@@ -94,7 +94,7 @@ export class Parser {
 				continue;
 			}
 			if (this.contributions.ignoreShebangFormat && startPos.line === 0 && startPos.character === 0) {
-				if (text.slice(0,2) == "#!") continue;
+				if (text.slice(0,1) == "#!") continue;
 			}
 
 
