@@ -1,4 +1,4 @@
-# Better Comments
+# <img src="images/icon_large.png" width="30" height="30"> Even Better Comments
 
 The Better Comments extension will help you create more human-friendly comments in your code.  
 With this extension, you will be able to categorise your annotations into:
@@ -9,7 +9,7 @@ With this extension, you will be able to categorise your annotations into:
 * Commented out code can also be styled to make it clear the code shouldn't be there
 * Any other comment styles you'd like can be specified in the settings
 
-![Annotated code](images/better-comments.PNG)
+![Annotated code](images/better-comments.png)
 
 ## Configuration
 
@@ -29,51 +29,51 @@ The default 5 can be modified to change the colors, and more can be added.
 
 ```json
 "evenbettercomments.tags": [
-  {
-    "tag": "!",
-    "color": "#FF2D00",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "?",
-    "color": "#3498DB",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "//",
-    "color": "#474747",
-    "strikethrough": true,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "todo",
-    "color": "#FF8C00",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "*",
-    "color": "#98C379",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  }
+	{
+		"tag": "!",
+		"aliases": ["Issue", "problem"],
+		"color": "#FF2D00",
+		"strikethrough": false,
+		"underline": false,
+		"backgroundColor": "transparent",
+		"bold": false,
+		"italic": false
+	}, {
+		"tag": "?",
+		"aliases": ["Idea", "Info"],
+		"color": "#3498DB",
+		"strikethrough": false,
+		"underline": false,
+		"backgroundColor": "transparent",
+		"bold": false,
+		"italic": false
+	}, {
+		"tag": "//",
+		"aliases": ["-----"],
+		"color": "#474747",
+		"strikethrough": true,
+		"underline": false,
+		"backgroundColor": "transparent",
+		"bold": false,
+		"italic": false
+	}, {
+		"tag": "todo",
+		"color": "#FF8C00",
+		"strikethrough": false,
+		"underline": false,
+		"backgroundColor": "transparent",
+		"bold": false,
+		"italic": false
+	}, {
+		"tag": "*",
+		"aliases": ["Important", "Wip", "~~~~~"],
+		"color": "#98C379",
+		"strikethrough": false,
+		"underline": false,
+		"backgroundColor": "transparent",
+		"bold": false,
+		"italic": false
+	}
 ]
 ```
 
