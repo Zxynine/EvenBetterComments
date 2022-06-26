@@ -4,6 +4,7 @@
 ### House Keeping
 * Updated README to reflect the new extension
 * Updated CHANGELOG to reflect new changes added.
+* Implemented workaround for ([vscode:prepublish bug](https://github.com/microsoft/vscode-vsce/issues/747))
 * Removal of stale burrito that was left in the microwave, ew.
 
 
