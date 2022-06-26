@@ -1,4 +1,4 @@
-namespace BetterComments
+namespace EvenBetterComments
 {
     /// <summary>
     /// The CSharpSample class.
