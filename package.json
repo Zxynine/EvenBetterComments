@@ -3,16 +3,16 @@
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
 	"version": "0.0.1",
-	"publisher": "Zxynine",
+	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
 	},
 	"license": "SEE LICENSE IN LICENSE.md",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Zxynine/Evenbetter-comments"
+		"url": "https://github.com/Zxynine/EvenBetterComments"
 	},
-	"bugs": "https://github.com/Zxynine/Evenbetter-comments/issues",
+	"bugs": "https://github.com/Zxynine/EvenBetterComments/issues",
 	"categories": [
 		"Formatters"
 	],
