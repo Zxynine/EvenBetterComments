@@ -2,7 +2,8 @@
 "name": "evenbettercomments",
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
-	"version": "0.0.1",
+    "icon": "images/icon_large.png",
+	"version": "4.0.0",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
@@ -28,7 +29,6 @@
 	],
 	"main": "./out/extension.js",
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"lint": "tslint -c tslint.json 'src/**/*.ts'"
