@@ -13,19 +13,15 @@ export function activate(context: vscode.ExtensionContext) {
 	let updateDecorations = function () {
 		// if no active window is open, return
 		if (!activeEditor) return;
-
 		// if lanugage isn't supported, return
 		if (!parser.supportedLanguage) return;
 
 		// Finds the single line comments using the language comment delimiter
 		parser.FindSingleLineComments(activeEditor);
-
 		// Finds the multi line comments using the language comment delimiter
 		parser.FindBlockComments(activeEditor);
-
 		// Finds the jsdoc comments
 		parser.FindJSDocComments(activeEditor);
-
 		// Apply the styles set in the package.json
 		parser.ApplyDecorations(activeEditor);
 	};
@@ -36,7 +32,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Set the regex patterns for the specified language's comments
 		parser.SetRegex(activeEditor.document.languageId);
-
 		// Trigger first update of decorators
 		triggerUpdateDecorations();
 	}
@@ -53,7 +48,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 			// Set regex for updated language
 			parser.SetRegex(editor.document.languageId);
-
 			// Trigger update to set decorations for newly active file
 			triggerUpdateDecorations();
 		}

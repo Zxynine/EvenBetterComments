@@ -8,9 +8,7 @@ export class Configuration {
 	private readonly commentConfig = new Map<string, CommentConfig | undefined>();
 	private readonly languageConfigFiles = new Map<string, string>();
 
-	/**
-	 * Creates a new instance of the Parser class
-	 */
+	/**  Creates a new instance of the Parser class */
 	public constructor() {
 		this.UpdateLanguagesDefinitions();
 	}
@@ -49,11 +47,10 @@ export class Configuration {
 			// Get the filepath from the map
 			let filePath = this.languageConfigFiles.get(languageCode) as string;
 			let content = fs.readFileSync(filePath, { encoding: 'utf8' });
-
 			// use json5, because the config can contains comments
 			let config = json5.parse(content);
-			this.commentConfig.set(languageCode, config.comments);
 
+			this.commentConfig.set(languageCode, config.comments);
 			return config.comments;
 		} catch (error) {
 			this.commentConfig.set(languageCode, undefined);

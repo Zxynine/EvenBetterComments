@@ -1,8 +1,6 @@
 interface CommentTag {
     tag: string;
-	// aliases: Array<string>;
     escapedTag: string;
-    // escapedAliases: Array<string>;
     decoration: any;
     ranges: Array<any>;
 }

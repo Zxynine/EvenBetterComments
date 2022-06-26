@@ -1,9 +1,11 @@
 # <img src="images/icon_large.png" width="30" height="30"> Even Better Comments
 
-The Better Comments extension will help you create more human-friendly comments in your code.  
+The Even Better Comments extension is based on the Better Comments extension which will help you create more human-friendly comments in your code.
+Even Better Comments seeks to improve upon this framework by adding in aliases, documentation, default values, and other various improvements.
 With this extension, you will be able to categorise your annotations into:
-* Alerts
-* Queries
+* Issues
+* Ideas
+* Dividers
 * TODOs
 * Highlights
 * Commented out code can also be styled to make it clear the code shouldn't be there
@@ -16,16 +18,21 @@ With this extension, you will be able to categorise your annotations into:
 This extension can be configured in User Settings or Workspace settings.
 
 `"evenbettercomments.multilineComments": true`  
- This setting will control whether multiline comments are styled using the annotation tags.
- When false, multiline comments will be presented without decoration.
+This setting will control whether multiline comments are styled using the annotation tags.
+When false, multiline comments will be presented without decoration.
 
 `"evenbettercomments.highlightPlainText": false`  
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first non-whitespace character on a line.
 
+`"evenbettercomments.ignoreShebangFormat": false`  
+This setting will force the parser to check if it is about to style the first line of code, and if
+it is, it will check that the first two characters are not `#!`. If it detects the shebang delimiter,
+formatting for that line will not be applied.
+
 `evenbettercomments.tags`  
 The tags are the characters or sequences used to mark a comment for decoration.
-The default 5 can be modified to change the colors, and more can be added.
+The default 5 can be modified to change the styles, and more can be added.
 
 ```json
 "evenbettercomments.tags": [
@@ -159,3 +166,4 @@ The default 5 can be modified to change the colors, and more can be added.
 * Vue.js
 * XML
 * YAML
+And more! Most languages which are properly configured should be supported.

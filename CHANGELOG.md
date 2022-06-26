@@ -1,5 +1,39 @@
 # Change Log
 
+## [4.0.2] (2022-06-26)
+### House Keeping
+* Updated README to reflect the new extension
+* Updated CHANGELOG to reflect new changes added.
+* Removal of stale burrito that was left in the microwave, ew.
+
+
+## [4.0.1] (2022-06-25)
+### Bug Fixes
+* Fixed icon not being loaded.
+* Fixed versioning labels in code.
+
+### House Keeping
+* Ensured all config options use `evenbettercomments` instead of `better-comments`.
+* Full publish to VS marketplace!
+
+
+## [4.0.0] (2022-06-25)
+### Development
+The release of v4.0.0 marks the start of the `Even Better Comments` extension, which is maintained by _Zxynine_.
+
+### Features
+* Added aliases for formats so that multiple delimiters can be used for a single format without bloating the settings.
+* Added option to check for shebang lines for any language.
+* Added ability to have a formatted comment on the same line as the starting delimiter for multiline comments.
+* Added documentation and wider support for settings.
+
+### House Keeping
+* Version bumped multiple dependencies.
+* Added type validation
+* Added 2-3 more language examples
+
+---
+
 ## [3.0.0] (2022-04-05)
 ### Features
 * Adding built in support for all languages ([e1373bf](https://github.com/aaron-bond/better-comments/commit/e1373bf)). Massive thanks to _edgardmessias_
