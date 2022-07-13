@@ -76,7 +76,7 @@ export class Parser {
 
 
 
-
+	//https://github.com/aaron-bond/better-comments/issues/404
 
 
 	/**
@@ -100,6 +100,7 @@ export class Parser {
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
 				continue;
 			}
+			//https://github.com/davidhewitt/shebang-language-associator
 			if (this.contributions.ignoreShebangFormat && startPos.line === 0 && startPos.character === 0) {
 				if (text.slice(0,1) == "#!") continue;
 			}
