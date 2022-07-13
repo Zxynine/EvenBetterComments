@@ -7,6 +7,7 @@ import * as json5 from 'json5';
 export class Configuration {
 	private readonly commentConfig = new Map<string, CommentConfig | undefined>();
 	private readonly languageConfigFiles = new Map<string, string>();
+	private readonly languageHasShebang = new Map<string, boolean>();
 
 	/**  Creates a new instance of the Parser class */
 	public constructor() {
@@ -15,7 +16,7 @@ export class Configuration {
 
 	/**
 	 * Generate a map of configuration files by language as defined by extensions
-	 * External extensions can override default configurations os VSCode
+	 * External extensions can override default configurations of VSCode
 	 */
 	public UpdateLanguagesDefinitions() {
 		this.commentConfig.clear();
@@ -24,10 +25,17 @@ export class Configuration {
 			let packageJSON = extension.packageJSON;
 			if (packageJSON.contributes && packageJSON.contributes.languages) {
 				for (let language of packageJSON.contributes.languages) {
+					this.languageHasShebang.set(language.id, (language.firstLine)? true : false)
 					if (language.configuration) this.languageConfigFiles.set(language.id, path.join(extension.extensionPath, language.configuration));
 				}
 			}
 		}
+	}
+
+	public GetHasShebang(languageCode: string): boolean {
+		if (this.languageHasShebang.has(languageCode)) {
+			return this.languageHasShebang.get(languageCode);
+		} else return false;
 	}
 
 	/** Gets the configuration information for the specified language */
@@ -47,9 +55,9 @@ export class Configuration {
 			// Get the filepath from the map
 			let filePath = this.languageConfigFiles.get(languageCode) as string;
 			let content = fs.readFileSync(filePath, { encoding: 'utf8' });
-			// use json5, because the config can contains comments
+			// use json5, because the config can contain comments
 			let config = json5.parse(content);
-
+			
 			this.commentConfig.set(languageCode, config.comments);
 			return config.comments;
 		} catch (error) {
