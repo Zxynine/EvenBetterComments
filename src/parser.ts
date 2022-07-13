@@ -77,6 +77,9 @@ export class Parser {
 
 
 	//https://github.com/aaron-bond/better-comments/issues/404
+	//https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#theming
+	//https://code.visualstudio.com/api/extension-guides/color-theme#syntax-colors
+	//https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide
 
 
 	/**
