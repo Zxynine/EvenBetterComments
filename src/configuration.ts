@@ -25,7 +25,7 @@ export class Configuration {
 			let packageJSON = extension.packageJSON;
 			if (packageJSON.contributes && packageJSON.contributes.languages) {
 				for (let language of packageJSON.contributes.languages) {
-					this.languageHasShebang.set(language.id, (language.firstLine)? true : false)
+					this.languageHasShebang.set(language.id, (language.firstLine)? true : false);
 					if (language.configuration) this.languageConfigFiles.set(language.id, path.join(extension.extensionPath, language.configuration));
 				}
 			}
@@ -34,7 +34,7 @@ export class Configuration {
 
 	public GetHasShebang(languageCode: string): boolean {
 		if (this.languageHasShebang.has(languageCode)) {
-			return this.languageHasShebang.get(languageCode);
+			return (this.languageHasShebang.get(languageCode))? true : false;
 		} else return false;
 	}
 

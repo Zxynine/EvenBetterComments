@@ -97,7 +97,9 @@ export class Parser {
 		let regEx = new RegExp(this.expression, regexFlags);
 		
 		for (let match:any; (match = regEx.exec(text));) {
-			let range: vscode.DecorationOptions = Parser.CreateRange(activeEditor, match.index, match.index + match[0].length);
+			let startPos = activeEditor.document.positionAt(match.index);
+			let endPos = activeEditor.document.positionAt(match.index + match[0].length);
+			let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
 			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)			
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
@@ -105,7 +107,7 @@ export class Parser {
 			}
 			//https://github.com/davidhewitt/shebang-language-associator
 			if (this.contributions.ignoreShebangFormat && startPos.line === 0 && startPos.character === 0) {
-				if (text.slice(0,1) == "#!") continue;
+				if (text.slice(0,1) === "#!") continue;
 			}
 
 
@@ -152,6 +154,7 @@ export class Parser {
 			let line : RegExpExecArray|null;
 			while (line = commentRegEx.exec(commentBlock)) {
 				let lineMatchIndex = line.index + match.index;
+			                                                                                    	// length of text?                //length of spacing?
 				let range: vscode.DecorationOptions = Parser.CreateRange(activeEditor, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 
 				// Find which custom delimiter was used in order to add it to the collection
@@ -322,7 +325,6 @@ export class Parser {
 
 			let decorationType : vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType(options);
 
-			let escapedSequence = item.tag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
 			//Create CommentTag for primary tag
 			this.tags.push(Parser.CreateTag(item.tag, decorationType));
 			
