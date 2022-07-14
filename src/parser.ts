@@ -3,6 +3,7 @@ import { Configuration } from './configuration';
 
 export class Parser {
 	private tags: CommentTag[] = [];
+	private enclosingPairs: EnclosingPair[] = [];
 	//TODO: create variables for other types of expressions.
 	private expression: string = "";
 
@@ -153,12 +154,58 @@ export class Parser {
 		commentMatchString += characters.join("|");
 		commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
 
+		/* 
+			"(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+		
+			
+			"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
+		capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
+		at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
+		
+		
+		              ([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
+		capture    any leading whitespace       dont index block start            any trailing whitespace
+		*/
+
+
 		// Use start and end delimiters to find block comments
 		let regexString = "(^|[ \\t])(";
 		regexString += this.blockCommentStart;
 		regexString += "[\\s])+([\\s\\S]*?)(";
 		regexString += this.blockCommentEnd;
-		regexString += ")";
+		regexString += ")"; 
+
+		/* 
+		"(^|[ \\t])(this.blockCommentStart[\\s])+([\\s\\S]*?)(this.blockCommentEnd)"
+		
+		        "(^|[ \\t])                 (this.blockCommentStart[\\s])+               ([\\s\\S]*?)          (this.blockCommentEnd)"
+		capture newline or whitespace   capture block start and whitespace char     capture any characters        capture block end
+		     single character                       at least one                        all non greedy                single char    
+		*/
+
+
+
+
+
+
+
+		/**! */
+		/**!*/
+		
+		/*! */
+		/*!*/
+
+		/*.! */
+		/*.!*/
+
+		/* ! */
+		/* !*/
+
+
+
+
+
+
 
 		let regEx = new RegExp(regexString, "gm");
 		let commentRegEx = new RegExp(commentMatchString, "igm");
@@ -183,10 +230,13 @@ export class Parser {
 
 
 	/**
+	 * Idea: first split document up into groups that are not block comments and ones that are. Iterate over each individual group and apply the formatting appropriately.
+	 * 
+	 * ? Nothing is telling this code not to parse single line and multi line in the same area.
+	 * 
 	* ISSUE: When you put "//*" inside a string, it will detect that line as a string from that point onwards.
 	* Example: ^"//*" this text gets highlighted;
 	*/
-
 
 	/**
 	 * Finds all multiline comments starting with "*"
@@ -314,6 +364,10 @@ export class Parser {
 				this.supportedLanguage = this.contributions.highlightPlainText;
 				break;
 		}
+
+
+
+
 	}
 	
 
@@ -345,6 +399,10 @@ export class Parser {
 			}
 		}
 	}
+	// private setEnclosingPairs(): void {
+
+	// 	enclosingPairs
+	// }
 
 	/**
 	 * Escapes a given string for use in a regular expression
@@ -385,6 +443,8 @@ export class Parser {
 			this.highlightMultilineComments = this.contributions.multilineComments;
 		}
 	}
+
+
 
 	//#endregion
 }

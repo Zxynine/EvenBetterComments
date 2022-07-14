@@ -6,6 +6,7 @@ import * as json5 from 'json5';
 
 export class Configuration {
 	private readonly commentConfig = new Map<string, CommentConfig | undefined>();
+	private readonly enclosingPairs = new Map<string, Array<EnclosingPair> | undefined>();
 	private readonly languageConfigFiles = new Map<string, string>();
 	private readonly languageHasShebang = new Map<string, boolean>();
 
@@ -40,16 +41,14 @@ export class Configuration {
 
 	/** Gets the configuration information for the specified language */
 	public GetCommentConfiguration(languageCode: string): CommentConfig | undefined {
+		// * if no config exists for this language, back out and leave the language unsupported
+		if (!this.languageConfigFiles.has(languageCode)) return undefined;
 
 		// * check if the language config has already been loaded
 		if (this.commentConfig.has(languageCode)) {
 			return this.commentConfig.get(languageCode);
 		}
 
-		// * if no config exists for this language, back out and leave the language unsupported
-		if (!this.languageConfigFiles.has(languageCode)) {
-			return undefined;
-		}
 
 		try {
 			// Get the filepath from the map
@@ -65,4 +64,55 @@ export class Configuration {
 			return undefined;
 		}
 	}
+
+
+	/** Gets the configuration information for the specified language */
+	public GetEnclosingPairs(languageCode: string): Array<EnclosingPair> | undefined {
+		// * if no config exists for this language, back out and leave the language unsupported
+		if (!this.languageConfigFiles.has(languageCode)) return undefined;
+
+		// * check if the language config has already been loaded
+		if (this.enclosingPairs.has(languageCode)) {
+			return this.enclosingPairs.get(languageCode);
+		}
+
+
+		try {
+			// Get the filepath from the map
+			let filePath = this.languageConfigFiles.get(languageCode) as string;
+			let content = fs.readFileSync(filePath, { encoding: 'utf8' });
+			// use json5, because the config can contain comments
+			let config = json5.parse(content);
+
+			let pairs : Array<[string,string]> = [];
+			if (config.brackets) pairs.concat(config.brackets);
+			if (config.surroundingPairs) pairs.concat(config.surroundingPairs);
+			if (config.autoClosingPairs) {
+				for (let closingPair of config.autoClosingPairs) {
+					pairs.push([closingPair.open, closingPair.close]);
+				}
+			}
+			
+			let enclosing : Array<EnclosingPair> | undefined = undefined;
+
+			if (pairs.length > 0) {
+				//TODO filter values out. Possibly use map for start and end chars.
+				enclosing = [];
+				for (let ePair of pairs) {
+					enclosing.push({
+						leftTag: ePair[0],
+						rightTag: ePair[1]
+					});
+				}
+			}
+				
+			this.enclosingPairs.set(languageCode, enclosing);
+			return enclosing;
+		} catch (error) {
+			this.enclosingPairs.set(languageCode, undefined);
+			return undefined;
+		}
+	}
+
+	
 }

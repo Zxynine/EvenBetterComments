@@ -30,3 +30,9 @@ interface CommentConfig {
 	lineComment?: string;
 	blockComment?: [string, string];
 }
+
+
+interface EnclosingPair {
+	leftTag : string;
+	rightTag : string;
+}
