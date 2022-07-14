@@ -100,6 +100,7 @@ The default 5 can be modified to change the styles, and more can be added.
 
 * Ada
 * AL
+* Ansible
 * Apex
 * AsciiDoc
 * BrightScript
@@ -118,8 +119,9 @@ The default 5 can be modified to change the styles, and more can be added.
 * Erlang
 * F#
 * Fortran
-* gdscript
+* Gdscript
 * GenStat
+* Gleam
 * Go
 * GraphQL
 * Groovy
@@ -143,6 +145,7 @@ The default 5 can be modified to change the styles, and more can be added.
 * MATLAB
 * Objective-C
 * Objective-C++
+* ObjectPascal
 * Pascal
 * Perl
 * Perl 6
