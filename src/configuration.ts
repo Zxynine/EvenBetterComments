@@ -66,6 +66,7 @@ export class Configuration {
 	}
 
 
+	
 	// /** Gets the configuration information for the specified language */
 	// public GetEnclosingPairs(languageCode: string): Array<EnclosingPair> | undefined {
 	// 	// * if no config exists for this language, back out and leave the language unsupported
@@ -114,5 +115,62 @@ export class Configuration {
 	// 	}
 	// }
 
+
+
+	private static getDocumentWorkspaceFolder(): string | undefined {
+		const fileName = vscode.window.activeTextEditor?.document.fileName;
+		return (vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).filter((fsPath) => fileName?.startsWith(fsPath))[0]);
+	}
+
+		
+	/**
+	 * Get the relative path to the workspace folder  
+	 * @param {string} filePath   
+	 * @returns {string} relativePath of folder
+	 */
+	private static getRelativeFolderPath(filePath : string) : string {
+		let dirName = path.dirname(filePath);
+		return vscode.workspace.asRelativePath(dirName);
+	}
+
+
+		
+	/**
+	 * Convert string to PascalCase.  
+	 * first_second_third => FirstSecondThird  
+	 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
+	 * 
+	 * @param {string} value - string to transform to PascalCase  
+	 * @returns {string} transformed value  
+	 */
+	private static toPascalCase(value : string) : string {
+		const match = value.match(/[a-z0-9]+/gi);
+		if (!match) return value;
+		return match.map(word => {
+			return word.charAt(0).toUpperCase()
+				+ word.substring(1).toLowerCase();
+		}).join('');
+	}
 	
+
+		
+	/**
+	 * Convert string to camelCase.  
+	 * first_second_third => firstSecondThird  
+	 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
+	 * 
+	 * @param {string} value - string to transform to camelCase
+	 * @returns {string} transformed value  
+	 */
+	private static toCamelCase(value : string) : string {
+		const match = value.match(/[a-z0-9]+/gi);
+		if (!match) return value;
+		return match.map(
+			(word, index) => ((index === 0)
+				? word.toLowerCase()
+				: word.charAt(0).toUpperCase()
+					+ word.substring(1).toLowerCase()
+			)
+		).join('');
+	}
 }

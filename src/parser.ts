@@ -33,6 +33,7 @@ export class Parser {
 	}
 
 	//Tools==========================================================================================================================================
+	
  	//TODO: Join using '|' char, the array is not needed.
  	//TODO: just save the regex string, this.tags should not change.	
 	/** Build up regex matcher for custom delimiter tags */
@@ -56,7 +57,7 @@ export class Parser {
 	 * @param decorationType The decoration format definition.
 	 * @returns {CommentTag} The created CommentTag object.
 	 */
-	 private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
+	private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
 		let escapedSequence = itemTag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
 		let newTag : CommentTag = {
 			tag: itemTag,
@@ -73,14 +74,57 @@ export class Parser {
 	 * @param input The input string to be escaped
 	 * @returns {string} The escaped string
 	 */
-	 private static escapeRegExp(input: string): string {
+	private static escapeRegExp(input: string): string {
 		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 		//                  (/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+
+	// static escape(value: string): string {
+	// 	return value.replace(/\$|}|\\/g, '\\$&');
+	// }
+	
+	// private static getFormattedDateTime12HR(date: Date) {
+	// 	const month = date.getMonth() + 1;
+	// 	const day = date.getDate();
+	// 	const year = date.getFullYear();
+	// 	const hour = (date.getHours() > 12)? date.getHours()-12 : date.getHours();
+	// 	const minutes = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes().toString();
+	// 	const amPM = (date.getHours() >= 12)? 'PM' : 'AM';
+	// 	return `${day}/${month}/${year} ${hour}:${minutes} ${amPM}`;
+	// }
+
+	// private static getFormattedDateTime24HR(date: Date) {
+	// 	const month = date.getMonth()+1;
+	// 	const day = date.getDate();
+	// 	const year = date.getFullYear();
+	// 	const hour = date.getHours();
+	// 	const minutes = (date.getMinutes() < 10) ? `0${date.getMinutes()}` : date.getMinutes().toString();
+	// 	return `${day}/${month}/${year} ${hour}:${minutes}`;
+	// }
+
+	//https://github.com/jcace/commentlinks/blob/master/src/CommentLinkProvider.ts
+	// const LINK_REGEX = /^(\.{1,2}[\/\\])?(.+?)$/;
+	private static findCommentLinks(comment: string) : Array<any> {
+		let linkRegex: RegExp = /\[\[.*?\]\]/g;
+		//This splits the comment into individual lines if there are any.
+		let lines = comment.split(/(?:\n|\r)+/);
+		for (let line in lines) {
+			for (let match:RegExpExecArray|null; (match = linkRegex.exec(line));) {
+				
+			}
+		}
+
+
+		return lines;
 	}
 	//===============================================================================================================================================
 
 
-
+	//https://github.com/estruyf/vscode-hide-comments
+	//https://github.com/kingsimba/vscode-tsdoc-comment
+	//https://github.com/baendlorel/cpp-comment-generator
+	//https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.bettercomment
+	//https://marketplace.visualstudio.com/search?term=comments&target=VSCode&category=Other&sortBy=Relevance
 
 
 
@@ -236,12 +280,14 @@ export class Parser {
 
 
 	/**
-	 * Idea: first split document up into groups that are not block comments and ones that are. Iterate over each individual group and apply the formatting appropriately.
-	 * 
-	 * ? Nothing is telling this code not to parse single line and multi line in the same area.
-	 * 
+	* Idea: first split document up into groups that are not block comments and ones that are. Iterate over each individual group and apply the formatting appropriately.
+	* 
+	* ? Nothing is telling this code not to parse single line and multi line in the same area.
+	* 
 	* ISSUE: When you put "//*" inside a string, it will detect that line as a string from that point onwards.
 	* Example: ^"//*" this text gets highlighted;
+	*
+	* [[Hello ]] dadw [[    ]]
 	*/
 
 	/** 
