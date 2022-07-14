@@ -1,12 +1,13 @@
 interface CommentTag {
 	tag: string;
 	escapedTag: string;
+	lowerTag: string;
 	decoration: any;
 	ranges: Array<any>;
 }
 
 interface Contributions {
-	singlelineComments: boolean;
+	monolineComments: boolean;
 	multilineComments: boolean;
 	useJSDocStyle: boolean;
 	highlightPlainText: boolean;
