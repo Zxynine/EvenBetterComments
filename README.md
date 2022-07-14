@@ -181,4 +181,5 @@ The default 5 can be modified to change the styles, and more can be added.
 * Vue.js
 * XML
 * YAML
+
 And more! Most languages which are properly configured should be supported.

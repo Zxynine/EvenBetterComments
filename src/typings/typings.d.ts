@@ -11,13 +11,12 @@ interface Contributions {
 	multilineComments: boolean;
 	useJSDocStyle: boolean;
 	highlightPlainText: boolean;
-	ignoreShebangFormat: boolean;
 	allowNestedHighlighting: boolean;
 	tags: [{
 		tag: string;
 		aliases: Array<string>;
 		color: string;
-        overline: boolean;
+		overline: boolean;
 		strikethrough: boolean;
 		underline: boolean;
 		bold: boolean;
@@ -32,7 +31,7 @@ interface CommentConfig {
 }
 
 
-interface EnclosingPair {
-	leftTag : string;
-	rightTag : string;
-}
+// interface EnclosingPair {
+// 	leftTag : string;
+// 	rightTag : string;
+// }

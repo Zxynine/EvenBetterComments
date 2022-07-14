@@ -1,11 +1,35 @@
 # Change Log
 
+## [4.1.0] (2022-xx-xx) WIP...
+### Development
+The release of v4.1.0 marks my first major changes to the code and structure of the extension.
+
+### Features
+* Added implicit support for languages with firstLine/Shebang specials.
+* Removed `ignoreShebangFormat` in favour of implicit functionality.
+* Added support for the `overline` decoration.
+* Added ability to disable formatting monoline comments.
+* Added colour picker to hex string of tag settings. (My personal favourite addition)
+
+### HouseKeeping
+* Abstracted code functions and changed some to be static.
+* Added more code comments for some functions.
+* Upgraded dependencies.
+
+### Bug Fixes
+* Added temp fix for `ObjectPascal` language not working.
+* Fixed my workaround for ([vscode:prepublish bug](https://github.com/microsoft/vscode-vsce/issues/747)) (I was dumb).
+
+### Planned
+* Rework regex parsing to be more consistent.
+* Add internal ability to find languages group pairs to prevent unplanned comment formatting.
+
+
 ## [4.0.2] (2022-06-26)
-### House Keeping
+### HouseKeeping
 * Updated README to reflect the new extension
 * Updated CHANGELOG to reflect new changes added.
 * Implemented workaround for ([vscode:prepublish bug](https://github.com/microsoft/vscode-vsce/issues/747))
-* Removal of stale burrito that was left in the microwave, ew.
 
 
 ## [4.0.1] (2022-06-25)
@@ -13,7 +37,7 @@
 * Fixed icon not being loaded.
 * Fixed versioning labels in code.
 
-### House Keeping
+### HouseKeeping
 * Ensured all config options use `evenbettercomments` instead of `better-comments`.
 * Full publish to VS marketplace!
 
@@ -23,12 +47,12 @@
 The release of v4.0.0 marks the start of the `Even Better Comments` extension, which is maintained by _Zxynine_.
 
 ### Features
-* Added aliases for formats so that multiple delimiters can be used for a single format without bloating the settings.
+* Added aliases for tags so that multiple delimiters can be used for a single format without bloating the settings.
 * Added option to check for shebang lines for any language.
 * Added ability to have a formatted comment on the same line as the starting delimiter for multiline comments.
 * Added documentation and wider support for settings.
 
-### House Keeping
+### HouseKeeping
 * Version bumped multiple dependencies.
 * Added type validation
 * Added 2-3 more language examples
@@ -39,7 +63,7 @@ The release of v4.0.0 marks the start of the `Even Better Comments` extension, w
 ### Features
 * Adding built in support for all languages ([e1373bf](https://github.com/aaron-bond/better-comments/commit/e1373bf)). Massive thanks to _edgardmessias_
 
-### House Keeping
+### HouseKeeping
 * Version bumped all dependencies
 * Language support is now driven from configuration files. This means that if you have an extension which informs VSCode about a language, Better Comments will know about it too!
 * Problems are likely to arise with this change, but it allows a lot more users to benefit from Better Comments without needing an explicit update for the extension adding support.
@@ -100,7 +124,7 @@ _**Thanks!**_
 * Added support for Twig
 * Added support for Puppet
 
-### House Keeping
+### HouseKeeping
 * I decided a major version release was appropriate for this one as it's a pretty huge set of changes in terms of how the extension functions
 * It's now possible to add block comment formatting for any new languages as required. Sorry it took so long!
 
@@ -128,7 +152,7 @@ _**Thanks!**_
 	* SAS ([145e8d3](https://github.com/aaron-bond/better-comments/commit/145e8d3))
 	* STATA ([eb0f367](https://github.com/aaron-bond/better-comments/commit/eb0f367))
 
-### House Keeping
+### HouseKeeping
 * Updating README to reflect actual styntax better ([71f9019](https://github.com/aaron-bond/better-comments/commit/71f9019)), merges [#77](https://github.com/aaron-bond/better-comments/issues/77)
 * Messed up the incrementing of the version on this one with the gdscript merge so just pushing this as 1.2.7 for convenience
 

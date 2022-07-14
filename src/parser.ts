@@ -3,7 +3,7 @@ import { Configuration } from './configuration';
 
 export class Parser {
 	private tags: CommentTag[] = [];
-	private enclosingPairs: EnclosingPair[] = [];
+	// private enclosingPairs: EnclosingPair[] = [];
 	//TODO: create variables for other types of expressions.
 	private expression: string = "";
 
@@ -32,7 +32,7 @@ export class Parser {
 		this.setTags();
 	}
 
-	//Tools....................................................
+	//Tools==========================================================================================================================================
  	//TODO: Join using '|' char, the array is not needed.
  	//TODO: just save the regex string, this.tags should not change.	
 	/** Build up regex matcher for custom delimiter tags */
@@ -67,8 +67,25 @@ export class Parser {
 		};
 		return newTag;
 	}
+	
+	/**
+	 * Escapes a given string for use in a regular expression
+	 * @param input The input string to be escaped
+	 * @returns {string} The escaped string
+	 */
+	 private static escapeRegExp(input: string): string {
+		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+		//                  (/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+	//===============================================================================================================================================
 
-	//.........................................................
+
+
+
+
+
+
+
 
 	/**
 	 * Sets the regex to be used by the matcher based on the config specified in the package.json
@@ -123,15 +140,12 @@ export class Parser {
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
 				continue;
 			}
-			if (this.contributions.ignoreShebangFormat && startPos.line === 0 && startPos.character === 0) {
-				if (text.slice(0,1) == "#!") continue;
-			}
 			
 			let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
 			// Find which custom delimiter was used in order to add it to the collection
-			let matchString = match[3] as string;
-			let matchTag = this.tags.find(item => item.lowerTag === matchString.toLowerCase());
+			let matchString = (match[3] as string).toLowerCase();
+			let matchTag = this.tags.find(item => item.lowerTag === matchString);
 			if (matchTag) matchTag.ranges.push(range);
 
 		}
@@ -184,11 +198,6 @@ export class Parser {
 		*/
 
 
-
-
-
-
-
 		/**! */
 		/**!*/
 		
@@ -200,9 +209,6 @@ export class Parser {
 
 		/* ! */
 		/* !*/
-
-
-
 
 
 
@@ -221,8 +227,8 @@ export class Parser {
 				let range: vscode.DecorationOptions = Parser.CreateRange(activeEditor, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 
 				// Find which custom delimiter was used in order to add it to the collection
-				let matchString = line[3] as string;
-				let matchTag = this.tags.find(item => (item.lowerTag === matchString.toLowerCase()));
+				let matchString = (line[3] as string).toLowerCase();
+				let matchTag = this.tags.find(item => item.lowerTag === matchString);
 				if (matchTag) matchTag.ranges.push(range);
 			}
 		}
@@ -238,7 +244,7 @@ export class Parser {
 	* Example: ^"//*" this text gets highlighted;
 	*/
 
-	/**
+	/** 
 	 * Finds all multiline comments starting with "*"
 	 * @param activeEditor The active text editor containing the code document
 	 */
@@ -251,18 +257,27 @@ export class Parser {
 		let characters: Array<string> = Parser.CreateCharactersArray(this.tags);
 
 		// Combine custom delimiters and the rest of the comment block matcher
-		let regEx = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm; // Find rows of comments matching pattern /** */
+		let regEx : RegExp = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm; // Find rows of comments matching pattern /** */
 		
-		let commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("; // Highlight after leading /** or *
+		/*                               /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm
+		        (^|[ \t])                         (\/\*\*)+            ([\s\S]*?)                 (\*\/)                gm
+		begining of line or whitespace       one or more '/ **'    all characters non greedy    one match '*-/'   global multiline
+		*/
+
+		// Highlight after leading /** or *
+		let commentMatchString = (this.contributions.allowNestedHighlighting)? "(^)+([ \\t]*\\*[ \\t]*)(" : "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("; 
 		commentMatchString += characters.join("|");
 		commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
-		//https://regex101.com
-		//[!\?].*([^!\?]*\n)*
-		//(^)+([ \t]*(?:\/\*\*|\*)[ \t]*)([\!|\?])([ ]*|[:])+(.*(?:[^!|\?]*\n)*)
 
-		//G1=^	G2=*...	G3=[?!] G4=indexstart	G5=content
+		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+		        "(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
+		one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
 
-		//((?:(?!\*\/).)*[\r\n]*(?:(?:(?!\*\/)(?!\!|\?).)*\n)*)
+						"([ \\t]*\\*[ \\t]*)"
+		           
+		*/
+
+
 
 		let commentRegEx = new RegExp(commentMatchString, "igm");
 
@@ -277,8 +292,8 @@ export class Parser {
 				let range: vscode.DecorationOptions = Parser.CreateRange(activeEditor, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 
 				// Find which custom delimiter was used in order to add it to the collection
-				let matchString = line[3] as string;
-				let matchTag = this.tags.find(item => item.lowerTag === matchString.toLowerCase());
+				let matchString = (line[3] as string).toLowerCase();
+				let matchTag = this.tags.find(item => item.lowerTag === matchString);
 				if (matchTag) matchTag.ranges.push(range);
 			}
 		}
@@ -306,11 +321,6 @@ export class Parser {
 
 
 
-
-
-
-
-
 	//#region  Private Methods.......................................................................................................................
 
 	/**
@@ -327,8 +337,8 @@ export class Parser {
 		if (config) {
 			this.supportedLanguage = true;
 
-			let blockCommentStart = config.blockComment ? config.blockComment[0] : null;
-			let blockCommentEnd = config.blockComment ? config.blockComment[1] : null;
+			let blockCommentStart = config.blockComment?.[0];
+			let blockCommentEnd = config.blockComment?.[1];
 
 			this.setCommentFormat(config.lineComment || blockCommentStart, blockCommentStart, blockCommentEnd);
 
@@ -404,14 +414,6 @@ export class Parser {
 	// 	enclosingPairs
 	// }
 
-	/**
-	 * Escapes a given string for use in a regular expression
-	 * @param input The input string to be escaped
-	 * @returns {string} The escaped string
-	 */
-	private escapeRegExp(input: string): string {
-		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-	}
 
 	/**
 	 * Set up the comment format for single and multiline highlighting
@@ -419,7 +421,7 @@ export class Parser {
 	 * @param start The start delimiter for block comments
 	 * @param end The end delimiter for block comments
 	 */
-	private setCommentFormat(monoLine: string|string[]|null, start: string|null = null, end: string|null = null): void {
+	private setCommentFormat(monoLine: string|string[]|undefined, start: string|undefined = undefined, end: string|undefined = undefined): void {
 		this.delimiter = "";
 		this.blockCommentStart = "";
 		this.blockCommentEnd = "";
@@ -427,18 +429,18 @@ export class Parser {
 		// If no single line comment delimiter is passed, monoline comments are not supported
 		if (this.contributions.monolineComments && monoLine) {
 			if (typeof monoLine === 'string') {
-				this.delimiter = this.escapeRegExp(monoLine).replace(/\//ig, "\\/");
+				this.delimiter = Parser.escapeRegExp(monoLine).replace(/\//ig, "\\/");
 			} else if (monoLine.length > 0) {
 				// * if multiple delimiters are passed, the language has more than one single line comment format
-				this.delimiter = monoLine.map(s => this.escapeRegExp(s)).join("|");
+				this.delimiter = monoLine.map(s => Parser.escapeRegExp(s)).join("|");
 			}
 		} else {
 			this.highlightMonolineComments = false;
 		}
 
 		if (start && end) {
-			this.blockCommentStart = this.escapeRegExp(start);
-			this.blockCommentEnd = this.escapeRegExp(end);
+			this.blockCommentStart = Parser.escapeRegExp(start);
+			this.blockCommentEnd = Parser.escapeRegExp(end);
 
 			this.highlightMultilineComments = this.contributions.multilineComments;
 		}
@@ -448,6 +450,22 @@ export class Parser {
 
 	//#endregion
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -466,3 +484,15 @@ export class Parser {
 
 
 
+
+
+	
+
+
+		//https://regex101.com
+		//[!\?].*([^!\?]*\n)*
+		//(^)+([ \t]*(?:\/\*\*|\*)[ \t]*)([\!|\?])([ ]*|[:])+(.*(?:[^!|\?]*\n)*)
+
+		//G1=^	G2=*...	G3=[?!] G4=indexstart	G5=content
+
+		//((?:(?!\*\/).)*[\r\n]*(?:(?:(?!\*\/)(?!\!|\?).)*\n)*)

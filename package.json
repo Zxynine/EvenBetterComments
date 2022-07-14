@@ -53,11 +53,6 @@
 					"description":"Whether the plaintext comment highlighter should be active",
 					"default":false
 				},
-				"evenbettercomments.ignoreShebangFormat":{
-					"type":"boolean",
-					"description":"Whether the command will look to see if the first line is shebang to ignore it or not",
-					"default":false
-				},
 				"evenbettercomments.allowNestedHighlighting":{
 					"type":"boolean",
 					"description":"Whether to highlight different types of comments on the same line",
