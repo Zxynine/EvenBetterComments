@@ -29,11 +29,6 @@ When false, multiline comments will be presented without decoration.
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first non-whitespace character on a line.
 
-`"evenbettercomments.ignoreShebangFormat": false`  
-This setting will force the parser to check if it is about to style the first line of code, and if
-it is, it will check that the first two characters are not `#!`. If it detects the shebang delimiter,
-formatting for that line will not be applied.
-
 `"evenbettercomments.allowNestedHighlighting": true`  
 This setting will tell the parser whether it should parse multiple tags on the same line or not.
 
