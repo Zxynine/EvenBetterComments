@@ -42,8 +42,7 @@ export function reloadGrammar() {
 				try {
 					const matchingGrammars = ExtentionProvider.AllExtentionPathGrammarsFlat.filter((g) => (g.scopeName === scopeName) && g.path);
 					if (matchingGrammars.length > 0) {
-						const grammar = matchingGrammars[0];
-						const filePath = pathJoin(grammar.extensionPath, grammar.path!);
+						const filePath = pathJoin(matchingGrammars[0].extensionPath, matchingGrammars[0].path!);
 						let content = await promises.readFile(filePath, 'utf-8');
 						return vsctm.parseRawGrammar(content, filePath);
 					}
@@ -58,7 +57,7 @@ export function reloadGrammar() {
 }
 
 
-
+//TODO add objectpooling.
 //Stores all of the documents being tokenized.
 let documentsMap : Map<vscode.Uri, DocumentController> = new Map();
 export function getDocument(uri:vscode.Uri) {
@@ -202,6 +201,16 @@ export class DocumentController implements vscode.Disposable {
 		}
 	}
 
+	
+	public refresh() {
+		this.tokensArray = [];
+		this.contentChangesArray = [];
+		this.parseEntireDocument();
+	}
+
+	//...............................................................................
+	// * Getting Scopes/API
+
 	public getScopeAt(position : vscode.Position) : TokenInfo{
 		if (!this.grammar) return TokenInfo.Default(position);
 		// let a = process.hrtime()[1] //? TEST SPEED
@@ -210,38 +219,45 @@ export class DocumentController implements vscode.Disposable {
 		this.validateLine(position.line);
 		this.contentChangesArray.length = 0; //clears changes
 
-		const lineTokens = this.tokensArray[position.line];
-		if (lineTokens) {
-			const token = lineTokens.tokens.last(token=> token.startIndex <= position.character);
-			if (token) return TokenInfo.Create(this.document, position.line, token);
-
-		}
-		return TokenInfo.Default(position);
+		const token = this.tokensArray[position.line]?.tokens.last(token=> token.startIndex <= position.character);
+		return (token)? TokenInfo.Create(this.document, position.line, token) : TokenInfo.Default(position);
 	}
 
 
-	public getLineScopes(position : vscode.Position) : Array<TokenInfo> {
+	public getLineScopes(linePosition : vscode.Position) : Array<TokenInfo> {
 		if (!this.grammar) return [];
-		position = this.document.validatePosition(position);
+		linePosition = this.document.validatePosition(linePosition);
 		
-		this.validateLine(position.line);
+		this.validateLine(linePosition.line);
 		this.contentChangesArray.length = 0; //clears changes
 
-		const lineTokens = this.tokensArray[position.line];
-		return (lineTokens)? TokenInfo.CreateLineArray(this.document, position.line, lineTokens) : [];
+		const lineTokens = this.tokensArray[linePosition.line];
+		return (lineTokens)? TokenInfo.CreateLineArray(this.document, linePosition.line, lineTokens) : [];
 	}
 
+	public getScopesForLines(lineRange : vscode.Range) : Array<Array<TokenInfo>> {
+		if (!this.grammar) return [];
+		lineRange = this.document.validateRange(lineRange);
+
+		this.validateLines(lineRange.start.line, lineRange.end.line);
+		this.contentChangesArray.length = 0; //clears changes
+
+		const lineCount = lineRange.end.line - lineRange.start.line;
+		const returnTokens : TokenInfo[][] = new Array(lineCount+1); //same line is 0 so array length of 1
+		for (let lineIndex = 0; (lineIndex <= lineCount); lineIndex++){
+			const lineTokensArray = this.tokensArray[lineIndex];
+			returnTokens[lineIndex] = (lineTokensArray)? TokenInfo.CreateLineArray(this.document, lineIndex, lineTokensArray) : [];
+		}
+
+		return returnTokens;
+	}
 
 
 	public getAllScopes() : Array<Array<TokenInfo>> {
 		if (!this.grammar) return [];
 		
-		//If line counts are the same, validate each line. If different, reparse entire document.
-		if (this.documentText.length === this.document.lineCount) {
-			for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
-				this.validateLine(lineIndex);
-			}
-		} else this.refresh();
+		this.validateDocument();
+		this.contentChangesArray.length = 0; //clears changes
 		//We should now have an up to date varsion of all tokens.
 
 		const returnTokens : TokenInfo[][] = new Array(this.document.lineCount);
@@ -256,30 +272,41 @@ export class DocumentController implements vscode.Disposable {
 
 
 
-	public refresh() {
-		this.tokensArray = [];
-        this.contentChangesArray = [];
-		this.parseEntireDocument();
-	}
-
 	//...............................................................................
+	// * Validation
+	//TODO: add return bool for changes maybe?
 	private validateLine(lineIndex : number) {
 		// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
 		if(this.documentText[lineIndex] !== this.document.lineAt(lineIndex).text){
 			this.parseLine(this.document.lineAt(lineIndex));
 		}
 	}
+
+	private validateLines(startLine:number, endLine:number) {
+		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++){
+			this.validateLine(lineIndex);
+		}
+	}
+
+	private validateDocument() {
+		//If line counts are the same, validate each line. If different, reparse entire document.
+		if (this.documentText.length === this.document.lineCount) {
+			for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
+				this.validateLine(lineIndex);
+			}
+		} else this.refresh();
+	}
+
 	//...............................................................................
+	// * Parsing
 	private parseLine(line : vscode.TextLine) {
 		if(!this.grammar) return;
 		// Update text content
 		this.documentText[line.lineNumber] = line.text;
-		// Don't tokenize line if too long
-		if(line.text.length > 20000) this.tokensArray[line.lineNumber] = undefined;
-		else { // Tokenize line
-			const prevState = line.lineNumber ?  this.tokensArray[line.lineNumber-1]?.ruleStack ?? null : null;
-			this.tokensArray[line.lineNumber] = this.grammar.tokenizeLine(line.text, prevState);
-		}
+		this.tokensArray[line.lineNumber] = ((line.text.length > 20000)
+			? undefined // Don't tokenize line if too long
+			: this.grammar.tokenizeLine(line.text, (line.lineNumber)? this.getLineState(line.lineNumber-1) : null)
+		);
 	}
 
 	private parseRange(range : vscode.Range){
@@ -294,6 +321,10 @@ export class DocumentController implements vscode.Disposable {
 		this.parseRange(docRange);
 	}
 
+
+	private getLineState(lineIndex:number) {
+		return this.tokensArray[lineIndex]?.ruleStack ?? null;
+	}
 }
 
 
@@ -302,18 +333,37 @@ export class DocumentController implements vscode.Disposable {
 
 
 
-const TokenTools = {
-	ExcludeTokensBefore: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => {
-		const sliceIndex = lineTokens.tokens.findIndex((Token) => Token.startIndex >= position.character);
-		return (sliceIndex===-1)? lineTokens.tokens : lineTokens.tokens.slice(sliceIndex, -1);
-	},
-	ExcludeTokensAfter: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => {
-		const sliceIndex = lineTokens.tokens.findIndex((Token) => Token.endIndex < position.character);
-		return (sliceIndex===-1)? lineTokens.tokens : lineTokens.tokens.slice(0, sliceIndex);
-	},
 
 
+
+export const TokenTools = {
+	//Find first token whose end index comes after/on range start. This is the first token in array
+	//Find last token whose start index comes before/on range end. This is the last token in array.
+	SelectRange: (lineTokens:vsctm.ITokenizeLineResult, startCharacter:number, endCharacter:number) => {
+		if (startCharacter > endCharacter) return lineTokens.tokens; //Not a valid range
+		const StartIndex = lineTokens.tokens.firstIndex((Token)=> Token.endIndex >= startCharacter);
+		const EndIndex = lineTokens.tokens.lastIndex((Token)=> Token.startIndex <= endCharacter);
+		if (StartIndex === -1 || EndIndex === -1) return []; //No valid tokens
+		return lineTokens.tokens.slice(StartIndex, EndIndex);
+	},
+	FindToken: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => lineTokens.tokens.first(
+		(token)=> token.startIndex <= position.character && position.character <= token.endIndex
+	),
+
+	CreateRangeFor: (token:vsctm.IToken, lineNumber:number) => new vscode.Range(lineNumber, token.startIndex, lineNumber, token.endIndex),
+	SelectTokenText: (token:vsctm.IToken, text:string) => text.substring(token.startIndex, token.endIndex),
 }
+
+
+
+
+
+
+
+//.........................................................................................................................
+
+
+
 
 
 
@@ -323,6 +373,7 @@ export class TokenInfo {
 	text:string;
 	scopes:Array<string>;
 
+	get lineNumber():number { return this.range.start.line; } //Should only exist on single line
 	//...............................................................................
 
 	constructor(range:vscode.Range, text:string, scopes:Array<string>) {
@@ -418,6 +469,14 @@ export class TokenInfo {
 
 
 
+	// ExcludeTokensBefore: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => {
+	// 	const sliceIndex = lineTokens.tokens.findIndex((Token) => Token.startIndex >= position.character);
+	// 	return (sliceIndex===-1)? lineTokens.tokens : lineTokens.tokens.slice(sliceIndex, -1);
+	// },
+	// ExcludeTokensAfter: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => {
+	// 	const sliceIndex = lineTokens.tokens.findIndex((Token) => Token.endIndex <= position.character);
+	// 	return (sliceIndex===-1)? lineTokens.tokens : lineTokens.tokens.slice(0, sliceIndex);
+	// },
 
 
 
