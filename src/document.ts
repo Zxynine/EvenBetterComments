@@ -192,8 +192,7 @@ export class DocumentController implements vscode.Disposable {
 			this.parseRange(change.range);
 			const lastState = this.tokensArray[changeEndLine]?.ruleStack;
 
-			// if (insert line count !== replaced content line count || ruleStack !== init ruleStack)?
-			// then: parse the rest of document and return;
+			// if (insert line count !== replaced content line count || ruleStack !== init ruleStack) then: parse the rest of document and return;
 			if((DocumentController.GetRangeLinecount(change.range) !== DocumentController.GetTextLinecount(change.text)) || (initState !== lastState)){
 				this.parseRange(new vscode.Range(changeEndLine+1, 0 , this.document.lineCount, 0));
 				return;
