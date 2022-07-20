@@ -85,6 +85,11 @@ export function TryGetDocumentScopeLine(document:vscode.TextDocument, position:v
 	catch (err) { HyperScopeError(err, "Unable to get Scope at position: ", position, "\n"); }
 	return undefined;
 }
+export function TryGetDocumentScopeFull(document:vscode.TextDocument) : TokenInfo[][]|undefined {
+	try { return documentsMap.get(document.uri)?.getAllScopes(); } 
+	catch (err) { HyperScopeError(err, "Unable to get Scopes for the document", "\n"); }
+	return undefined;
+}
 
 export async function TryGetGrammar(scopeName : string) : Promise<vsctm.IGrammar|undefined> {
 	try { if(registry) return await registry.loadGrammar(scopeName) ?? undefined; } 
@@ -263,7 +268,7 @@ export class DocumentController implements vscode.Disposable {
 		//We should now have an up to date varsion of all tokens.
 
 		const returnTokens : TokenInfo[][] = new Array(this.document.lineCount);
-		for (let lineIndex = 0; (lineIndex < returnTokens.length); lineIndex++){
+		for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
 			const lineTokensArray = this.tokensArray[lineIndex];
 			returnTokens[lineIndex] = (lineTokensArray)? TokenInfo.CreateLineArray(this.document, lineIndex, lineTokensArray) : [];
 		}
@@ -323,7 +328,7 @@ export class DocumentController implements vscode.Disposable {
 	}
 
 	private parseEntireDocument() : void {
-		this.parseLines(0, this.document.lineCount);
+		this.parseLines(0, this.document.lineCount-1);
 	}
 
 
