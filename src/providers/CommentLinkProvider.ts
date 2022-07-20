@@ -1,23 +1,25 @@
 import {
 	CodeLensProvider,
-	HoverProvider,
-	// DocumentLinkProvider,
-	// DocumentLink,
+	// HoverProvider,
+	DocumentLinkProvider,
+	DocumentLink,
 	TextDocument,
 	CodeLens,
 	Range,
 	Command,
 	Uri,
 	workspace,
-	CancellationToken,
-	Hover,
+	// CancellationToken,
+	// Hover,
 	Position,
-	ProviderResult,
-	MarkdownString,
+	// ProviderResult,
+	// MarkdownString,
+
 } from "vscode";
 import { resolve, join, dirname } from "path";
 import { lstatSync } from "fs";
 import { homedir } from "os";
+// import { ExtentionID } from "../extension";
 	
 const LINK_REGEX = /^(\.{1,2}[\/\\])?(.+?)$/;
 	
@@ -45,11 +47,10 @@ export const findLinksInLine = (line: string) => {
 	}
 	return result;
 }
-
-const findLinksInDoc = (doc: string) => {
+export const findLinksInString = (str: string) => {
 	const result: {lN:number, str:string}[] = [];
 
-	const splitDoc = doc.split(/\r?\n/);
+	const splitDoc = str.split(/\r?\n/);
 	const lineMatchRegex = /\[\[.*?\]\]/g;
 	splitDoc.forEach((line, lineNumber) => {
 		if (!isComment(line)) return;
@@ -60,14 +61,29 @@ const findLinksInDoc = (doc: string) => {
 	return result;
 };
 
-export const getLinksRanges = (doc:string) => {
+const findLinksInDoc = (doc: TextDocument) => {
+	const result: {lN:number, str:string}[] = [];
+
+	const lineMatchRegex = /\[\[.*?\]\]/g;
+	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
+		const line = doc.lineAt(lineNumber).text;
+		if (!isComment(line)) continue;
+		line.match(lineMatchRegex)?.forEach((match) => 
+			result.push({ lN: lineNumber, str: match.replace(/(\[|\])/g, "") })
+		);
+	}
+	return result;
+};
+
+
+export const getLinksRangesString = (str:string) => {
 	const result: Range[] = [];
 	
-	const splitDoc = doc.split(/\r?\n/);
+	const splitDoc = str.split(/\r?\n/);
+	const indexedMatch = /\[(\[.*?\])\]/g;
 	splitDoc.forEach((line, lineNumber) => {
 		if (!isComment(line)) return;
 		// console.log("Found comment line: " + line);
-		const indexedMatch = /\[(\[.*?\])\]/g;
 		for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
 			// console.log("Found comment link line: " + line, "\n", match);
 			result.push(new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length));
@@ -77,54 +93,27 @@ export const getLinksRanges = (doc:string) => {
 }
 
 
-//?....................................................................\\
-//TODO: implement caching for document links/paths
-
-export class CommentLinkHoverProvider implements HoverProvider {
-	provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>|undefined {
-		if (document.uri.scheme === "output") return undefined;
-		
-		const workspacePath = DocumentTools.GetWorkspacePath(document);
-		const basePath = DocumentTools.GetBasePath(document);
+export const getLinksRangesDoc = (doc:TextDocument) => {
+	const result: Range[] = [];
 	
-		const line = document.lineAt(position).text;
-		if (!isComment(line)) return;
-		
-		
-		const lineMatchRegex = /\[(\[.*?\])\]/g;
-		for (let match: RegExpExecArray|null; (match = lineMatchRegex.exec(line));) {
-			// console.log("Found comment hover link line: " + line, "\n", match, range);
-			if ((match.index) < position.character && position.character < (match.index+match[0].length)) {
-				const cleanedLine = match[0].replace(/(\[|\])/g, "");
-				const components = LINK_REGEX.exec(cleanedLine)!;
-				const filePath = components[2];
-				const relativeFolder = components[1];
-				const fullPath = (relativeFolder
-					? resolve(basePath, relativeFolder, filePath)
-					: resolve(workspacePath, filePath)
-				);
-				// Don't show the codelens if the file doesn't exist
-				if (!DocumentTools.FileExists(fullPath)) return;
-				
-				const myContent = new MarkdownString(`[Open: ${cleanedLine}](${DocumentTools.GetFileUri(fullPath)} "Open ${DocumentTools.GetFileFsPath(filePath)}")`);
-				// Command Uris are disabled by default for security reasons.
-				// If you set this flag, make sure your content is not constructed using untrusted/unsanitized text.
-				myContent.isTrusted = true;
-				
-				const matchRange = new Range(position.line, match.index, position.line, match.index+match[0].length);
-				return new Hover(myContent, matchRange);
-
-			}
-
+	const indexedMatch = /\[(\[.*?\])\]/g;
+	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
+		const line = doc.lineAt(lineNumber).text;
+		if (!isComment(line)) continue;
+		for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
+			result.push(new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length));
 		}
-		return undefined;
-
 	}
+	return result;
 }
 
 
+//?....................................................................\\
+//TODO: implement caching for document links/paths
 
-export class CommentLinkProvider implements CodeLensProvider {
+
+
+export class CommentLinkLensProvider implements CodeLensProvider {
 	// Each provider requires a provideCodeLenses function which will give the various documents
 	// the code lenses
 	async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
@@ -133,11 +122,9 @@ export class CommentLinkProvider implements CodeLensProvider {
 		const workspacePath = DocumentTools.GetWorkspacePath(document);
 		const basePath = DocumentTools.GetBasePath(document);
 	
-		
-		
 		const lenses: CodeLens[] = [];
 		
-		const matches = findLinksInDoc(document.getText());
+		const matches = findLinksInDoc(document);
 		matches.forEach((match) => {
 			const components = LINK_REGEX.exec(match.str)!;
 			const filePath = components[2];
@@ -166,48 +153,47 @@ export class CommentLinkProvider implements CodeLensProvider {
 
 
 
-// export class DocumentCommentLinkProvider implements DocumentLinkProvider {
-// 	static readonly regex = /@([a-z\d._-]+)(\?([^@]+))?@/ig;
-
-// 	// Each provider requires a provideCodeLenses function which will give the various documents
-// 	// the code lenses
-// 	async provideDocumentLinks(document: TextDocument) {
-// 		if (document.uri.scheme === "output") return [];
+export class DocumentCommentLinkProvider implements DocumentLinkProvider {
+	// Each provider requires a provideDocumentLinks function which will give the various documentLink objects
+	async provideDocumentLinks(document: TextDocument) {
+		if (document.uri.scheme === "output") return [];
 		
-// 		const workspacePath = DocumentTools.GetWorkspacePath(document);
-// 		const basePath = DocumentTools.GetBasePath(document);
+		const workspacePath = DocumentTools.GetWorkspacePath(document);
+		const basePath = DocumentTools.GetBasePath(document);
 
-// 		const links: DocumentLink[] = [];
-
-// 		const matches = findLinksInDoc(document.getText());
-// 		matches.forEach((match) => {
-// 			const components = LINK_REGEX.exec(match.str)!;
-// 			const filePath = components[2];
-// 			const relativeFolder = components[1];
+		const links: DocumentLink[] = [];
 		
-// 			const fullPath = (relativeFolder
-// 				? resolve(basePath, relativeFolder, filePath)
-// 				: resolve(workspacePath, filePath)
-// 				);
-// 				// Don't show the codelens if the file doesn't exist
-// 				if (!DocumentTools.FileExists(fullPath)) return;
+		const indexedMatch = /\[(\[.*?\])\]/g;
+		for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
+			const line = document.lineAt(lineNumber).text;
+			if (!isComment(line)) continue;
+			for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
+				// console.log("Match found on line " + lineNumber + "!", match);
+				const cleanedLine = match[0].replace(/(\[|\])/g, "");
+				const components = LINK_REGEX.exec(cleanedLine)!;
+				const filePath = components[2];
+				const relativeFolder = components[1];
+				const fullPath = (relativeFolder
+					? resolve(basePath, relativeFolder, filePath)
+					: resolve(workspacePath, filePath)
+				);
+				// Don't show the codelens if the file doesn't exist
+				if (!DocumentTools.FileExists(fullPath)) continue;
 			
-// 			matches.push({
-// 				range: new Range(i, match.index, i, match[0].length + match.index),
-// 				target: Uri.from({
-// 					scheme: env.uriScheme,
-// 					authority: Constants.ExtensionId,
-// 					query: match[1],
-// 					fragment: match[3],
-// 				}),
-// 				tooltip: 'Custom command.',
-// 			});
-// 		});
-// 		return matches;
-// 	}
-// }
+				links.push(new DocumentLink(
+					new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length),
+					DocumentTools.GetFileUri(fullPath)
+				));
+			}
+		}
+		return links;
+	}
+}
 
 				
+
+
+
 
 
 
@@ -227,6 +213,9 @@ class DocumentTools {
 	static GetFileUri = (filePath:string):Uri => Uri.file(filePath);
 	static GetFileFsPath = (filePath:string):string => Uri.parse(filePath).fsPath;
 	static GetFullRange = (document:TextDocument):Range => new Range(0, 0, document.lineCount, 0);
+
+	/** Exapnds ~ to homedir in non-Windows platform*/
+	static ResolveHomeDir = (inputPath:string):string => (inputPath.trim() && inputPath.startsWith('~')) ? join(homedir(),inputPath.substring(1)) : inputPath;
 }
 
 
@@ -243,21 +232,6 @@ class DocumentTools {
 // }
 
 	
-
-
-	
-/**
- * Exapnds ~ to homedir in non-Windows platform
- */
-export function resolveHomeDir(inputPath: string): string {
-	return (inputPath.trim() && inputPath.startsWith('~')) ? join(homedir(),inputPath.substring(1)) : inputPath;
-}
-
-
-
-
-
-
 
 
 
@@ -289,3 +263,57 @@ export {
     createCodeLens,
     createCodeLenses
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+// export class CommentLinkHoverProvider implements HoverProvider {
+// 	provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>|undefined {
+// 		if (document.uri.scheme === "output") return undefined;
+		
+// 		const workspacePath = DocumentTools.GetWorkspacePath(document);
+// 		const basePath = DocumentTools.GetBasePath(document);
+	
+// 		const line = document.lineAt(position).text;
+// 		if (!isComment(line)) return;
+		
+		
+// 		const lineMatchRegex = /\[(\[.*?\])\]/g;
+// 		// for (let match: RegExpExecArray|null; (match = lineMatchRegex.exec(line));) {
+// 		// 	// console.log("Found comment hover link line: " + line, "\n", match, range);
+// 		// 	if ((match.index) < position.character && position.character < (match.index+match[0].length)) {
+// 		// 		const cleanedLine = match[0].replace(/(\[|\])/g, "");
+// 		// 		const components = LINK_REGEX.exec(cleanedLine)!;
+// 		// 		const filePath = components[2];
+// 		// 		const relativeFolder = components[1];
+// 		// 		const fullPath = (relativeFolder
+// 		// 			? resolve(basePath, relativeFolder, filePath)
+// 		// 			: resolve(workspacePath, filePath)
+// 		// 		);
+// 		// 		// Don't show the codelens if the file doesn't exist
+// 		// 		if (!DocumentTools.FileExists(fullPath)) return;
+				
+// 		// 		const myContent = new MarkdownString(`[Open: ${cleanedLine}](${DocumentTools.GetFileUri(fullPath)} "Open ${DocumentTools.GetFileFsPath(filePath)}")`);
+// 		// 		// Command Uris are disabled by default for security reasons.
+// 		// 		// If you set this flag, make sure your content is not constructed using untrusted/unsanitized text.
+// 		// 		myContent.isTrusted = true;
+				
+// 		// 		const matchRange = new Range(position.line, match.index, position.line, match.index+match[0].length);
+// 		// 		return new Hover(myContent, matchRange);
+
+// 		// 	}
+
+// 		// }
+// 		return undefined;
+
+// 	}
+// }

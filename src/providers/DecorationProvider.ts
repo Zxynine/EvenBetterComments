@@ -6,11 +6,15 @@ import * as vscode from 'vscode';
 
 
 
+export const hiddenCommentDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{ 
+	color: "transparent", backgroundColor: "transparent", opacity: "0.0"
+});
+
 
 export const linkedCommentDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{ 
 	color: "#FF3399FF", backgroundColor: "transparent", 
-	textDecoration : "underline"}
-);
+	textDecoration : "underline"
+});
 
 
 

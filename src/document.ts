@@ -86,10 +86,10 @@ export function TryGetDocumentScopeLine(document:vscode.TextDocument, position:v
 	return undefined;
 }
 
-export async function TryGetGrammar(scopeName : string) : Promise<vsctm.IGrammar|null> {
-	try { if(registry) return await registry.loadGrammar(scopeName); } 
+export async function TryGetGrammar(scopeName : string) : Promise<vsctm.IGrammar|undefined> {
+	try { if(registry) return await registry.loadGrammar(scopeName) ?? undefined; } 
 	catch(err) { HyperScopeError(err, "Unable to get grammar for scope: ", scopeName, "\n"); }
-	return null;
+	return undefined;
 }
 
 export async function openDocument(document : vscode.TextDocument) {
@@ -162,26 +162,29 @@ export class DocumentController implements vscode.Disposable {
 	private documentText : Array<string> = [];
 	private contentChangesArray : Array<vscode.TextDocumentContentChangeEvent> = []; // Stores text-change
 
-
+	//Tools
 	private static readonly ChangeSorter = (ChangeL:ChangeEvent, ChangeR:ChangeEvent) => ChangeL.range.start.isAfter(ChangeR.range.start) ? 1 : -1;
 	private static readonly GetTextLinecount = (text : string) => text.match(/[\r\n]+/g)?.length ?? 0;
 	private static readonly GetRangeLinecount = (range : vscode.Range) => (range.end.line - range.start.line);
+	private getLineState(lineIndex:number) {
+		return (lineIndex >= 0)? this.tokensArray[lineIndex]?.ruleStack ?? null : null;
+	}
 
 	public constructor(doc: vscode.TextDocument, textMateGrammar: vsctm.IGrammar) {
 		this.grammar = textMateGrammar;
 		this.document = doc;
-
 		this.parseEntireDocument();
 		/* Store content changes. Will be clear when calling `getScopeAt()`. */
-		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument((e) => {
-			if (e.document == this.document && e.contentChanges.length) {
-				const changes = [...e.contentChanges].sort(DocumentController.ChangeSorter);
-				this.contentChangesArray = changes;
-				this.applyChanges(changes);
-			}
-		}));
+		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange));
 	}
 
+	private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
+		if (event.document == this.document && event.contentChanges.length) {
+			const changes = [...event.contentChanges].sort(DocumentController.ChangeSorter);
+			this.contentChangesArray = changes;
+			this.applyChanges(changes);
+		}
+	}
 
 
 	private applyChanges(sortedChanges: readonly vscode.TextDocumentContentChangeEvent[]) {
@@ -304,26 +307,26 @@ export class DocumentController implements vscode.Disposable {
 		this.documentText[line.lineNumber] = line.text;
 		this.tokensArray[line.lineNumber] = ((line.text.length > 20000)
 			? undefined // Don't tokenize line if too long
-			: this.grammar.tokenizeLine(line.text, (line.lineNumber)? this.getLineState(line.lineNumber-1) : null)
+			: this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1))
 		);
 	}
 
-	private parseRange(range : vscode.Range){
-		range = this.document.validateRange(range);
-		for (let lineIndex = range.start.line; (lineIndex <= range.end.line); lineIndex++){
+	private parseLines(startLine:number, endLine:number){
+		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++){
 			this.parseLine(this.document.lineAt(lineIndex));
 		}
 	}
 
+	private parseRange(range : vscode.Range){
+		range = this.document.validateRange(range);
+		this.parseLines(range.start.line, range.end.line);
+	}
+
 	private parseEntireDocument() : void {
-		const docRange = new vscode.Range(0, 0, this.document.lineCount, 0);
-		this.parseRange(docRange);
+		this.parseLines(0, this.document.lineCount);
 	}
 
 
-	private getLineState(lineIndex:number) {
-		return this.tokensArray[lineIndex]?.ruleStack ?? null;
-	}
 }
 
 
@@ -412,6 +415,10 @@ export class TokenInfo {
 
 		return `\n---\nText: ${tokenText}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
 
+	}
+
+	public IsComment() : boolean {
+		return (this.scopes[0].startsWith('comment') || ((this.scopes.length > 1) && this.scopes[1].startsWith('comment')));
 	}
 }
 

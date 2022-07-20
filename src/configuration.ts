@@ -6,6 +6,8 @@ import * as json5 from 'json5';
 import { ExtentionProvider } from './providers/ExtentionProvider';
 // import "./extensions/ArrayExtensions";
 
+// type 
+
 export class Configuration {
 	private readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
 	private readonly languageConfigFiles = new Map<string, string>();
@@ -28,12 +30,30 @@ export class Configuration {
 	 * External extensions can override default configurations of VSCode
 	 */
 	public UpdateLanguagesDefinitions() {
+		console.log("EvenBetterComments: Language Definitions Updated!");
 		this.commentConfig.clear();
 		for (let language of ExtentionProvider.AllExtentionPathLanguagesFlat) {
 			this.languageHasShebang.set(language.id, Boolean(language.firstLine));
 			if (language.configuration) this.languageConfigFiles.set(language.id, path.join(language.extensionPath, language.configuration));
 		}
 	}
+
+	public GetLanguageConfiguration(languageCode:string) {
+		// * if no config exists for this language, back out and leave the language unsupported
+		if (!this.languageConfigFiles.has(languageCode)) return undefined;
+		try {
+			const content = this.ReadLanguageFile(languageCode);
+			// use json5, because the config can contain comments
+			return (content)? json5.parse(content) : undefined;
+		} catch (error) { return undefined; }
+	}
+
+
+
+
+
+
+
 
 	public GetHasShebang(languageCode: string): boolean {
 		return (this.languageHasShebang.get(languageCode)??false)
@@ -43,23 +63,14 @@ export class Configuration {
 
 	/** Gets the configuration information for the specified language */
 	public GetCommentConfiguration(languageCode: string): vscode.CommentRule | undefined {
-		// * if no config exists for this language, back out and leave the language unsupported
-		if (!this.languageConfigFiles.has(languageCode)) return undefined;
-
 		// * if the language config has already been loaded return the loaded value
 		if (this.commentConfig.has(languageCode)) return this.commentConfig.get(languageCode);
-
-
-		try {
-			const content = this.ReadLanguageFile(languageCode);
-			// use json5, because the config can contain comments
-			const comments : vscode.CommentRule = (content)? json5.parse(content).comments : undefined;
-			this.commentConfig.set(languageCode, comments);
-			return comments;
-		} catch (error) {
-			this.commentConfig.set(languageCode, undefined);
-			return undefined;
-		}
+		
+		// * even if language does not have a config, we set the comment config to make future calls return above.
+		const LanguageConfig = this.GetLanguageConfiguration(languageCode);
+		const comments = LanguageConfig?.comments;
+		this.commentConfig.set(languageCode, comments);
+		return comments;
 	}
 
 
@@ -73,6 +84,14 @@ export class Configuration {
 	// 	if (this.enclosingPairs.has(languageCode)) {
 	// 		return this.enclosingPairs.get(languageCode);
 	// 	}
+
+	// 	// * if the language config has already been loaded return the loaded value
+	// 	if (this.commentConfig.has(languageCode)) return this.commentConfig.get(languageCode);
+		
+	// 	// * even if language does not have a config, we set the comment config to make future calls return above.
+	// 	const LanguageConfig = this.GetLanguageConfiguration(languageCode);
+
+
 
 
 	// 	try {
