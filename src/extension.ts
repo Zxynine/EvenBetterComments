@@ -1,13 +1,7 @@
-/**
- * refer to `draivin.hscopes` && `yfzhao20.hscopes-booster`
- * @license MIT
- */
 import * as vscode from 'vscode';
 import { Configuration } from './configuration';
 import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
-import { LoadDocumentsAndGrammer, openDocument, closeDocument, reloadGrammar, reloadDocuments, unloadDocuments, GetGetScopeAtAPI } from "./document";
-import { highlighterDecoratiuon } from './providers/DecorationProvider';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,11 +11,6 @@ export const ExtentionID = "evenbettercomments";
 
 /** All command ids contributed by this extension. */
  export const enum CommandIds {
-	ReloadDocuments = 'hscopes-booster.reloadDocuments',
-	ReloadGrammar = 'hscopes-booster.reloadGrammar',
-	ShowScope = 'vscode-show-scopes.show',
-	ShowLineScopes = 'vscode-show-scopes.show-line',
-	ShowScopeInspector = 'vscode-show-scopes.show-inspector',
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,76 +67,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({ language: "*" }, new DocumentCommentLinkProvider()));
 
 	//............................................................................
-
-	// * This section deals with loading scopes of documents
-	LoadDocumentsAndGrammer();
-	/** EXPORT API */
-	const api = GetGetScopeAtAPI();
-
-	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(openDocument));
-	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(closeDocument));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDocuments, reloadDocuments));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, reloadGrammar));
-	//............................................................................
-	
-	// * This section deals with displaying scopes in editor
-	
-
-	const extensionOutputChannel = vscode.window.createOutputChannel('scopes', 'yaml');
-	async function HyperscopesDisplayScopes() {
-		console.log("HyperScopes: show command run!");
-		const activeTextEditor = vscode.window.activeTextEditor;
-		if (activeTextEditor) {
-			const token = api.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
-			if (token) {
-				extensionOutputChannel.show(true);
-				extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-
-				let counter = 0;
-				activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-				const intervalId = setInterval(() => {
-					if (counter++ > 5) clearInterval(intervalId);
-					activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [token.range] : []);
-				}, 100);
-			} else console.log("HyperScopes: Token not found.");
-		}
-	}
-	async function HyperscopesDisplayScopesLine() {
-		console.log("HyperScopes: show line command run!");
-		const activeTextEditor = vscode.window.activeTextEditor;
-		if (activeTextEditor) {
-
-			const tokenArray = api.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
-			if (tokenArray) {
-				for (const token of tokenArray) {
-					if (token) {
-						extensionOutputChannel.show(true);
-						extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-		
-						let counter = 0;
-						activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-						const intervalId = setInterval(() => {
-							if (counter++ > 5) clearInterval(intervalId);
-							activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [token.range] : []);
-						}, 100);
-					} else console.log("HyperScopes: Token not found.");
-				}
-			}
-		}
-	}
-
-	const StartScopeInspector = async () => { if (vscode.window.activeTextEditor) vscode.commands.executeCommand('editor.action.inspectTMScopes'); }
-	
-
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScope, HyperscopesDisplayScopes));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineScopes, HyperscopesDisplayScopesLine));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
-	//............................................................................
-	/** EXPORT API */
-	return api;
 }
 
-export function deactivate() { unloadDocuments() }
+export function deactivate() { }
 
 
 

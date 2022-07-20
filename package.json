@@ -35,31 +35,6 @@
 		"lint": "tslint -c tslint.json 'src/**/*.ts'"
 	},
 	"contributes": {
-		"commands": [
-			{
-				"title": "HyperScopes: Show Scopes",
-				"command": "vscode-show-scopes.show",
-				"when": "editorTextFocus"
-			},
-			{
-				"title": "HyperScopes: Show Scopes Full Line",
-				"command": "vscode-show-scopes.show-line",
-				"when": "editorTextFocus"
-			},
-			{
-				"title": "HyperScopes: Show Inspector",
-				"command": "vscode-show-scopes.show-inspector",
-				"when": "editorTextFocus"
-			},
-			{
-				"title": "HyperScopes: Reload Document Tokens",
-				"command": "hscopes-booster.reloadDocuments"
-			},
-			{
-				"title": "HyperScopes: Reload Grammar Scopes",
-				"command": "hscopes-booster.reloadGrammar"
-			}
-		],
 		"configuration": {
 			"title": "Better Comments configuration",
 			"properties": {

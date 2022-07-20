@@ -24,6 +24,9 @@ export class Parser {
 	private highlightJSDoc = true;
 	private highlightLinkedComments = true;
 
+	private hideAllComments = false;
+	private hideCommentsTag: CommentTag;
+
 	// * this will allow plaintext files to show comment highlighting if switched on
 	private isPlainText = false;
 	// * this is used to prevent the first line of the file (specifically python) from coloring like other comments
@@ -37,6 +40,10 @@ export class Parser {
 	private configuration: Configuration;
 	/** Creates a new instance of the Parser class */
 	public constructor(config: Configuration) {
+		this.hideCommentsTag = {
+			tag: '', escapedTag: '', lowerTag: '',
+			ranges: [], decoration: hiddenCommentDecoration
+		};
 		this.configuration = config;
 		this.setTags();
 	}
@@ -95,6 +102,11 @@ export class Parser {
 		if (!this.supportedLanguage) return;
 		// if no active window is open, return
 		if (!activeEditor) return;
+
+		// this.FindAllCommentsToHide(activeEditor);
+		// this.ApplyHide(activeEditor);
+
+
 
 		// Finds the single line comments using the language comment delimiter
 		this.FindSingleLineComments(activeEditor);
@@ -186,7 +198,7 @@ export class Parser {
 		// Combine custom delimiters and the rest of the comment block matcher
 		let commentMatchString = (this.contributions.allowNestedHighlighting)? ("(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)(") : ("(^)+([ \\t]*[ \\t]*)(");
 		commentMatchString += characters.join("|");
-		commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
+		commentMatchString += ")([ ]*|[:])+([^\\r\\n]*?(?=$|\\*?\\*/))";
 
 		/* 
 			"(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
@@ -245,7 +257,7 @@ export class Parser {
 	 * ISSUE: When you put "//*" inside a string, it will detect that line as a string from that point onwards.
 	 * Example: ^"//*" this text gets highlighted;
 	 *
-	 * [[Hello ]] dadw [[    ]]
+	 * TODO [[Hello ]] dadw [[    ]]
 	**/
 
 	/** 
@@ -256,9 +268,9 @@ export class Parser {
 		// If highlight multiline is off in package.json or doesn't apply to his language, return
 		if (!this.highlightMultilineComments && !this.highlightJSDoc) return;
 
-		let text = activeEditor.document.getText();
+		const text = activeEditor.document.getText();
 		// Build up regex matcher for custom delimiter tags
-		let characters: Array<string> = Parser.CreateCharactersArray(this.tags);
+		const characters: Array<string> = Parser.CreateCharactersArray(this.tags);
 
 		// Combine custom delimiters and the rest of the comment block matcher
 		const regEx : RegExp = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm; // Find rows of comments matching pattern /** */
@@ -271,7 +283,7 @@ export class Parser {
 		// Highlight after leading /** or *
 		let commentMatchString = (this.contributions.allowNestedHighlighting)? "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(" : "(^)+([ \\t]*\\*[ \\t]*)("; 
 		commentMatchString += characters.join("|");
-		commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
+		commentMatchString += ")([ ]*|[:])+([^\\r\\n]*?(?=$|\\*?\\*/))";
 
 		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
 		        "(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
@@ -280,7 +292,7 @@ export class Parser {
 						"([ \\t]*\\*[ \\t]*)"
 		*/
 
-		let commentRegEx = new RegExp(commentMatchString, "igm");
+		const commentRegEx = new RegExp(commentMatchString, "igm");
 
 		// Find the multiline comment block
 		for (let match:RegExpExecArray|null; (match = regEx.exec(text));) {
@@ -300,6 +312,41 @@ export class Parser {
 		}
 	}
 
+
+
+	public FindAllCommentsToHide(activeEditor: vscode.TextEditor):void {
+		if (!this.hideAllComments) return;
+		const text = activeEditor.document.getText();
+		// Build up regex matcher for custom delimiter tags
+		const RegExMulti : RegExp = ((this.highlightJSDoc)
+			? /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm 
+			: new RegExp("(^|[ \\t])(" + this.blockCommentStart + "[\\s])+([\\s\\S]*?)(" + this.blockCommentEnd + ")", "gm")
+		);
+
+		// Find the multiline comment block
+		for (let match:RegExpExecArray|null; (match = RegExMulti.exec(text));) {
+			const commentBlock = match[0];
+			const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, match.index, match.index+commentBlock.length);
+			this.hideCommentsTag.ranges.push(range);
+		}
+		
+		// if it's plain text, we have to do mutliline regex to catch the start of the line with ^
+		const RegExMono = new RegExp(this.expression, (this.isPlainText) ? "igm" : "ig");
+		
+		for (let match:RegExpExecArray|null; (match = RegExMono.exec(text));) {
+			let startPos = activeEditor.document.positionAt(match.index);
+			let endPos = activeEditor.document.positionAt(match.index + match[0].length);
+			
+			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
+			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
+
+
+			let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
+			this.hideCommentsTag.ranges.push(range);
+		}
+
+
+	}
 
 
 
@@ -324,14 +371,9 @@ export class Parser {
 
 
 	public ApplyHide(activeEditor: vscode.TextEditor):void {
-		// for (let tag of this.tags) {
-		// 	activeEditor.setDecorations(tag.decoration, []); //Removes current decorations
-		// }
-		const newRange:vscode.Range[] = this.tags.flatMap((tag)=> tag.ranges);
-
-		activeEditor.setDecorations(hiddenCommentDecoration, newRange);
-		this.tags.forEach((tag)=> tag.ranges.length = 0);
-
+		this.RemoveDecorations(activeEditor);
+		activeEditor.setDecorations(this.hideCommentsTag.decoration, this.hideCommentsTag.ranges);
+		this.hideCommentsTag.ranges.length = 0; // clear the ranges for the next pass
 	}
 
 
