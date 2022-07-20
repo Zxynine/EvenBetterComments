@@ -35,6 +35,14 @@
 		"lint": "tslint -c tslint.json 'src/**/*.ts'"
 	},
 	"contributes": {
+		"commands":[ 
+			{
+				"command": "evenbettercomments.reloadtags",
+				"title": "Reload Tags",
+				"category": "EvenBetterComments",
+				"shortTitle": "Reload Tags"
+			}
+		],
 		"configuration": {
 			"title": "Better Comments configuration",
 			"properties": {

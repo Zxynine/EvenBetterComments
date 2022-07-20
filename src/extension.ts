@@ -11,6 +11,7 @@ export const ExtentionID = "evenbettercomments";
 
 /** All command ids contributed by this extension. */
  export const enum CommandIds {
+	ReloadTags = 'evenbettercomments.reloadtags',
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,11 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
 	// * This section deals with the comment links and lens
 		
 	// Register our CodeLens provider and push to the context so it can be disposed of later
-	context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: "*" }, new CommentLinkLensProvider()));
 	// context.subscriptions.push(vscode.languages.registerHoverProvider({ language: "*" }, new CommentLinkHoverProvider()))
+	context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: "*" }, new CommentLinkLensProvider()));
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({ language: "*" }, new DocumentCommentLinkProvider()));
 
 	//............................................................................
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadTags,async ()=> parser.reloadSettings()));
 }
 
 export function deactivate() { }
