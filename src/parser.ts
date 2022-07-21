@@ -1,3 +1,4 @@
+import { match } from 'assert';
 import * as vscode from 'vscode';
 import { Configuration } from './configuration';
 import { getLinksRangesDoc } from './providers/CommentLinkProvider';
@@ -17,7 +18,7 @@ export class Parser {
 
 	private delimiter: string = "";
 	private blockCommentStart: string = "";
-	private blockCommentEnd: string = "";
+	private blockCommentEnd: string = ""; 
 
 	private highlightMonolineComments = false;
 	private highlightMultilineComments = false;
@@ -76,21 +77,13 @@ export class Parser {
 		const escapedSequence = itemTag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
 		return <CommentTag>{
 			tag: itemTag,
-			escapedTag: escapedSequence.replace(/\//gi, "\\/"), //? hardcoded to escape slashes
+			escapedTag: RegexBuilder.EscapeSlashes(escapedSequence), //? hardcoded to escape slashes
 			lowerTag: itemTag.toLowerCase(), //? used for comparison
 			ranges: [],
 			decoration: vscode.window.createTextEditorDecorationType(options)
 		};
 	}
-	
-	/**
-	 * Escapes a given string for use in a regular expression
-	 * @param input The input string to be escaped
-	 * @returns {string} The escaped string
-	 */
-	private static escapeRegExp(input: string): string {
-		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-	}
+
 
 
 	//===============================================================================================================================================
@@ -171,14 +164,11 @@ export class Parser {
 
 			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
-
-
-			const range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 			
 			// Find which custom delimiter was used in order to add it to the collection
 			const matchString = (match[3] as string).toLowerCase();
 			const matchTag = this.tags.find(item => item.lowerTag === matchString);
-			if (matchTag) matchTag.ranges.push(range);
+			if (matchTag) matchTag.ranges.push(<vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) });
 		}
 	}
 
@@ -300,8 +290,8 @@ export class Parser {
 			// Find the line
 			for (let line:RegExpExecArray|null; (line = commentRegEx.exec(commentBlock));) {
 				const lineMatchIndex = line.index + match.index;
-																							// length of leading delimeter and spaces        //length of word?
-				const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex+ line[0].length);
+				const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
+																								// length of leading delimeter and spaces        //length of ful match
 
 				// Find which custom delimiter was used in order to add it to the collection
 				const matchString = (line[3] as string).toLowerCase();
@@ -497,6 +487,7 @@ export class Parser {
 			this.tags.push(Parser.CreateTag(item.tag, options));
 			
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
+
 			if (item.aliases) {
 				for (const aliasTag of item.aliases) {
 					this.tags.push(Parser.CreateTag(aliasTag, options));
@@ -523,17 +514,17 @@ export class Parser {
 		if (monoLine) {
 			this.highlightMonolineComments = this.contributions.monolineComments;
 			if (typeof monoLine === 'string') {
-				this.delimiter = Parser.escapeRegExp(monoLine).replace(/\//ig, "\\/");
+				this.delimiter = RegexBuilder.EscapeSlashes(RegexBuilder.escapeRegExp(monoLine));
 			} else if (monoLine.length > 0) {
 				// * if multiple delimiters are passed, the language has more than one single line comment format
-				this.delimiter = monoLine.map(s => Parser.escapeRegExp(s)).join("|");
+				this.delimiter = monoLine.map(s => RegexBuilder.escapeRegExp(s)).join("|");
 			}
 		}
 
 		if (start && end) {
 			this.highlightMultilineComments = this.contributions.multilineComments;
-			this.blockCommentStart = Parser.escapeRegExp(start);
-			this.blockCommentEnd = Parser.escapeRegExp(end);
+			this.blockCommentStart = RegexBuilder.escapeRegExp(start);
+			this.blockCommentEnd = RegexBuilder.escapeRegExp(end);
 		}
 	}
 
@@ -551,41 +542,44 @@ export class Parser {
 
 
 class RegexBuilder {
-	static readonly NewLine = "\\r?\\n";
-	static readonly Indents = "[ \\t]*";
-	static readonly WhiteSpace = "\\s";
+	public static readonly NewLine = "\\r?\\n";
+	public static readonly Indents = "[ \\t]*";
+	public static readonly WhiteSpace = "\\s";
 
-	static readonly AllMonoLine = ".*"
-	static readonly AllMultiLine = "[\\s\\S]*"
+	public static readonly AllMonoLine = ".*"
+	public static readonly AllMultiLine = "[\\s\\S]*"
 
-	static readonly StartIndex = "(^)";
-	static readonly EndIndex = "($)";
-	
-	static LookAhead(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
-	static LookBehind(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
+	public static readonly StartIndex = "(^)";
+	public static readonly EndIndex = "($)";
 
-	static Capture(expression:string) { return "("+expression+")"; }
-	static DontCapture(expression:string) { return "(?:"+expression+")"; }
+	public static LookAhead(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
+	public static LookBehind(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
+
+	public static Capture(expression:string) { return "("+expression+")"; }
+	public static DontCapture(expression:string) { return "(?:"+expression+")"; }
+
+	public static readonly EscapeSlashes = (expression:string) => expression.replace(/\//gi, "\\/");
+
+	/**
+	 * Escapes a given string for use in a regular expression
+	 * @param input The input string to be escaped
+	 * @returns {string} The escaped string
+	 */
+	public static escapeRegExp(input: string): string {
+		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+	}
 
 
+	public static ForMatchesOf(regex:RegExp, content:string, action : (match:RegExpExecArray)=>void) {
+		for (let match:RegExpExecArray|null; match=regex.exec(content);) action(match);
+	}
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export interface RegexModel {
+	regex: string;
+	flags: string;
+  }
 
 
 
