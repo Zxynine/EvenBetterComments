@@ -90,6 +90,11 @@ export function TryGetDocumentScopeFull(document:vscode.TextDocument) : TokenInf
 	catch (err) { HyperScopeError(err, "Unable to get Scopes for the document", "\n"); }
 	return undefined;
 }
+export function TryGetDocumentScopeFullFlat(document:vscode.TextDocument) : TokenInfo[]|undefined {
+	try { return documentsMap.get(document.uri)?.getAllScopesFlat(); } 
+	catch (err) { HyperScopeError(err, "Unable to get Scopes for the document", "\n"); }
+	return undefined;
+}
 
 export async function TryGetGrammar(scopeName : string) : Promise<vsctm.IGrammar|undefined> {
 	try { if(registry) return await registry.loadGrammar(scopeName) ?? undefined; } 
@@ -276,6 +281,22 @@ export class DocumentController implements vscode.Disposable {
 		return returnTokens;
 	}
 
+	public getAllScopesFlat() : Array<TokenInfo> {
+		if (!this.grammar) return [];
+		
+		this.validateDocument();
+		this.contentChangesArray.length = 0; //clears changes
+		//We should now have an up to date varsion of all tokens.
+
+		const returnTokens : TokenInfo[] = [];
+		for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
+			const lineTokensArray = this.tokensArray[lineIndex];
+			if (lineTokensArray) returnTokens.push.apply(TokenInfo.CreateLineArray(this.document, lineIndex, lineTokensArray));
+		}
+
+		return returnTokens;
+	}
+
 
 
 
@@ -446,6 +467,574 @@ export class TokenInfo {
 // 	}
 // 	return true;
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// /**
+//  * The state of the tokenizer between two lines.
+//  * It is useful to store flags such as in multiline comment, etc.
+//  * The model will clone the previous line's state and pass it in to tokenize the next line.
+//  */
+//  export interface IState {
+// 	clone(): IState;
+// 	equals(other: IState): boolean;
+// }
+
+
+//  export const enum LanguageId {
+// 	Null = 0, PlainText = 1
+// }
+
+// export class Token {
+// 	_tokenBrand: void = undefined;
+
+// 	public readonly offset: number;
+// 	public readonly type: string;
+// 	public readonly language: string;
+
+// 	constructor(offset: number, type: string, language: string) {
+// 		this.offset = offset;
+// 		this.type = type;
+// 		this.language = language;
+// 	}
+
+// 	public toString(): string { return `(${this.offset}, ${this.type})`; }
+// }
+
+
+// export class TokenizationResult {
+// 	_tokenizationResultBrand: void = undefined;
+
+// 	public readonly tokens: Token[];
+// 	public readonly endState: IState;
+
+// 	constructor(tokens: Token[], endState: IState) {
+// 		this.tokens = tokens;
+// 		this.endState = endState;
+// 	}
+// }
+
+//  export interface ITokenizationSupport {
+// 	getInitialState(): IState;
+// 	tokenize(line: string, hasEOL: boolean, state: IState): TokenizationResult;
+// 	tokenizeEncoded(line: string, hasEOL: boolean, state: IState): EncodedTokenizationResult;
+// }
+// https://github.com/microsoft/vscode/blob/9776b9d4378ad95aa7b815a3413eed003cb6024b/src/vs/workbench/services/textMate/browser/abstractTextMateService.ts#L159
+
+
+
+//  export class EncodedTokenizationResult {
+// 	_encodedTokenizationResultBrand: void = undefined;
+
+// 	/** The tokens in binary format. Each token occupies two array indices. For token i:
+// 	 *  - at offset 2*i => startIndex
+// 	 *  - at offset 2*i + 1 => metadata
+// 	 */
+// 	public readonly tokens: Uint32Array;
+// 	public readonly endState: IState;
+
+// 	constructor(tokens: Uint32Array, endState: IState) {
+// 		this.tokens = tokens;
+// 		this.endState = endState;
+// 	}
+// }
+
+//  export interface ILanguageIdCodec {
+// 	encodeLanguageId(languageId: string): LanguageId;
+// 	decodeLanguageId(languageId: LanguageId): string;
+// }
+
+// /**
+//  * Helpers to manage the "collapsed" metadata of an entire StackElement stack.
+//  * The following assumptions have been made:
+//  *  - languageId < 256 => needs 8 bits
+//  *  - unique color count < 512 => needs 9 bits
+//  *
+//  * The binary format is:
+//  * - -------------------------------------------
+//  *     3322 2222 2222 1111 1111 1100 0000 0000
+//  *     1098 7654 3210 9876 5432 1098 7654 3210
+//  * - -------------------------------------------
+//  *     xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+//  *     bbbb bbbb ffff ffff fFFF FBTT LLLL LLLL
+//  * - -------------------------------------------
+//  *  - L = LanguageId (8 bits)
+//  *  - T = StandardTokenType (2 bits)
+//  *  - B = Balanced bracket (1 bit)
+//  *  - F = FontStyle (4 bits)
+//  *  - f = foreground color (9 bits)
+//  *  - b = background color (9 bits)
+//  */
+//  export const enum MetadataConsts {
+// 	LANGUAGEID_MASK = 0b00000000000000000000000011111111,
+// 	TOKEN_TYPE_MASK = 0b00000000000000000000001100000000,
+// 	BALANCED_BRACKETS_MASK = 0b00000000000000000000010000000000,
+// 	FONT_STYLE_MASK = 0b00000000000000000111100000000000,
+// 	FOREGROUND_MASK = 0b00000000111111111000000000000000,
+// 	BACKGROUND_MASK = 0b11111111000000000000000000000000,
+
+// 	ITALIC_MASK = 0b00000000000000000000100000000000,
+// 	BOLD_MASK = 0b00000000000000000001000000000000,
+// 	UNDERLINE_MASK = 0b00000000000000000010000000000000,
+// 	STRIKETHROUGH_MASK = 0b00000000000000000100000000000000,
+
+// 	// Semantic tokens cannot set the language id, so we can
+// 	// use the first 8 bits for control purposes
+// 	SEMANTIC_USE_ITALIC = 0b00000000000000000000000000000001,
+// 	SEMANTIC_USE_BOLD = 0b00000000000000000000000000000010,
+// 	SEMANTIC_USE_UNDERLINE = 0b00000000000000000000000000000100,
+// 	SEMANTIC_USE_STRIKETHROUGH = 0b00000000000000000000000000001000,
+// 	SEMANTIC_USE_FOREGROUND = 0b00000000000000000000000000010000,
+// 	SEMANTIC_USE_BACKGROUND = 0b00000000000000000000000000100000,
+
+// 	LANGUAGEID_OFFSET = 0,
+// 	TOKEN_TYPE_OFFSET = 8,
+// 	BALANCED_BRACKETS_OFFSET = 10,
+// 	FONT_STYLE_OFFSET = 11,
+// 	FOREGROUND_OFFSET = 15,
+// 	BACKGROUND_OFFSET = 24
+// }
+
+
+// /**
+//  * A standard token type.
+//  */
+//  export const enum StandardTokenType {
+// 	Other = 0,
+// 	Comment = 1,
+// 	String = 2,
+// 	RegEx = 3
+// }
+
+
+// export function nullTokenize(languageId: string, state: IState): TokenizationResult {
+// 	return new TokenizationResult([new Token(0, '', languageId)], state);
+// }
+
+// export function nullTokenizeEncoded(languageId: LanguageId, state: IState | null): EncodedTokenizationResult {
+// 	const tokens = new Uint32Array(2);
+// 	tokens[0] = 0;
+// 	tokens[1] = (
+// 		(languageId << MetadataConsts.LANGUAGEID_OFFSET)
+// 		| (StandardTokenType.Other << MetadataConsts.TOKEN_TYPE_OFFSET)
+// 		| (FontStyle.None << MetadataConsts.FONT_STYLE_OFFSET)
+// 		| (ColorId.DefaultForeground << MetadataConsts.FOREGROUND_OFFSET)
+// 		| (ColorId.DefaultBackground << MetadataConsts.BACKGROUND_OFFSET)
+// 	) >>> 0;
+
+// 	return new EncodedTokenizationResult(tokens, state === null ? NullState : state);
+// }
+
+// /**
+//  * Open ended enum at runtime
+//  */
+//  export const enum ColorId {
+// 	None = 0,
+// 	DefaultForeground = 1,
+// 	DefaultBackground = 2
+// }
+
+// /**
+//  * A font style. Values are 2^x such that a bit mask can be used.
+//  */
+//  export const enum FontStyle {
+// 	NotSet = -1,
+// 	None = 0,
+// 	Italic = 1,
+// 	Bold = 2,
+// 	Underline = 4,
+// 	Strikethrough = 8,
+// }
+
+// export const NullState: IState = new class implements IState {
+// 	public equals(other: IState): boolean { return (this === other); }
+// 	public clone(): IState { return this; }
+// };
+
+
+
+
+
+// function getSafeTokenizationSupport(languageIdCodec: ILanguageIdCodec, languageId: string): ITokenizationSupport {
+// 	const tokenizationSupport = TokenizationRegistry.get(languageId);
+// 	if (tokenizationSupport) return tokenizationSupport;
+
+// 	const encodedLanguageId = languageIdCodec.encodeLanguageId(languageId);
+// 	return {
+// 		getInitialState: () => NullState,
+// 		tokenize: (line: string, hasEOL: boolean, state: IState) => nullTokenize(languageId, state),
+// 		tokenizeEncoded: (line: string, hasEOL: boolean, state: IState) => nullTokenizeEncoded(encodedLanguageId, state)
+// 	};
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// /**
+//  * @internal
+//  */
+//  export interface ITokenizationSupportChangedEvent {
+// 	changedLanguages: string[];
+// 	changedColorMap: boolean;
+// }
+
+// /**
+//  * @internal
+//  */
+// export interface ITokenizationSupportFactory {
+// 	createTokenizationSupport(): vscode.ProviderResult<ITokenizationSupport>;
+// }
+
+// export interface IDisposable {
+// 	dispose(): void;
+// }
+
+// /**
+//  * @internal
+//  */
+//  export interface ITokenizationRegistry {
+
+// 	/**
+// 	 * An event triggered when:
+// 	 *  - a tokenization support is registered, unregistered or changed.
+// 	 *  - the color map is changed.
+// 	 */
+// 	onDidChange: vscode.Event<ITokenizationSupportChangedEvent>;
+
+// 	/**
+// 	 * Fire a change event for a language.
+// 	 * This is useful for languages that embed other languages.
+// 	 */
+// 	fire(languageIds: string[]): void;
+
+// 	/**
+// 	 * Register a tokenization support.
+// 	 */
+// 	register(languageId: string, support: ITokenizationSupport): IDisposable;
+
+// 	/**
+// 	 * Register a tokenization support factory.
+// 	 */
+// 	registerFactory(languageId: string, factory: ITokenizationSupportFactory): IDisposable;
+
+// 	/**
+// 	 * Get or create the tokenization support for a language.
+// 	 * Returns `null` if not found.
+// 	 */
+// 	getOrCreate(languageId: string): Promise<ITokenizationSupport | null>;
+
+// 	/**
+// 	 * Get the tokenization support for a language.
+// 	 * Returns `null` if not found.
+// 	 */
+// 	get(languageId: string): ITokenizationSupport | null;
+
+// 	/**
+// 	 * Returns false if a factory is still pending.
+// 	 */
+// 	isResolved(languageId: string): boolean;
+
+// 	/**
+// 	 * Set the new color map that all tokens will use in their ColorId binary encoded bits for foreground and background.
+// 	 */
+// 	setColorMap(colorMap: vscode.Color[]): void;
+
+// 	getColorMap(): vscode.Color[] | null;
+
+// 	getDefaultBackground(): vscode.Color | null;
+// }
+
+
+// export class DisposableStore implements IDisposable {
+
+// 	static DISABLE_DISPOSED_WARNING = false;
+
+// 	private _toDispose = new Set<IDisposable>();
+// 	private _isDisposed = false;
+
+// 	constructor() {
+// 		trackDisposable(this);
+// 	}
+
+// 	/**
+// 	 * Dispose of all registered disposables and mark this object as disposed.
+// 	 *
+// 	 * Any future disposables added to this object will be disposed of on `add`.
+// 	 */
+// 	public dispose(): void {
+// 		if (this._isDisposed) {
+// 			return;
+// 		}
+
+// 		markAsDisposed(this);
+// 		this._isDisposed = true;
+// 		this.clear();
+// 	}
+
+// 	/**
+// 	 * Returns `true` if this object has been disposed
+// 	 */
+// 	public get isDisposed(): boolean {
+// 		return this._isDisposed;
+// 	}
+
+// 	/**
+// 	 * Dispose of all registered disposables but do not mark this object as disposed.
+// 	 */
+// 	public clear(): void {
+// 		try {
+// 			dispose(this._toDispose.values());
+// 		} finally {
+// 			this._toDispose.clear();
+// 		}
+// 	}
+
+// 	public add<T extends IDisposable>(o: T): T {
+// 		if (!o) {
+// 			return o;
+// 		}
+// 		if ((o as unknown as DisposableStore) === this) {
+// 			throw new Error('Cannot register a disposable on itself!');
+// 		}
+
+// 		setParentOfDisposable(o, this);
+// 		if (this._isDisposed) {
+// 			if (!DisposableStore.DISABLE_DISPOSED_WARNING) {
+// 				console.warn(new Error('Trying to add a disposable to a DisposableStore that has already been disposed of. The added object will be leaked!').stack);
+// 			}
+// 		} else {
+// 			this._toDispose.add(o);
+// 		}
+
+// 		return o;
+// 	}
+// }
+
+// export abstract class Disposable implements IDisposable {
+
+// 	static readonly None = Object.freeze<IDisposable>({ dispose() { } });
+
+// 	protected readonly _store = new DisposableStore();
+
+// 	constructor() {
+// 		trackDisposable(this);
+// 		setParentOfDisposable(this._store, this);
+// 	}
+
+// 	public dispose(): void {
+// 		markAsDisposed(this);
+
+// 		this._store.dispose();
+// 	}
+
+// 	protected _register<T extends IDisposable>(o: T): T {
+// 		if ((o as unknown as Disposable) === this) {
+// 			throw new Error('Cannot register a disposable on itself!');
+// 		}
+// 		return this._store.add(o);
+// 	}
+// }
+
+// // export const TokenizationRegistry: ITokenizationRegistry = new TokenizationRegistryImpl();
+
+// export class TokenizationRegistry implements ITokenizationRegistry {
+
+// 	private readonly _map = new Map<string, ITokenizationSupport>();
+// 	private readonly _factories = new Map<string, TokenizationSupportFactoryData>();
+
+// 	private readonly _onDidChange = new Emitter<ITokenizationSupportChangedEvent>();
+// 	public readonly onDidChange: vscode.Event<ITokenizationSupportChangedEvent> = this._onDidChange.event;
+
+// 	private _colorMap: vscode.Color[] | null;
+
+// 	constructor() {
+// 		this._colorMap = null;
+// 	}
+
+// 	public fire(languages: string[]): void {
+// 		this._onDidChange.fire({
+// 			changedLanguages: languages,
+// 			changedColorMap: false
+// 		});
+// 	}
+
+// 	public register(language: string, support: ITokenizationSupport) {
+// 		this._map.set(language, support);
+// 		this.fire([language]);
+// 		return toDisposable(() => {
+// 			if (this._map.get(language) !== support) {
+// 				return;
+// 			}
+// 			this._map.delete(language);
+// 			this.fire([language]);
+// 		});
+// 	}
+
+// 	public registerFactory(languageId: string, factory: ITokenizationSupportFactory): IDisposable {
+// 		this._factories.get(languageId)?.dispose();
+// 		const myData = new TokenizationSupportFactoryData(this, languageId, factory);
+// 		this._factories.set(languageId, myData);
+// 		return toDisposable(() => {
+// 			const v = this._factories.get(languageId);
+// 			if (!v || v !== myData) {
+// 				return;
+// 			}
+// 			this._factories.delete(languageId);
+// 			v.dispose();
+// 		});
+// 	}
+
+// 	public async getOrCreate(languageId: string): Promise<ITokenizationSupport | null> {
+// 		// check first if the support is already set
+// 		const tokenizationSupport = this.get(languageId);
+// 		if (tokenizationSupport) {
+// 			return tokenizationSupport;
+// 		}
+
+// 		const factory = this._factories.get(languageId);
+// 		if (!factory || factory.isResolved) {
+// 			// no factory or factory.resolve already finished
+// 			return null;
+// 		}
+
+// 		await factory.resolve();
+
+// 		return this.get(languageId);
+// 	}
+
+// 	public get(language: string): ITokenizationSupport | null {
+// 		return (this._map.get(language) || null);
+// 	}
+
+// 	public isResolved(languageId: string): boolean {
+// 		const tokenizationSupport = this.get(languageId);
+// 		if (tokenizationSupport) return true;
+
+// 		const factory = this._factories.get(languageId);
+// 		if (!factory || factory.isResolved) return true;
+// 		return false;
+// 	}
+
+// 	public setColorMap(colorMap: vscode.Color[]): void {
+// 		this._colorMap = colorMap;
+// 		this._onDidChange.fire({
+// 			changedLanguages: Array.from(this._map.keys()),
+// 			changedColorMap: true
+// 		});
+// 	}
+
+// 	public getColorMap(): vscode.Color[] | null {
+// 		return this._colorMap;
+// 	}
+
+// 	public getDefaultBackground(): vscode.Color | null {
+// 		if (this._colorMap && this._colorMap.length > ColorId.DefaultBackground) {
+// 			return this._colorMap[ColorId.DefaultBackground];
+// 		}
+// 		return null;
+// 	}
+// }
+
+
+
+
+
+// class TokenizationSupportFactoryData extends Disposable {
+
+// 	private _isDisposed: boolean = false;
+// 	private _resolvePromise: Promise<void> | null = null;
+// 	private _isResolved: boolean = false;
+// 	public get isResolved(): boolean {return this._isResolved;}
+
+// 	constructor(
+// 		private readonly _registry: TokenizationRegistry,
+// 		private readonly _languageId: string,
+// 		private readonly _factory: ITokenizationSupportFactory,
+// 	) {super();}
+
+// 	public override dispose(): void {
+// 		this._isDisposed = true;
+// 		super.dispose();
+// 	}
+
+// 	public async resolve(): Promise<void> {
+// 		this._resolvePromise ??= this._create();
+// 		return this._resolvePromise;
+// 	}
+
+// 	private async _create(): Promise<void> {
+// 		const value = await Promise.resolve(this._factory.createTokenizationSupport());
+// 		this._isResolved = true;
+// 		if (value && !this._isDisposed) {
+// 			this._register(this._registry.register(this._languageId, value));
+// 		}
+// 	}
+// }
+
+
+
+
+
 
 
 
