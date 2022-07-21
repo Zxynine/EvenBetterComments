@@ -58,6 +58,7 @@ export class Parser {
 		let endPos = document.positionAt(endIndex);
 		return <vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) };
 	}
+
 	
 	/**
 	 * Static method used to create CommentTag objects.
@@ -96,14 +97,15 @@ export class Parser {
 		// if no active window is open, return
 		if (!activeEditor) return;
 
-		// this.GetAllCommentRanges(activeEditor);
+		this.GetAllCommentRanges(activeEditor);
 
-		// Finds the single line comments using the language comment delimiter
-		this.FindSingleLineComments(activeEditor);
-		// Finds the multi line comments using the language comment delimiter
-		this.FindBlockComments(activeEditor);
-		// Finds the jsdoc comments
-		this.FindJSDocComments(activeEditor);
+		// // Finds the single line comments using the language comment delimiter
+		// this.FindSingleLineComments(activeEditor);
+		// // Finds the multi line comments using the language comment delimiter
+		// this.FindBlockComments(activeEditor);
+		// // Finds the jsdoc comments
+		// this.FindJSDocComments(activeEditor);
+
 		// Apply the styles set in the package.json
 		this.ApplyDecorations(activeEditor);
 	};
@@ -304,88 +306,85 @@ export class Parser {
 
 
 
-
-	// public GetAllCommentRanges(activeEditor: vscode.TextEditor): void {
-	// 	const AllTokens = TryGetDocumentScopeFull(activeEditor.document);
-	// 	if (!AllTokens) return;
+	public GetAllCommentRanges(activeEditor: vscode.TextEditor): void {
+		const AllTokens = TryGetDocumentScopeFull(activeEditor.document);
+		if (!AllTokens) return;
 		
-	// 	let startLineIndex = -1;
-	// 	let startColumnIndex = -1;
+		let startLineIndex = -1;
+		let startColumnIndex = -1;
 		
-	// 	let endLineIndex = -1;
-	// 	let endColumnIndex = -1;
+		let endLineIndex = -1;
+		let endColumnIndex = -1;
 
-	// 	const commentRanges = [];
-
-
-	// 	for (let currentLineIndex = 0; currentLineIndex < AllTokens.length; currentLineIndex++) {
-	// 		const CommentColumnIndex = AllTokens[currentLineIndex].findIndex(token=> token.IsComment());
-	// 		const LastCommentColumnIndex = AllTokens[currentLineIndex].lastIndex(token=> token.IsComment());
+		const commentRanges : vscode.Range[] = [];
 
 
-	// 		if (CommentColumnIndex !== -1) {
-	// 			//Line has comments
-	// 			if (startColumnIndex === -1) {
-	// 				//NoPrevious comment lines
-	// 				//Check if comment spands whole line
-	// 				if (LastCommentColumnIndex < CommentColumnIndex) {
-	// 					//comment spans whole line, index and continue.
-	// 					startLineIndex = currentLineIndex;
-	// 					startColumnIndex = CommentColumnIndex;
-	// 					endLineIndex = currentLineIndex;
-	// 					endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.	
-	// 				} else {
-	// 					//Comment terminates before EOL, create single line range.
-	// 					const StartPos = AllTokens[currentLineIndex][CommentColumnIndex].range.start;
-	// 					const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
-	// 					const range = new vscode.Range(StartPos, EndPos);
-	// 					commentRanges.push(range);
-	// 					console.log(AllTokens[currentLineIndex][CommentColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
-	// 				}
-	// 			} else {
-	// 				//Has previous comment lines
-	// 				//Check if comment spans whole line.
-	// 				if (LastCommentColumnIndex < CommentColumnIndex) {
-	// 					//comment spans whole line, index and continue.
-	// 					endLineIndex = currentLineIndex;
-	// 					endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.
-	// 				} else {
-	// 					//Comment terminates before EOL and has previous comments, create full span and reset index.
-	// 					const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
-	// 					const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
-	// 					const range = new vscode.Range(StartPos, EndPos);
-	// 					commentRanges.push(range);
-	// 					console.log(AllTokens[startLineIndex][startColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
+		for (let currentLineIndex = 0; currentLineIndex < AllTokens.length; currentLineIndex++) {
+			const CommentColumnIndex = AllTokens[currentLineIndex].findIndex(token=> token.IsComment());
+			const LastCommentColumnIndex = AllTokens[currentLineIndex].lastIndex(token=> token.IsComment());
 
-	// 					startLineIndex = -1;
-	// 					startColumnIndex = -1;
-	// 					endLineIndex = -1;
-	// 					endColumnIndex = -1;
-	// 				}
-	// 			}
-	// 		} else {
-	// 			//No comments on line, check if we are building a range (skip if first line)
-	// 			if (currentLineIndex !==0 && startColumnIndex !== -1) {
-	// 				//Previous range still, building, finish it using last stored comment index
-	// 				const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
-	// 				const EndPos = AllTokens[endLineIndex][endColumnIndex].range.end;
-	// 				const range = new vscode.Range(StartPos, EndPos);
-	// 				commentRanges.push(range);
 
-	// 				startLineIndex = -1;
-	// 				startColumnIndex = -1;
-	// 				endLineIndex = -1;
-	// 				endColumnIndex = -1;
-	// 			}
-	// 		}
-	// 	}
+			if (CommentColumnIndex !== -1) {
+				//Line has comments
+				if (startColumnIndex === -1) {
+					//NoPrevious comment lines
+					//Check if comment spands whole line
+					if (LastCommentColumnIndex < CommentColumnIndex) {
+						//comment spans whole line, index and continue.
+						startLineIndex = currentLineIndex;
+						startColumnIndex = CommentColumnIndex;
+						endLineIndex = currentLineIndex;
+						endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.	
+					} else {
+						//Comment terminates before EOL, create single line range.
+						const StartPos = AllTokens[currentLineIndex][CommentColumnIndex].range.start;
+						const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
+						const range = new vscode.Range(StartPos, EndPos);
+						commentRanges.push(range);
+						console.log(AllTokens[currentLineIndex][CommentColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
+					}
+				} else {
+					//Has previous comment lines
+					//Check if comment spans whole line.
+					if (LastCommentColumnIndex < CommentColumnIndex) {
+						//comment spans whole line, index and continue.
+						endLineIndex = currentLineIndex;
+						endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.
+					} else {
+						//Comment terminates before EOL and has previous comments, create full span and reset index.
+						const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
+						const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
+						const range = new vscode.Range(StartPos, EndPos);
+						commentRanges.push(range);
+						console.log(AllTokens[startLineIndex][startColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
 
-	// 	console.log(commentRanges);
-	// 	this.tags[0].ranges.concat(commentRanges);
+						startLineIndex = -1;
+						startColumnIndex = -1;
+						endLineIndex = -1;
+						endColumnIndex = -1;
+					}
+				}
+			} else {
+				//No comments on line, check if we are building a range (skip if first line)
+				if (currentLineIndex !==0 && startColumnIndex !== -1) {
+					//Previous range still, building, finish it using last stored comment index
+					const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
+					const EndPos = AllTokens[endLineIndex][endColumnIndex].range.end;
+					const range = new vscode.Range(StartPos, EndPos);
+					commentRanges.push(range);
 
-		
+					startLineIndex = -1;
+					startColumnIndex = -1;
+					endLineIndex = -1;
+					endColumnIndex = -1;
+				}
+			}
+		}
 
-	// }
+		this.tags[0].ranges = commentRanges.map(element => <vscode.DecorationOptions>{ range: element });
+		console.log(commentRanges);
+
+	}
 
 
 
@@ -398,7 +397,7 @@ export class Parser {
 		// this.ApplyHide(activeEditor);
 		for (let tag of this.tags) {
 			activeEditor.setDecorations(tag.decoration, tag.ranges);
-			tag.ranges.length = 0; // clear the ranges for the next pass
+			// tag.ranges.length = 0; // clear the ranges for the next pass
 		}
 
 		//Provides highlighting for comment links

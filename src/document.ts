@@ -418,7 +418,7 @@ export class TokenInfo {
 		const tokenScopes = this.scopes.sort().join('\n  - '); //Why sort them? surely the order matters...
 		const baseScope = this.scopes[0].split('.')[0];
 
-		return `\n---\nText: ${tokenText}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
+		return `\n---\nText: ${tokenText}\nLine: ${this.range.start.line}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
 
 	}
 
