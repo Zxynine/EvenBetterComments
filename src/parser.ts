@@ -197,7 +197,7 @@ export class Parser {
 		// Combine custom delimiters and the rest of the comment block matcher
 		let commentMatchString = (this.contributions.allowNestedHighlighting)? ("(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)(") : ("(^)+([ \\t]*[ \\t]*)(");
 		commentMatchString += characters.join("|");
-		commentMatchString += ")([ ]*|[:])+([^\\r\\n]*?(?=$|\\*?\\*/))";
+		commentMatchString += ")(?<!\s\\*)([ ]*|[:])+([^\\r\\n]*?(?=$|\\*?\\*/))";
 
 		/* 
 			"(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
@@ -232,7 +232,7 @@ export class Parser {
 
 		// Find the multiline comment block
 		for (let match:RegExpExecArray|null; (match = regEx.exec(text));) {
-			const commentBlock = match[0].substring(0, -this.blockCommentEnd.length);
+			const commentBlock = match[0];
 
 			// Find the line
 			for (let line:RegExpExecArray|null; (line = commentRegEx.exec(commentBlock));) {
@@ -550,6 +550,25 @@ export class Parser {
 
 
 
+class RegexBuilder {
+	static readonly NewLine = "\\r?\\n";
+	static readonly Indents = "[ \\t]*";
+	static readonly WhiteSpace = "\\s";
+
+	static readonly AllMonoLine = ".*"
+	static readonly AllMultiLine = "[\\s\\S]*"
+
+	static readonly StartIndex = "(^)";
+	static readonly EndIndex = "($)";
+	
+	static LookAhead(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
+	static LookBehind(lookFor:string, match:boolean) { return "(?<"+(match?"=":"!")+lookFor+")"; }
+
+	static Capture(expression:string) { return "("+expression+")"; }
+	static DontCapture(expression:string) { return "(?:"+expression+")"; }
+
+
+}
 
 
 
@@ -559,13 +578,19 @@ export class Parser {
 
 
 
-		// const WS = "[ \\t]*"
-		// const NL = "[\\r\\n]*"
-		// const notNL = "[^\\r\\n]*"
-		// const SpacesColon = "([]*|[:])+"
-		// const skipGroupsCb = "(?:\{[^\}]*\})*";
-		// const skipGroupsBr = "(?:\[[^\]]*\])*";
-		// const skipAllGroups = "((?:\{[^\}]*\})*|(?:\[[^\]]*\])*|.*?(?=//))*";
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
