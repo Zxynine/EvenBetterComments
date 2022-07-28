@@ -1,5 +1,51 @@
 
-import * as vscode from "vscode";
+
+
+
+import * as vscode from 'vscode';
+
+
+
+
+
+
+
+
+
+
+
+
+export default class Debug {
+	Log(msg: string, ...items: string[]) {
+		vscode.window.showInformationMessage(msg, ...items);
+	}
+
+	LogWarning(msg: string, ...items: string[]) {
+		vscode.window.showWarningMessage(msg, ...items);
+	}
+
+	LogError(msg: string, ...items: string[]) {
+		vscode.window.showErrorMessage(msg, ...items);
+	}
+	  
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
 
 
 /** Type of VS Code Message. */
@@ -105,11 +151,3 @@ function showMessage(type: MessageType, message: string, options: vscode.Message
 
 
 
-
-
-
-
-
-
-
-export default MessageType;

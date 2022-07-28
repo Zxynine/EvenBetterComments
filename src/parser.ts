@@ -3,7 +3,7 @@ import { Configuration } from './configuration';
 import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration, hiddenCommentDecoration } from './providers/DecorationProvider';
-import { TryGetDocumentScopeFullFlat } from './document';
+import { TryGetDocumentScopeFullFlat, DocumentLoader } from './document';
 
 
 // const regexString = "(^|[ \\t])(" + this.blockCommentStart + "[\\s])+([\\s\\S]*?)(" + this.blockCommentEnd + ")"; 
@@ -97,14 +97,14 @@ export class Parser {
 		// if no active window is open, return
 		if (!activeEditor) return;
 
-		this.GetAllCommentRanges(activeEditor);
+		// this.GetAllCommentRanges(activeEditor);
 
-		// // Finds the single line comments using the language comment delimiter
-		// this.FindSingleLineComments(activeEditor);
-		// // Finds the multi line comments using the language comment delimiter
-		// this.FindBlockComments(activeEditor);
-		// // Finds the jsdoc comments
-		// this.FindJSDocComments(activeEditor);
+		// Finds the single line comments using the language comment delimiter
+		this.FindSingleLineComments(activeEditor);
+		// Finds the multi line comments using the language comment delimiter
+		this.FindBlockComments(activeEditor);
+		// Finds the jsdoc comments
+		this.FindJSDocComments(activeEditor);
 
 		// Apply the styles set in the package.json
 		this.ApplyDecorations(activeEditor);
@@ -145,12 +145,12 @@ export class Parser {
 	/**
 	 * Finds all single line comments delimited by a given delimiter and matching tags specified in package.json
 	 * @param activeEditor The active text editor containing the code document
-	 */
+	**/
 	public FindSingleLineComments(activeEditor: vscode.TextEditor): void {
 		// If highlight single line comments is off, single line comments are not supported for this language
 		if (!this.highlightMonolineComments) return;
 
-		let text = activeEditor.document.getText();
+		const text = activeEditor.document.getText();
 
 		// if it's plain text, we have to do mutliline regex to catch the start of the line with ^
 		let regexFlags = (this.isPlainText) ? "igm" : "ig";
@@ -164,14 +164,39 @@ export class Parser {
 
 			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
+			//^.*?Regex non greedy
+			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
+			if ( LineArray) {
+				if (!LineArray.hasTokenType(StandardTokenType.Comment))	continue;
+				else {
+		
+					let characters: Array<string> = Parser.CreateCharactersArray(this.tags);
 
 
-			let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
-			
-			// Find which custom delimiter was used in order to add it to the collection
-			let matchString = (match[3] as string).toLowerCase();
-			let matchTag = this.tags.find(item => item.lowerTag === matchString);
-			if (matchTag) matchTag.ranges.push(range);
+					const offset = LineArray.offsetOf(StandardTokenType.Comment);
+					const lineSub = activeEditor.document.lineAt(startPos).text.substring(offset);
+					const searchRegex = "^.*?(" + this.delimiter + ")+( |\t)*(" + characters.join("|") + ")+(.*)"
+
+					const matchResult = lineSub.match(searchRegex);
+					if (matchResult) {
+						let range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
+						
+						console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
+						// Find which custom delimiter was used in order to add it to the collection
+						let matchString = (matchResult[3] as string).toLowerCase();
+						let matchTag = this.tags.find(item => item.lowerTag === matchString);
+						if (matchTag) matchTag.ranges.push(range);
+					}
+				}
+			}  else {
+
+				let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
+				
+				// Find which custom delimiter was used in order to add it to the collection
+				let matchString = (match[3] as string).toLowerCase();
+				let matchTag = this.tags.find(item => item.lowerTag === matchString);
+				if (matchTag) matchTag.ranges.push(range);
+			}
 		}
 	}
 
@@ -306,93 +331,20 @@ export class Parser {
 
 
 
-	public GetAllCommentRanges(activeEditor: vscode.TextEditor): void {
-		const AllTokens = TryGetDocumentScopeFullFlat(activeEditor.document);
-		if (!AllTokens) return;
-		
-		// let startLineIndex = -1;
-		// let startColumnIndex = -1;
-		
-		// let endLineIndex = -1;
-		// let endColumnIndex = -1;
+	// public GetAllCommentRanges(activeEditor: vscode.TextEditor): void {
+	// 	const AllTokens = TryGetDocumentScopeFullFlat(activeEditor.document);
+	// 	if (!AllTokens) return;
 
-		// const commentRanges : vscode.Range[] = [];
-
-
-		// for (let currentLineIndex = 0; currentLineIndex < AllTokens.length; currentLineIndex++) {
-		// 	const CommentColumnIndex = AllTokens[currentLineIndex].findIndex(token=> token.IsComment());
-		// 	const LastCommentColumnIndex = AllTokens[currentLineIndex].lastIndex(token=> token.IsComment());
-
-
-		// 	if (CommentColumnIndex !== -1) {
-		// 		//Line has comments
-		// 		if (startColumnIndex === -1) {
-		// 			//NoPrevious comment lines
-		// 			//Check if comment spands whole line
-		// 			if (LastCommentColumnIndex < CommentColumnIndex) {
-		// 				//comment spans whole line, index and continue.
-		// 				startLineIndex = currentLineIndex;
-		// 				startColumnIndex = CommentColumnIndex;
-		// 				endLineIndex = currentLineIndex;
-		// 				endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.	
-		// 			} else {
-		// 				//Comment terminates before EOL, create single line range.
-		// 				const StartPos = AllTokens[currentLineIndex][CommentColumnIndex].range.start;
-		// 				const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
-		// 				const range = new vscode.Range(StartPos, EndPos);
-		// 				commentRanges.push(range);
-		// 				console.log(AllTokens[currentLineIndex][CommentColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
-		// 			}
-		// 		} else {
-		// 			//Has previous comment lines
-		// 			//Check if comment spans whole line.
-		// 			if (LastCommentColumnIndex < CommentColumnIndex) {
-		// 				//comment spans whole line, index and continue.
-		// 				endLineIndex = currentLineIndex;
-		// 				endColumnIndex = AllTokens[currentLineIndex].length-1; //Last index of array.
-		// 			} else {
-		// 				//Comment terminates before EOL and has previous comments, create full span and reset index.
-		// 				const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
-		// 				const EndPos = AllTokens[currentLineIndex][LastCommentColumnIndex].range.end;
-		// 				const range = new vscode.Range(StartPos, EndPos);
-		// 				commentRanges.push(range);
-		// 				console.log(AllTokens[startLineIndex][startColumnIndex], AllTokens[currentLineIndex][LastCommentColumnIndex]);
-
-		// 				startLineIndex = -1;
-		// 				startColumnIndex = -1;
-		// 				endLineIndex = -1;
-		// 				endColumnIndex = -1;
-		// 			}
-		// 		}
-		// 	} else {
-		// 		//No comments on line, check if we are building a range (skip if first line)
-		// 		if (currentLineIndex !==0 && startColumnIndex !== -1) {
-		// 			//Previous range still, building, finish it using last stored comment index
-		// 			const StartPos = AllTokens[startLineIndex][startColumnIndex].range.start;
-		// 			const EndPos = AllTokens[endLineIndex][endColumnIndex].range.end;
-		// 			const range = new vscode.Range(StartPos, EndPos);
-		// 			commentRanges.push(range);
-
-		// 			startLineIndex = -1;
-		// 			startColumnIndex = -1;
-		// 			endLineIndex = -1;
-		// 			endColumnIndex = -1;
-		// 		}
-		// 	}
-		// }
-		const commentRanges : vscode.Range[] = [];
-		AllTokens.forEach((Token) => {
-			if (Token.IsComment()) commentRanges.push(Token.range);
-		});
+	// 	const commentRanges : vscode.Range[] = [];
+	// 	AllTokens.forEach((Token) => {
+	// 		if (Token.IsComment()) commentRanges.push(Token.range);
+	// 	});
 
 
 
-
-
-		this.tags[0].ranges = commentRanges.map(element => <vscode.DecorationOptions>{ range: element });
-		console.log(commentRanges);
-
-	}
+	// 	this.tags[0].ranges = commentRanges.map(element => <vscode.DecorationOptions>{ range: element });
+	// 	console.log(commentRanges);
+	// }
 
 
 
@@ -405,7 +357,7 @@ export class Parser {
 		// this.ApplyHide(activeEditor);
 		for (let tag of this.tags) {
 			activeEditor.setDecorations(tag.decoration, tag.ranges);
-			// tag.ranges.length = 0; // clear the ranges for the next pass
+			tag.ranges.length = 0; // clear the ranges for the next pass
 		}
 
 		//Provides highlighting for comment links
@@ -416,29 +368,29 @@ export class Parser {
 	}
 
 
-	public ApplyHide(activeEditor: vscode.TextEditor):void {
-		// for (let tag of this.tags) {
-		// 	activeEditor.setDecorations(tag.decoration, []); //Removes current decorations
-		// }
-		const newRange:vscode.Range[] = this.tags.flatMap((tag)=> tag.ranges);
+	// public ApplyHide(activeEditor: vscode.TextEditor):void {
+	// 	// for (let tag of this.tags) {
+	// 	// 	activeEditor.setDecorations(tag.decoration, []); //Removes current decorations
+	// 	// }
+	// 	const newRange:vscode.Range[] = this.tags.flatMap((tag)=> tag.ranges);
 
-		activeEditor.setDecorations(hiddenCommentDecoration, newRange);
-		this.tags.forEach((tag)=> tag.ranges.length = 0);
+	// 	activeEditor.setDecorations(hiddenCommentDecoration, newRange);
+	// 	this.tags.forEach((tag)=> tag.ranges.length = 0);
 
-	}
+	// }
 
 
-	/**
-	 * Clears all active decorations.
-	 * @param activeEditor The active text editor containing the code document
-	 */
-	public RemoveDecorations(activeEditor: vscode.TextEditor): void {
-		for (let tag of this.tags) {
-			activeEditor.setDecorations(tag.decoration, []);
-			tag.ranges.length = 0; // clear the ranges for the next pass
-		}
-		activeEditor.setDecorations(linkedCommentDecoration, []);
-	}
+	// /**
+	//  * Clears all active decorations.
+	//  * @param activeEditor The active text editor containing the code document
+	//  */
+	// public RemoveDecorations(activeEditor: vscode.TextEditor): void {
+	// 	for (let tag of this.tags) {
+	// 		activeEditor.setDecorations(tag.decoration, []);
+	// 		tag.ranges.length = 0; // clear the ranges for the next pass
+	// 	}
+	// 	activeEditor.setDecorations(linkedCommentDecoration, []);
+	// }
 
 
 
@@ -580,7 +532,11 @@ export class Parser {
 
 
 
-
+const enum CommentTokens {
+	NoComments = (0<<0),
+	MonoLine = (1<<0),
+	MultiLine = (1<<1),
+}
 
 
 

@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import * as vsctm from 'vscode-textmate';
-import * as oniguruma from "vscode-oniguruma";
-import { readFileSync, promises } from "fs";
-import { join as pathJoin } from "path";
-import "./extensions/ArrayExtensions";
-import { ExtentionProvider } from './providers/ExtentionProvider';
-import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
+// import * as vsctm from 'vscode-textmate';
 
+import "./extensions/ArrayExtensions";
+// import { ExtentionProvider } from './providers/ExtentionProvider';
+import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
+import { TMRegistry } from './Tokenisation/TextmateLoader';
+import { LanguageLoader } from './providers/LanguageProvider';
+import { StandardLineTokens, TokenArray } from './Tokenisation/tokenisation';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
 	console.error("HyperScopes: "+message, ...optionalParams, err);
@@ -14,126 +14,68 @@ function HyperScopeError(err : any, message : string, ...optionalParams : any[])
 
 
 export function LoadDocumentsAndGrammer() {
+	LanguageLoader.LoadLanguages();
 	reloadGrammar();
-	reloadDocuments();
+	DocumentLoader.reloadDocuments();
 }
 
 
 
-const wasmBin = readFileSync(pathJoin(__dirname, '../node_modules/vscode-oniguruma/release/onig.wasm')).buffer;
-const vscodeOnigurumaLib : Promise<vsctm.IOnigLib> = oniguruma.loadWASM(wasmBin).then(
-	() => <vsctm.IOnigLib>{
-		createOnigScanner : (patterns) => new oniguruma.OnigScanner(patterns),
-		createOnigString : (str) => new oniguruma.OnigString(str)
-	}
-);
 
-export let registry : vsctm.Registry|undefined;
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function reloadGrammar() {
-	try {
-		registry = new vsctm.Registry(<vsctm.RegistryOptions>{
-			onigLib: vscodeOnigurumaLib,
-
-			getInjections: (scopeName) => {
-				return (ExtentionProvider.AllExtentionGrammarsFlat.filter((g) => g.scopeName && g.injectTo?.some((s) => (s === scopeName))).map((g) => g.scopeName!));
-			},
-
-			loadGrammar: async (scopeName) => {
-				try {
-					const matchingGrammars = ExtentionProvider.AllExtentionPathGrammarsFlat.filter((g) => (g.scopeName === scopeName) && g.path);
-					if (matchingGrammars.length > 0) {
-						const filePath = pathJoin(matchingGrammars[0].extensionPath, matchingGrammars[0].path!);
-						let content = await promises.readFile(filePath, 'utf-8');
-						return vsctm.parseRawGrammar(content, filePath);
-					}
-				} catch (err) { HyperScopeError(err, `Unable to load grammar for scope: '${scopeName}'.`);  }
-				return undefined;
-			},
-		});
-	} catch (err) {
-		registry = undefined;
-		console.error(err);
-	}
+	TMRegistry.ReloadGrammar();
 }
 
-
-//TODO add objectpooling.
-//Stores all of the documents being tokenized.
-let documentsMap : Map<vscode.Uri, DocumentController> = new Map();
-export function getDocument(uri:vscode.Uri) {
-	return documentsMap.get(uri);
-}
 export function GetDocumentScopeAt(document:vscode.TextDocument, position:vscode.Position) {
-	return documentsMap.get(document.uri)?.getScopeAt(position);
+	return DocumentLoader.getDocument(document.uri)?.getScopeAt(position);
 }
 
-export function getLanguageScopeName(languageId : string): string|undefined {
-	try {
-		const matchingLanguages = ExtentionProvider.AllExtentionGrammarsReduced.filter((g) => g.language === languageId);
-		if (matchingLanguages.length > 0) return matchingLanguages[0].scopeName; // console.info(`Mapping language ${languageId} to initial scope ${matchingLanguages[0].scopeName}`);
-	} catch (err) { HyperScopeError(err, "HyperScopes: Unable to get scope name for language: ", languageId, "\n"); }
-	return undefined;
-}
+// export function getLanguageScopeName(languageId : string): string|undefined {
+// 	try {
+// 		const matchingLanguages = ExtentionProvider.AllExtentionGrammarsReduced.filter((g) => g.language === languageId);
+// 		if (matchingLanguages.length > 0) return matchingLanguages[0].scopeName; // console.info(`Mapping language ${languageId} to initial scope ${matchingLanguages[0].scopeName}`);
+// 	} catch (err) { HyperScopeError(err, "HyperScopes: Unable to get scope name for language: ", languageId, "\n"); }
+// 	return undefined;
+// }
 
 export function TryGetDocumentScopeAt(document:vscode.TextDocument, position:vscode.Position) : TokenInfo|undefined {
-	try { return documentsMap.get(document.uri)?.getScopeAt(position); } 
+	try { return DocumentLoader.getDocument(document.uri)?.getScopeAt(position); } 
 	catch (err) { HyperScopeError(err, "Unable to get Scope at position: ", position, "\n"); }
 	return undefined;
 }
 export function TryGetDocumentScopeLine(document:vscode.TextDocument, position:vscode.Position) : TokenInfo[]|undefined {
-	try { return documentsMap.get(document.uri)?.getLineScopes(position); } 
+	try { return DocumentLoader.getDocument(document.uri)?.getLineScopes(position); } 
 	catch (err) { HyperScopeError(err, "Unable to get Scope at position: ", position, "\n"); }
 	return undefined;
 }
 export function TryGetDocumentScopeFull(document:vscode.TextDocument) : TokenInfo[][]|undefined {
-	try { return documentsMap.get(document.uri)?.getAllScopes(); } 
+	try { return DocumentLoader.getDocument(document.uri)?.getAllScopes(); } 
 	catch (err) { HyperScopeError(err, "Unable to get Scopes for the document", "\n"); }
 	return undefined;
 }
 export function TryGetDocumentScopeFullFlat(document:vscode.TextDocument) : TokenInfo[]|undefined {
-	try { return documentsMap.get(document.uri)?.getAllScopesFlat(); } 
+	try { return DocumentLoader.getDocument(document.uri)?.getAllScopesFlat(); } 
 	catch (err) { HyperScopeError(err, "Unable to get Scopes for the document", "\n"); }
 	return undefined;
 }
 
-export async function TryGetGrammar(scopeName : string) : Promise<vsctm.IGrammar|undefined> {
-	try { if(registry) return await registry.loadGrammar(scopeName) ?? undefined; } 
+export async function TryGetGrammar(scopeName : string) : Promise<IGrammar|undefined> {
+	try { if(TMRegistry.Current) return await TMRegistry.Current.loadGrammar(scopeName) ?? undefined; } 
 	catch(err) { HyperScopeError(err, "Unable to get grammar for scope: ", scopeName, "\n"); }
 	return undefined;
-}
-
-export async function openDocument(document : vscode.TextDocument) {
-	try {
-		const thisDocController = documentsMap.get(document.uri);
-		if (thisDocController) thisDocController.refresh();
-		else if (registry) {
-			const scopeName = getLanguageScopeName(document.languageId);
-			if (scopeName) {
-				const grammar = await registry.loadGrammar(scopeName);
-				if (grammar) documentsMap.set(document.uri, new DocumentController(document, grammar));
-			} else console.log("HyperScopes: Could not find scope with name: " + document.languageId); //plainText passes through here
-		}
-	} catch (err) { HyperScopeError(err, "Unable to load document controller"); }
-}
-
-export function reloadDocuments(){
-	unloadDocuments();
-	vscode.workspace.textDocuments.forEach((doc) => openDocument(doc));
-	console.log("HyperScopes: Reloaded all documents.");
-}
-
-export function closeDocument(document:vscode.TextDocument) {
-	const thisDocController = documentsMap.get(document.uri);
-	if (thisDocController) {
-		thisDocController.dispose();
-		documentsMap.delete(document.uri);
-	}
-}
-export function unloadDocuments() {
-	for (const thisDocController of documentsMap.values()) {
-		thisDocController.dispose();
-	}
-	documentsMap.clear();
 }
 
 
@@ -142,7 +84,6 @@ export function GetGetScopeAtAPI() {
 	return { 
 		getScopeAt: TryGetDocumentScopeAt, 
 		getScopeLine: TryGetDocumentScopeLine,
-		getScopeForLanguage: getLanguageScopeName, 
 		getGrammar: TryGetGrammar 
 	};
 }
@@ -150,8 +91,60 @@ export function GetGetScopeAtAPI() {
 
 
 
+//.........................................................................................................................
 
 
+
+
+export class DocumentLoader {
+	private static readonly documentsMap : Map<vscode.Uri, DocumentController> = new Map<vscode.Uri, DocumentController>();
+
+	public static getDocument(uri : vscode.Uri) {
+		return DocumentLoader.documentsMap.get(uri);
+	}
+
+	public static getDocumentController(document : vscode.TextDocument) {
+		return DocumentLoader.documentsMap.get(document.uri);
+	}
+
+
+	public static async openDocument(document : vscode.TextDocument) {
+		const thisDocController = DocumentLoader.documentsMap.get(document.uri);
+		if (thisDocController) thisDocController.refresh();
+		
+		const registry = TMRegistry.Current;
+		if (registry) {
+			const scopeName = LanguageLoader.languageToScopeName.get(document.languageId)
+			if (scopeName) {
+				const grammar = await registry.loadGrammar(scopeName);
+				if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+			}
+		}
+	}
+
+	public static closeDocument(document:vscode.TextDocument) {
+		if (DocumentLoader.documentsMap.has(document.uri)) {
+			DocumentLoader.documentsMap.get(document.uri)!.dispose();
+			DocumentLoader.documentsMap.delete(document.uri);
+		}
+	}
+
+
+
+
+	public static async reloadDocuments() {
+		DocumentLoader.unloadDocuments();
+		vscode.workspace.textDocuments.forEach(DocumentLoader.openDocument);
+		console.log("HyperScopes: Reloaded all documents.");
+	}
+
+	public static unloadDocuments() {
+		for (const thisDocController of DocumentLoader.documentsMap.values()) {
+			thisDocController.dispose();
+		}
+		DocumentLoader.documentsMap.clear();
+	}
+}
 
 
 //.........................................................................................................................
@@ -166,9 +159,10 @@ export class DocumentController implements vscode.Disposable {
 	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
 
 	// Stores the state for each line
-	private readonly grammar: vsctm.IGrammar;
+	private readonly grammar: IGrammar;
 	private readonly document: vscode.TextDocument;
-	private tokensArray : Array<vsctm.ITokenizeLineResult | undefined> = [];
+	private tokensArray : Array<ITokenizeLineResult | undefined> = [];
+	private tokens2Array : Array<ITokenizeLineResult2 | undefined> = [];
 	private documentText : Array<string> = [];
 	private contentChangesArray : Array<vscode.TextDocumentContentChangeEvent> = []; // Stores text-change
 
@@ -176,11 +170,9 @@ export class DocumentController implements vscode.Disposable {
 	private static readonly ChangeSorter = (ChangeL:ChangeEvent, ChangeR:ChangeEvent) => ChangeL.range.start.isAfter(ChangeR.range.start) ? 1 : -1;
 	private static readonly GetTextLinecount = (text : string) => text.match(/[\r\n]+/g)?.length ?? 0;
 	private static readonly GetRangeLinecount = (range : vscode.Range) => (range.end.line - range.start.line);
-	private getLineState(lineIndex:number) {
-		return (lineIndex >= 0)? this.tokensArray[lineIndex]?.ruleStack ?? null : null;
-	}
 
-	public constructor(doc: vscode.TextDocument, textMateGrammar: vsctm.IGrammar) {
+
+	public constructor(doc: vscode.TextDocument, textMateGrammar: IGrammar) {
 		this.grammar = textMateGrammar;
 		this.document = doc;
 		this.parseEntireDocument();
@@ -216,6 +208,7 @@ export class DocumentController implements vscode.Disposable {
 	
 	public refresh() {
 		this.tokensArray = [];
+		this.tokens2Array = [];
 		this.contentChangesArray = [];
 		this.parseEntireDocument();
 	}
@@ -225,7 +218,6 @@ export class DocumentController implements vscode.Disposable {
 
 	public getScopeAt(position : vscode.Position) : TokenInfo{
 		if (!this.grammar) return TokenInfo.Default(position);
-		// let a = process.hrtime()[1] //? TEST SPEED
 		position = this.document.validatePosition(position);
 		
 		this.validateLine(position.line);
@@ -242,6 +234,16 @@ export class DocumentController implements vscode.Disposable {
 		
 		this.validateLine(linePosition.line);
 		this.contentChangesArray.length = 0; //clears changes
+
+		const tok2arr = this.tokens2Array[linePosition.line];
+		if (tok2arr) {
+			const LineTokens = new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text);
+			console.log("Offset array for line " + linePosition.line + ": ",  LineTokens.toOffsetArray());
+			console.log("Token Names: ", LineTokens.toTokenTypeArray().map(TokenArray.GetTokenName));
+			console.log("Contains comment: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.Comment));
+			console.log("Contains Regex: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.RegEx));
+			console.log("Index of comment: " + TokenArray.findIndexOfType(tok2arr.tokens, StandardTokenType.Comment));
+		}
 
 		const lineTokens = this.tokensArray[linePosition.line];
 		return (lineTokens)? TokenInfo.CreateLineArray(this.document, linePosition.line, lineTokens) : [];
@@ -260,6 +262,7 @@ export class DocumentController implements vscode.Disposable {
 			const lineTokensArray = this.tokensArray[lineIndex];
 			returnTokens[lineIndex] = (lineTokensArray)? TokenInfo.CreateLineArray(this.document, lineIndex, lineTokensArray) : [];
 		}
+
 
 		return returnTokens;
 	}
@@ -297,14 +300,38 @@ export class DocumentController implements vscode.Disposable {
 		return returnTokens;
 	}
 
+	//...............................................................................
 
+	public getLineTokenData(linePosition : vscode.Position) : StandardLineTokens|undefined {
+		if (!this.grammar) return;
+		linePosition = this.document.validatePosition(linePosition);
+		
+		this.validateLine(linePosition.line);
+		this.contentChangesArray.length = 0; //clears changes
 
+		const tok2arr = this.tokens2Array[linePosition.line];
+		if (tok2arr) {
+			const LineTokens = new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text);
+			return LineTokens;
+			// console.log("Offset array for line " + linePosition.line + ": ",  LineTokens.toOffsetArray());
+			// console.log("Token Names: ", LineTokens.toTokenTypeArray().map(TokenArray.GetTokenName));
+			// console.log("Contains comment: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.Comment));
+			// console.log("Contains Regex: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.RegEx));
+			// console.log("Index of comment: " + TokenArray.findIndexOfType(tok2arr.tokens, StandardTokenType.Comment));
+		} else return;
+	}
 
 	//...............................................................................
 	// * Validation
-	//TODO: add return bool for changes maybe?
+	// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
+		
+	// private validateTextLine(line: vscode.TextLine) {
+	// 	if(this.documentText[line.lineNumber] !== line.text){
+	// 		this.parseLine(line);
+	// 	}
+	// }
+
 	private validateLine(lineIndex : number) {
-		// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
 		if(this.documentText[lineIndex] !== this.document.lineAt(lineIndex).text){
 			this.parseLine(this.document.lineAt(lineIndex));
 		}
@@ -331,10 +358,13 @@ export class DocumentController implements vscode.Disposable {
 		if(!this.grammar) return;
 		// Update text content
 		this.documentText[line.lineNumber] = line.text;
-		this.tokensArray[line.lineNumber] = ((line.text.length > 20000)
-			? undefined // Don't tokenize line if too long
-			: this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1))
-		);
+		if ((line.text.length > 20000)) { // Don't tokenize line if too long
+			this.tokensArray[line.lineNumber] = undefined;
+			this.tokens2Array[line.lineNumber] = undefined;
+		} else {
+			this.tokensArray[line.lineNumber] = this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1));
+			this.tokens2Array[line.lineNumber] = this.grammar.tokenizeLine2(line.text, this.getLineState2(line.lineNumber-1));
+		}
 	}
 
 	private parseLines(startLine:number, endLine:number){
@@ -352,39 +382,18 @@ export class DocumentController implements vscode.Disposable {
 		this.parseLines(0, this.document.lineCount-1);
 	}
 
+	//...............................................................................
 
+	public *getDocumentLines() {
+		for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
+			yield this.document.lineAt(lineIndex);
+		}
+	}
+	//...............................................................................
+	
+	private getLineState(lineIndex:number) { return (lineIndex >= 0)? this.tokensArray[lineIndex]?.ruleStack : undefined; }
+	private getLineState2(lineIndex:number) { return (lineIndex >= 0)? this.tokens2Array[lineIndex]?.ruleStack : undefined; }
 }
-
-
-
-//.........................................................................................................................
-
-
-
-
-
-
-export const TokenTools = {
-	//Find first token whose end index comes after/on range start. This is the first token in array
-	//Find last token whose start index comes before/on range end. This is the last token in array.
-	SelectRange: (lineTokens:vsctm.ITokenizeLineResult, startCharacter:number, endCharacter:number) => {
-		if (startCharacter > endCharacter) return lineTokens.tokens; //Not a valid range
-		const StartIndex = lineTokens.tokens.firstIndex((Token)=> Token.endIndex >= startCharacter);
-		const EndIndex = lineTokens.tokens.lastIndex((Token)=> Token.startIndex <= endCharacter);
-		if (StartIndex === -1 || EndIndex === -1) return []; //No valid tokens
-		return lineTokens.tokens.slice(StartIndex, EndIndex);
-	},
-	FindToken: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => lineTokens.tokens.first(
-		(token)=> token.startIndex <= position.character && position.character <= token.endIndex
-	),
-
-	CreateRangeFor: (token:vsctm.IToken, lineNumber:number) => new vscode.Range(lineNumber, token.startIndex, lineNumber, token.endIndex),
-	SelectTokenText: (token:vsctm.IToken, text:string) => text.substring(token.startIndex, token.endIndex),
-}
-
-
-
-
 
 
 
@@ -400,46 +409,52 @@ export class TokenInfo {
 	range:vscode.Range;
 	text:string;
 	scopes:Array<string>;
+	token:IToken;
 
 	get lineNumber():number { return this.range.start.line; } //Should only exist on single line
 	//...............................................................................
 
-	constructor(range:vscode.Range, text:string, scopes:Array<string>) {
+	constructor(range:vscode.Range, text:string, scopes:Array<string>, token:IToken) {
 		this.range = range;
 		this.text = text;
 		this.scopes = scopes;
+		this.token = token;
 	}
 	
 
-	public static Create(document:vscode.TextDocument, lineIndex:number, token:vsctm.IToken) : TokenInfo {
+	public static Create(document:vscode.TextDocument, lineIndex:number, token:IToken) : TokenInfo {
 		return new TokenInfo(
 			new vscode.Range(lineIndex, token.startIndex, lineIndex, token.endIndex),
 			document.lineAt(lineIndex).text.substring(token.startIndex, token.endIndex),
 			token.scopes,
+			token
 		);
 	}
 
-	public static CreateLineArray(document:vscode.TextDocument, lineIndex:number, lineTokens:vsctm.ITokenizeLineResult) : Array<TokenInfo> {
+	public static CreateLineArray(document:vscode.TextDocument, lineIndex:number, lineTokens:ITokenizeLineResult) : Array<TokenInfo> {
 		const lineText = document.lineAt(lineIndex).text;
 		return lineTokens.tokens.map((token) => new TokenInfo(
 			new vscode.Range(lineIndex, token.startIndex, lineIndex, token.endIndex),
 			lineText.substring(token.startIndex, token.endIndex),
 			token.scopes,
+			token
 		));
 	}
 
 	public static Default(position:vscode.Position) : TokenInfo {
-		return new TokenInfo(new vscode.Range(position,position),"",[]);
+		return new TokenInfo(new vscode.Range(position,position),"",[], <IToken>{});
 	}
 	//...............................................................................
 
 	public GetTokenDisplayInfo() : string {
 		const tokenLength = this.text.length;
+		const tokenLine = this.range.start.line+1; //Documents disply lines counting from 1.
 		const tokenText = (tokenLength < 120)? `'${this.text.replace("'","''")}'` : `'${this.text.substring(0, 116).replace("'","''")}...'`; //double single quote escapes it to be displayed
 		const tokenScopes = this.scopes.sort().join('\n  - '); //Why sort them? surely the order matters...
 		const baseScope = this.scopes[0].split('.')[0];
+		// const 
 
-		return `\n---\nText: ${tokenText}\nLine: ${this.range.start.line}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
+		return `\n---\nText: ${tokenText}\nLine: ${tokenLine}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
 
 	}
 
@@ -447,6 +462,38 @@ export class TokenInfo {
 		return (this.scopes[0].startsWith('comment') || ((this.scopes.length > 1) && this.scopes[1].startsWith('comment')));
 	}
 }
+
+
+
+
+
+
+
+//.........................................................................................................................
+
+
+
+
+
+
+// export const TokenTools = {
+// 	//Find first token whose end index comes after/on range start. This is the first token in array
+// 	//Find last token whose start index comes before/on range end. This is the last token in array.
+// 	SelectRange: (lineTokens:vsctm.ITokenizeLineResult, startCharacter:number, endCharacter:number) => {
+// 		if (startCharacter > endCharacter) return lineTokens.tokens; //Not a valid range
+// 		const StartIndex = lineTokens.tokens.firstIndex((Token)=> Token.endIndex >= startCharacter);
+// 		const EndIndex = lineTokens.tokens.lastIndex((Token)=> Token.startIndex <= endCharacter);
+// 		if (StartIndex === -1 || EndIndex === -1) return []; //No valid tokens
+// 		return lineTokens.tokens.slice(StartIndex, EndIndex);
+// 	},
+// 	FindToken: (lineTokens:vsctm.ITokenizeLineResult, position:vscode.Position) => lineTokens.tokens.first(
+// 		(token)=> token.startIndex <= position.character && position.character <= token.endIndex
+// 	),
+
+// 	CreateRangeFor: (token:vsctm.IToken, lineNumber:number) => new vscode.Range(lineNumber, token.startIndex, lineNumber, token.endIndex),
+// 	SelectTokenText: (token:vsctm.IToken, text:string) => text.substring(token.startIndex, token.endIndex),
+// }
+
 
 
 

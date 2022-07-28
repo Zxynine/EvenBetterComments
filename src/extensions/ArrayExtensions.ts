@@ -9,7 +9,11 @@ export type nulldefined = null|undefined;
 
 declare global {
     interface Array<T> {
+		/** 
+		 * Null safe version of a map, its the same as mapping then filtering with a truth check. 
+		**/
 		condensedMap<TR>(this : Array<T>, map:Func<[T], TR>) : Array<TR>;
+		/** Null safe version of a flatMap, its the same as flatMapping then filtering with a truth check. */
 		condensedFlatMap<TR>(this : Array<T>, map:Func<[T], Array<TR>>) : Array<TR>;
 		filteredMap<TR>(this : Array<T>, map:Func<[T], TR>, filter:Func<[TR], unknown>) : Array<TR>;
 		filteredFlatMap<TR>(this : Array<T>, flatMap:Func<[T], Array<TR>>, filter:Func<[Array<TR>], unknown>) : Array<TR>;
@@ -34,17 +38,19 @@ declare global {
 
 		count<T>(this:Array<T>, conditional:Action<[T]>) : number;
 
-
+		collect<C,T>(this:Array<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C;
     }
 
     interface ReadonlyArray<T> {
+		/** Null safe version of a map, its the same as mapping then filtering with a truth check. */
 		condensedMap<TR>(this : ReadonlyArray<T>, map:Func<[T], TR>) : Array<TR>;
+		/** Null safe version of a flatMap, its the same as flatMapping then filtering with a truth check. */
 		condensedFlatMap<TR>(this : ReadonlyArray<T>, map:Func<[T], Array<TR>>) : Array<TR>;
 		filteredMap<TR>(this : ReadonlyArray<T>, map:Func<[T], TR>, filter:Func<[TR], unknown>) : Array<TR>;
 		filteredFlatMap<TR>(this : ReadonlyArray<T>, flatMap:Func<[T], Array<TR>>, filter:Func<[Array<TR>], unknown>) : Array<TR>;
 		// mappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, map:Func<[T], TR>) : Array<TR>;
 		// flatMappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, flatMap:Func<[T], Array<TR>>) : Array<TR>;
-		binarySearch<T>(this : Array<T>, filter:Func<[T], 1|0|-1>) : T|undefined;
+		binarySearch<T>(this : ReadonlyArray<T>, filter:Func<[T], 1|0|-1>) : T|undefined;
 		/**
 		 * Returns the value of the first element in the array where predicate is true, and undefined otherwise.
 		 * @param {Func<[T], boolean>} predicate - find calls predicate once for each element of the array, in ascending order, until it finds one where predicate returns true. If such an element is found, find immediately returns that element value. Otherwise, find returns undefined.
@@ -56,15 +62,16 @@ declare global {
 		**/
 		last<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>) : T|undefined;
 
-		firstIndex<T>(this:Array<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
-		lastIndex<T>(this:Array<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
+		firstIndex<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
+		lastIndex<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
 
 		count<T>(this:ReadonlyArray<T>, conditional:Action<[T]>) : number;
 
+		collect<C,T>(this:ReadonlyArray<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C;
     }
 }
 
-//Null safe version of a map, its the same as mapping then filtering with a truth check.
+/** Null safe version of a map, its the same as mapping then filtering with a truth check. */
 Array.prototype.condensedMap = function <T,TR>(this : Array<T>, map:Func<[T], TR|nulldefined>) : Array<TR> {
 	const ResultArray : TR[] = [];
 	this.forEach((ext) => {
@@ -74,7 +81,7 @@ Array.prototype.condensedMap = function <T,TR>(this : Array<T>, map:Func<[T], TR
 	return ResultArray;
 }
 
-//Null safe version of a flatmap, its the same as flatmapping then filtering with a truth check.
+/** Null safe version of a flatMap, its the same as flatMapping then filtering with a truth check. */
 Array.prototype.condensedFlatMap = function <T,TR>(this : Array<T>, map:Func<[T], Array<TR>|nulldefined>) : Array<TR> {
 	const ResultArray : TR[] = [];
 	this.forEach((ext) => {
@@ -173,4 +180,14 @@ Array.prototype.binarySearch = function <T>(this : Array<T>, filter:Func<[T], 1|
 	}
 	if (iterations > half) console.error("Binary search on array exceded maximum iterations, ensure the array is properly sorted!", this, filter);
 	return undefined;
+}
+
+
+
+
+
+Array.prototype.collect = function <C,T>(this:Array<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C {
+	let collector = initialValue;
+	for (const item of this) collector = callback(collector, item);
+	return collector;
 }

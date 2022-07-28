@@ -1,23 +1,12 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 
-import * as fs from 'fs';
 import * as json5 from 'json5';
-import { ExtentionProvider } from './providers/ExtentionProvider';
-// import "./extensions/ArrayExtensions";
+import { LanguageLoader } from './providers/LanguageProvider';
 
-// type 
 
 export class Configuration {
 	private readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
-	private readonly languageConfigFiles = new Map<string, string>();
 	private readonly languageHasShebang = new Map<string, boolean>();
-
-	private ReadLanguageFile(languageCode: string) : string|undefined {
-		// Get the filepath from the map
-		const filePath = this.languageConfigFiles.get(languageCode);
-		return (filePath)? fs.readFileSync(filePath, { encoding: 'utf8' }) : undefined;
-	}
 
 
 
@@ -30,19 +19,18 @@ export class Configuration {
 	 * External extensions can override default configurations of VSCode
 	 */
 	public UpdateLanguagesDefinitions() {
-		console.log("EvenBetterComments: Language Definitions Updated!");
 		this.commentConfig.clear();
-		for (let language of ExtentionProvider.AllExtentionPathLanguagesFlat) {
+		LanguageLoader.LoadLanguages();
+		for (const language of LanguageLoader.AllLanguageDefinitions) {
 			this.languageHasShebang.set(language.id, Boolean(language.firstLine));
-			if (language.configuration) this.languageConfigFiles.set(language.id, path.join(language.extensionPath, language.configuration));
 		}
 	}
 
 	public GetLanguageConfiguration(languageCode:string) {
 		// * if no config exists for this language, back out and leave the language unsupported
-		if (!this.languageConfigFiles.has(languageCode)) return undefined;
+		if (!LanguageLoader.HasLanguage(languageCode)) return undefined;
 		try {
-			const content = this.ReadLanguageFile(languageCode);
+			const content = LanguageLoader.ReadLanguageFileSync(languageCode);
 			// use json5, because the config can contain comments
 			return (content)? json5.parse(content) : undefined;
 		} catch (error) { return undefined; }

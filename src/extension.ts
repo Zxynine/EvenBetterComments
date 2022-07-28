@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import { Configuration } from './configuration';
 import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
-import { LoadDocumentsAndGrammer, openDocument, closeDocument, reloadGrammar, reloadDocuments, unloadDocuments, GetGetScopeAtAPI } from "./document";
+import { LoadDocumentsAndGrammer, DocumentLoader, reloadGrammar, GetGetScopeAtAPI } from "./document";
 import { highlighterDecoratiuon } from './providers/DecorationProvider';
 
 
@@ -84,9 +84,9 @@ export function activate(context: vscode.ExtensionContext) {
 	/** EXPORT API */
 	const api = GetGetScopeAtAPI();
 
-	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(openDocument));
-	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(closeDocument));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDocuments, reloadDocuments));
+	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(DocumentLoader.openDocument));
+	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDocuments, DocumentLoader.reloadDocuments));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, reloadGrammar));
 	//............................................................................
 	
@@ -128,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
 						activeTextEditor.setDecorations(highlighterDecoratiuon, []);
 						const intervalId = setInterval(() => {
 							if (counter++ > 5) clearInterval(intervalId);
-							activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [token.range] : []);
+							activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [activeEditor.document.lineAt(token.range.start).range] : []);
 						}, 100);
 					} else console.log("HyperScopes: Token not found.");
 				}
@@ -147,7 +147,7 @@ export function activate(context: vscode.ExtensionContext) {
 	return api;
 }
 
-export function deactivate() { unloadDocuments() }
+export function deactivate() { DocumentLoader.unloadDocuments() }
 
 
 

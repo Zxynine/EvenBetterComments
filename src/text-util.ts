@@ -300,7 +300,9 @@ export {
 
 
 
-
+export function splitLines(str: string): string[] {
+	return str.split(/\r\n|\r|\n/);
+}
 
 
 

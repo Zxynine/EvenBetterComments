@@ -71,3 +71,9 @@ interface AppPackageJSON {
 
 // (/\*\*)\n.+\*(.*)\n.*( \*/)
 // $1$2$3
+
+
+/**
+ * A union of given const enum values.
+*/
+type Flags<T extends number> = number;
