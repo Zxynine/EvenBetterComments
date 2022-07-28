@@ -28,7 +28,7 @@ export const ExtentionID = "evenbettercomments";
 /**
  * MAIN ACTIVATE FUNCTION
  * this method is called when vs code is activated
- */
+**/
 export function activate(context: vscode.ExtensionContext) {
 	let activeEditor: vscode.TextEditor;
 	let configuration: Configuration = new Configuration();
@@ -74,7 +74,6 @@ export function activate(context: vscode.ExtensionContext) {
 		
 	// Register our CodeLens provider and push to the context so it can be disposed of later
 	context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: "*" }, new CommentLinkLensProvider()));
-	// context.subscriptions.push(vscode.languages.registerHoverProvider({ language: "*" }, new CommentLinkHoverProvider()))
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({ language: "*" }, new DocumentCommentLinkProvider()));
 
 	//............................................................................

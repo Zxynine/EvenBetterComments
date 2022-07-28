@@ -12,4 +12,3 @@ export interface IReference<T> extends IDisposable {
 	readonly object: T;
 }
 
-

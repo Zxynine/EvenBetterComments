@@ -1,15 +1,3 @@
-// tslint:disable:no-bitwise
-// tslint:disable:max-classes-per-file
-// tslint:disable:variable-name
-// tslint:disable:member-access
-// tslint:disable:member-ordering
-// tslint:disable:prefer-const
-// tslint:disable:max-line-length
-// tslint:disable:quotemark
-// import { Position, Range } from "vscode";
-
-
-
 
 export interface ITokenPresentation {
 	foreground: ColorId;
@@ -94,15 +82,6 @@ export const enum MetadataConsts {
 	FONT_STYLE_OFFSET = 11,//0b00000000000000000000100000000000
 	FOREGROUND_OFFSET = 14,//0b00000000000000000100000000000000
 	BACKGROUND_OFFSET = 23,//0b00000000100000000000000000000000
-	
-	// Semantic tokens cannot set the language id, so we can
-	// use the first 8 bits for control purposes
-	SEMANTIC_USE_ITALIC =         0b00000000000000000000000000000001,
-	SEMANTIC_USE_BOLD =           0b00000000000000000000000000000010,
-	SEMANTIC_USE_UNDERLINE =      0b00000000000000000000000000000100,
-	SEMANTIC_USE_STRIKETHROUGH =  0b00000000000000000000000000001000,
-	SEMANTIC_USE_FOREGROUND =     0b00000000000000000000000000010000,
-	SEMANTIC_USE_BACKGROUND =     0b00000000000000000000000000100000,
 }
 
 export function MaskAndShift(this:MetadataConsts, mask:MetadataConsts, offset:MetadataConsts) { return (this & mask) >>> offset; }
@@ -174,25 +153,6 @@ export class TokenMetadata {
 
 
 
-
-
-// export default class Token {
-// 	public readonly type: number;
-// 	public readonly character: string;
-// 	public range: Range;
-
-// 	constructor(type: number, character: string, beginIndex: number, lineIndex: number) {
-// 		this.type = type;
-// 		this.character = character;
-// 		const startPos = new Position(lineIndex, beginIndex);
-// 		const endPos = startPos.translate(0, character.length);
-// 		this.range = new Range(startPos, endPos);
-// 	}
-
-// 	public offset(amount: number) {
-// 		this.range = new Range(this.range.start.translate(0, amount), this.range.end.translate(0, amount));
-// 	}
-// }
 
 
 
@@ -308,8 +268,14 @@ export class StandardLineTokens {
 	private readonly _tokensEndOffset: number;
 	private readonly _text: string;
 
-	private GetMetadata(tokenIndex:number) {
+	private GetMetadata(tokenIndex:number): number {
 		return this._tokens[(tokenIndex << 1) + 1];
+	}
+	public getStartOffset(tokenIndex: number): number {
+		return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0;
+	}
+	public getEndOffset(tokenIndex: number): number {
+		return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset;
 	}
 
 
@@ -320,8 +286,8 @@ export class StandardLineTokens {
 		this._tokensEndOffset = text.length;
 	}
 
-	public get count() { return this._tokensCount; }
-	public get LineText() { return this._text; }
+	public get count(): number { return this._tokensCount; }
+	public get LineText(): string { return this._text; }
 	//Gets the combined metadata of all tokens in the line, this allows for easy queries.
 	public get LineMetadata() {
 		let metaResult = 0;
@@ -342,12 +308,6 @@ export class StandardLineTokens {
 		return (Index === -1)? -1 : this.getEndOffset(Index);
 	}
 
-	public getStartOffset(tokenIndex: number): number {
-		return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0;
-	}
-	public getEndOffset(tokenIndex: number): number {
-		return this._tokens[tokenIndex << 1];
-	}
 
 	public getOffsetDelta(tokenIndex: number): number {
 		if (tokenIndex <= 0) return 0;
@@ -373,6 +333,8 @@ export class StandardLineTokens {
 	public findTokenIndexAtOffset(offset: number): number {
 		return LineTokens.findIndexInTokensArray(this._tokens, offset);
 	}
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Conversions
 
 	public toOffsetArray() : Array<number> {
 		const offsets = new Array<number>(this._tokensCount+2);
@@ -403,6 +365,8 @@ export class StandardLineTokens {
 	}
 
 
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Iterators
 	public *Metadatas() { for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)+1]; }
 	public *Offsets() {
 		for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)];
@@ -410,6 +374,8 @@ export class StandardLineTokens {
 	}
 
 
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Static functions
 	//Binary search
 	public static findIndexInTokensArray(tokens: IToken2Array, desiredIndex: number): number {
 		if (tokens.length <= 2) return 0;

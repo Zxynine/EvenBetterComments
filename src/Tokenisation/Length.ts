@@ -17,7 +17,7 @@ export class LengthObj {
 
 	public static lengthDiffNonNegative(start: LengthObj, end: LengthObj): LengthObj {
 		if (end.isLessThan(start)) return LengthObj.zero;
-		if (start.lineCount === end.lineCount) {
+		else if (start.lineCount === end.lineCount) {
 			return new LengthObj(0, end.columnCount - start.columnCount);
 		} else {
 			return new LengthObj(end.lineCount - start.lineCount, end.columnCount);
@@ -187,7 +187,7 @@ export function lengthToPosition(length: Length): Position {
 	const l = length as any as number;
 	const lineCount = Math.floor(l / factor);
 	const colCount = l - lineCount * factor;
-	return new Position(lineCount + 1, colCount + 1);
+	return new Position(lineCount, colCount);
 }
 
 export function positionToLength(position: Position): Length {
@@ -203,18 +203,18 @@ export function lengthsToRange(lengthStart: Length, lengthEnd: Length): Range {
 	const lineCount2 = Math.floor(l2 / factor);
 	const colCount2 = l2 - lineCount2 * factor;
 
-	return new Range(lineCount + 1, colCount + 1, lineCount2 + 1, colCount2 + 1);
+	return new Range(lineCount, colCount, lineCount2, colCount2);
 }
 
 
 export function lengthOfString(str: string): Length {
 	const lines = str.split(SplitLines);
-	return toLength(lines.length - 1, lines[lines.length - 1].length);
+	return toLength(lines.length-1, lines[lines.length-1].length);
 }
 
 export function lengthOfStringObj(str: string): LengthObj {
 	const lines = str.split(SplitLines);
-	return new LengthObj(lines.length - 1, lines[lines.length - 1].length);
+	return new LengthObj(lines.length-1, lines[lines.length-1].length);
 }
 
 

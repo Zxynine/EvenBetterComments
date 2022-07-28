@@ -20,8 +20,3 @@ interface IOnigMatch {
     index: number;
     captureIndices: IOnigCaptureIndex[];
 }
-
-// interface IMatchResult {
-// 	readonly captureIndices: IOnigCaptureIndex[];
-// 	readonly matchedRuleId: RuleId | typeof endRuleId;
-// }

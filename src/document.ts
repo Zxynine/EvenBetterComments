@@ -6,7 +6,7 @@ import "./extensions/ArrayExtensions";
 import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
 import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { LanguageLoader } from './providers/LanguageProvider';
-import { StandardLineTokens, TokenArray } from './Tokenisation/tokenisation';
+import { StandardLineTokens } from './Tokenisation/tokenisation';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
 	console.error("HyperScopes: "+message, ...optionalParams, err);
@@ -43,13 +43,6 @@ export function GetDocumentScopeAt(document:vscode.TextDocument, position:vscode
 	return DocumentLoader.getDocument(document.uri)?.getScopeAt(position);
 }
 
-// export function getLanguageScopeName(languageId : string): string|undefined {
-// 	try {
-// 		const matchingLanguages = ExtentionProvider.AllExtentionGrammarsReduced.filter((g) => g.language === languageId);
-// 		if (matchingLanguages.length > 0) return matchingLanguages[0].scopeName; // console.info(`Mapping language ${languageId} to initial scope ${matchingLanguages[0].scopeName}`);
-// 	} catch (err) { HyperScopeError(err, "HyperScopes: Unable to get scope name for language: ", languageId, "\n"); }
-// 	return undefined;
-// }
 
 export function TryGetDocumentScopeAt(document:vscode.TextDocument, position:vscode.Position) : TokenInfo|undefined {
 	try { return DocumentLoader.getDocument(document.uri)?.getScopeAt(position); } 
@@ -150,7 +143,7 @@ export class DocumentLoader {
 //.........................................................................................................................
 
 
-//TODO: implement this directly with comment parsing to reduce needles parsing
+//TODO: implement this directly with comment parsing to reduce needless parsing
 
 
 
@@ -235,16 +228,6 @@ export class DocumentController implements vscode.Disposable {
 		this.validateLine(linePosition.line);
 		this.contentChangesArray.length = 0; //clears changes
 
-		const tok2arr = this.tokens2Array[linePosition.line];
-		if (tok2arr) {
-			const LineTokens = new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text);
-			console.log("Offset array for line " + linePosition.line + ": ",  LineTokens.toOffsetArray());
-			console.log("Token Names: ", LineTokens.toTokenTypeArray().map(TokenArray.GetTokenName));
-			console.log("Contains comment: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.Comment));
-			console.log("Contains Regex: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.RegEx));
-			console.log("Index of comment: " + TokenArray.findIndexOfType(tok2arr.tokens, StandardTokenType.Comment));
-		}
-
 		const lineTokens = this.tokensArray[linePosition.line];
 		return (lineTokens)? TokenInfo.CreateLineArray(this.document, linePosition.line, lineTokens) : [];
 	}
@@ -313,23 +296,12 @@ export class DocumentController implements vscode.Disposable {
 		if (tok2arr) {
 			const LineTokens = new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text);
 			return LineTokens;
-			// console.log("Offset array for line " + linePosition.line + ": ",  LineTokens.toOffsetArray());
-			// console.log("Token Names: ", LineTokens.toTokenTypeArray().map(TokenArray.GetTokenName));
-			// console.log("Contains comment: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.Comment));
-			// console.log("Contains Regex: " + TokenArray.containsTokenType(tok2arr.tokens, StandardTokenType.RegEx));
-			// console.log("Index of comment: " + TokenArray.findIndexOfType(tok2arr.tokens, StandardTokenType.Comment));
 		} else return;
 	}
 
 	//...............................................................................
 	// * Validation
 	// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
-		
-	// private validateTextLine(line: vscode.TextLine) {
-	// 	if(this.documentText[line.lineNumber] !== line.text){
-	// 		this.parseLine(line);
-	// 	}
-	// }
 
 	private validateLine(lineIndex : number) {
 		if(this.documentText[lineIndex] !== this.document.lineAt(lineIndex).text){

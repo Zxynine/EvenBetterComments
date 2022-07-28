@@ -20,8 +20,6 @@ export function parseJSONGrammar(contents: string, filename: string | null): IRa
 }
 
 
-
-
 export class TMRegistry {
 	static readonly vsctm = getNodeModule("vscode-textmate");
 	static readonly oniguruma = getNodeModule("vscode-oniguruma");
@@ -62,36 +60,6 @@ export class TMRegistry {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export class LanguageDefinition {
-// 	public readonly language!: string;
-// 	public readonly extends?: string;
-// 	public readonly scopes?: ScopePair[];
-// }
 
 
 export class LanguageConfig {

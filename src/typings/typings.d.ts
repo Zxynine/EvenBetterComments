@@ -31,49 +31,41 @@ interface Contributions {
 
 
 
-// interface CommentConfig {
-//     lineComment?: string;
-//     blockComment?: [string, string];
+//  /** The 'package.json' file of an app. */
+// interface AppPackageJSON {
+// 	/** Information about the author. */
+// 	author?: {
+// 		 /** The email address. */
+// 		email?: string;
+// 		 /** The name. */
+// 		name?: string;
+// 		 /** The (homepage) URL. */
+// 		url?: string;
+// 	};
+// 	 /** A list of one or more dependencies. */
+// 	dependencies?: { [module: string]: string };
+// 	 /** A list of one or more dev dependencies. */
+// 	devDependencies?: { [module: string]: string };
+// 	 /** The description. */
+// 	description?: string;
+// 	 /** The display name. */
+// 	displayName?: string;
+// 	 /** The software license (ID). */
+// 	license?: string;
+// 	 /** The (internal) name. */
+// 	name?: string;
+// 	 /** Options for the script. */
+// 	options?: { [key: string]: any };
+// 	 /** The version number. */
+// 	version?: string;
+// 	 /** Use Vuetify instead of Bootstrap or not. */
+// 	vue?: boolean;
 // }
-
-
- /** The 'package.json' file of an app. */
-interface AppPackageJSON {
-	/** Information about the author. */
-	author?: {
-		 /** The email address. */
-		email?: string;
-		 /** The name. */
-		name?: string;
-		 /** The (homepage) URL. */
-		url?: string;
-	};
-	 /** A list of one or more dependencies. */
-	dependencies?: { [module: string]: string };
-	 /** A list of one or more dev dependencies. */
-	devDependencies?: { [module: string]: string };
-	 /** The description. */
-	description?: string;
-	 /** The display name. */
-	displayName?: string;
-	 /** The software license (ID). */
-	license?: string;
-	 /** The (internal) name. */
-	name?: string;
-	 /** Options for the script. */
-	options?: { [key: string]: any };
-	 /** The version number. */
-	version?: string;
-	 /** Use Vuetify instead of Bootstrap or not. */
-	vue?: boolean;
-}
 
 
 // (/\*\*)\n.+\*(.*)\n.*( \*/)
 // $1$2$3
 
 
-/**
- * A union of given const enum values.
-*/
+/** A union of given const enum values. **/
 type Flags<T extends number> = number;

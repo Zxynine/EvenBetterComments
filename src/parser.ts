@@ -179,13 +179,14 @@ export class Parser {
 
 					const matchResult = lineSub.match(searchRegex);
 					if (matchResult) {
-						let range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
-						
-						console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
 						// Find which custom delimiter was used in order to add it to the collection
 						let matchString = (matchResult[3] as string).toLowerCase();
 						let matchTag = this.tags.find(item => item.lowerTag === matchString);
-						if (matchTag) matchTag.ranges.push(range);
+						if (matchTag) {
+							let range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
+							console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
+							matchTag.ranges.push(range);
+						}
 					}
 				}
 			}  else {

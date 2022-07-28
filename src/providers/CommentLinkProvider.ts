@@ -1,6 +1,5 @@
 import {
 	CodeLensProvider,
-	// HoverProvider,
 	DocumentLinkProvider,
 	DocumentLink,
 	TextDocument,
@@ -9,17 +8,11 @@ import {
 	Command,
 	Uri,
 	workspace,
-	// CancellationToken,
-	// Hover,
 	Position,
-	// ProviderResult,
-	// MarkdownString,
-
 } from "vscode";
 import { resolve, join, dirname } from "path";
 import { lstatSync } from "fs";
 import { homedir } from "os";
-// import { ExtentionID } from "../extension";
 	
 const LINK_REGEX = /^(\.{1,2}[\/\\])?(.+?)$/;
 	
@@ -29,7 +22,7 @@ const LINK_REGEX = /^(\.{1,2}[\/\\])?(.+?)$/;
 
 
 //?.....................FindLinksInDoc..................................\\
-
+//TODO incorporate finding links into parser
 const commentRegex = /^\*|^\/\/|^\/\*|^\#|^<!--/;
 // const URLRegex = /[a-zA-z0-9.-_~+#,%&=*;:@]/
 
