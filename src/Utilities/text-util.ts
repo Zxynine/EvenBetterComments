@@ -341,3 +341,40 @@ export function splitLines(str: string): string[] {
 		);
 	} else return undefined;
   }
+
+
+  
+export function strcmp(a: string, b: string): number {
+	if (a < b) {
+		return -1;
+	}
+	if (a > b) {
+		return 1;
+	}
+	return 0;
+}
+
+
+export function strArrCmp(a: string[] | null, b: string[] | null): number {
+	if (a === null && b === null) {
+		return 0;
+	}
+	if (!a) {
+		return -1;
+	}
+	if (!b) {
+		return 1;
+	}
+	let len1 = a.length;
+	let len2 = b.length;
+	if (len1 === len2) {
+		for (let i = 0; i < len1; i++) {
+			let res = strcmp(a[i], b[i]);
+			if (res !== 0) {
+				return res;
+			}
+		}
+		return 0;
+	}
+	return len1 - len2;
+}

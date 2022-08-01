@@ -15,9 +15,9 @@ function getNodeModulePath(moduleName: string) {return path.join(vscode.env.appR
 function getNodeModule(moduleName: string) {return require(getNodeModulePath(moduleName));}
 
 
-export function parseJSONGrammar(contents: string, filename: string | null): IRawGrammar {
-	return <IRawGrammar>JSON.parse(contents);
-}
+// export function parseJSONGrammar(contents: string, filename: string | null): IRawGrammar {
+// 	return <IRawGrammar>JSON.parse(contents);
+// }
 
 
 export class TMRegistry {
@@ -41,12 +41,7 @@ export class TMRegistry {
 				getInjections: (scopeName) => LanguageLoader.scopeNameToInjections.get(scopeName),
 				loadGrammar: (scopeName: string) => {
 					const path = LanguageLoader.scopeNameToPath.get(scopeName);
-					return (!path)? null : new Promise<IRawGrammar>((resolve, reject) => {
-						fs.readFile(path, 'utf-8', (error, content) => {
-							if (error) reject(error);
-							else resolve(TMRegistry.vsctm.parseRawGrammar(content.toString(), path));
-						});
-					});
+					return ((!path)? null :  LanguageLoader.ReadFileAsync(path).then((data) => TMRegistry.vsctm.parseRawGrammar(data, path)));
 				}
 			});
 		} catch (err) {

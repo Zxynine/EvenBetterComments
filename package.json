@@ -37,6 +37,14 @@
 	"contributes": {
 		"commands": [
 			{
+				"title": "EvenBetterComments: Reload Configuration",
+				"command": "evenbettercomments.reloadConfiguration"
+			},
+			{
+				"title": "EvenBetterComments: Reload Decorations",
+				"command": "evenbettercomments.reloadDecorations"
+			},
+			{
 				"title": "HyperScopes: Show Scopes",
 				"command": "vscode-show-scopes.show",
 				"when": "editorTextFocus"

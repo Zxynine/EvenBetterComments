@@ -5,9 +5,49 @@ declare const enum StandardTokenType {
     Other = 0,
     Comment = 1,
     String = 2,
-    RegEx = 4,
+    RegEx = 3,
+	// Indicates that no token type is set.
+	NotSet = 8
 }
 
+
+/**
+ * Identifiers with a binary dot operator.
+ * Examples: `baz` or `foo.bar`
+*/
+type ScopeName = string;
+
+/**
+ * An expression language of ScopeNames with a binary space (to indicate nesting) operator.
+ * Examples: `foo.bar boo.baz`
+*/
+type ScopePath = string;
+
+/**
+ * An expression language of ScopePathStr with a binary comma (to indicate alternatives) operator.
+ * Examples: `foo.bar boo.baz,quick quack`
+*/
+type ScopePattern = string;
+/**
+ * A TextMate theme.
+ */
+interface IRawTheme {
+	readonly name?: string;
+	readonly settings: IRawThemeSetting[];
+}
+
+/**
+ * A single theme setting.
+ */
+interface IRawThemeSetting {
+	readonly name?: string;
+	readonly scope?: ScopePattern | ScopePattern[];
+	readonly settings: {
+		readonly fontStyle?: string;
+		readonly foreground?: string;
+		readonly background?: string;
+	};
+}
 
 interface ILocation {
 	readonly filename: string;
@@ -22,8 +62,44 @@ interface ILocatable {readonly $vscodeTextmateLocation?: ILocation;}
 interface IGrammar {
 	/** Tokenize `lineText` using previous line state `prevState` **/
 	tokenizeLine(lineText: string, prevState?: IStackElement): ITokenizeLineResult;
+	/**
+	 * Tokenize `lineText` using previous line state `prevState`.
+	 * The result contains the tokens in binary format, resolved with the following information:
+	 *  - language
+	 *  - token type (regex, string, comment, other)
+	 *  - font style
+	 *  - foreground color
+	 *  - background color
+	 * e.g. for getting the languageId: `(metadata & MetadataConsts.LANGUAGEID_MASK) >>> MetadataConsts.LANGUAGEID_OFFSET`
+	 */
 	tokenizeLine2(lineText: string, prevState?: IStackElement): ITokenizeLineResult2;
 }
+
+
+
+
+
+// declare const ruleIdSymbol = Symbol('RuleId');
+// type RuleId = { __brand: typeof ruleIdSymbol };
+
+// interface Injection {
+// 	readonly debugSelector: string;
+// 	readonly matcher: Matcher<string[]>;
+// 	readonly priority: -1 | 0 | 1; // 0 is the default. -1 for 'L' and 1 for 'R'
+// 	readonly ruleId: RuleId;
+// 	readonly grammar: IRawGrammar;
+// }
+
+/** A registry helper that can locate grammar file paths given scope names. */
+interface RegistryOptions {
+	onigLib: Promise<IOnigLib>;
+	theme?: IRawTheme;
+	colorMap?: string[];
+	loadGrammar(scopeName: ScopeName): Promise<IRawGrammar | undefined | null>;
+	getInjections?(scopeName: ScopeName): ScopeName[] | undefined;
+}
+
+
 interface IRawGrammar extends ILocatable {
 	repository: IRawRepository;
 	readonly scopeName: string;
@@ -39,6 +115,10 @@ interface IGrammarConfiguration {
 	tokenTypes?: ITokenTypeMap;
 	balancedBracketSelectors?: string[];
 	unbalancedBracketSelectors?: string[];
+}
+interface IGrammarRepository {
+	lookup(scopeName: ScopeName): IRawGrammar | undefined;
+	injections(scopeName: ScopeName): ScopeName[];
 }
 
 
@@ -94,8 +174,6 @@ interface IRegistry {
 
 	dispose(): void;
 }
-
-
 
 
 
@@ -161,3 +239,14 @@ interface IWhileCheckResult {
 	readonly isFirstLine: boolean;
 }
 
+
+interface IDecodedMetadata {
+	languageId: string | undefined;
+	tokenType: StandardTokenType;
+	bold: boolean | undefined;
+	italic: boolean | undefined;
+	underline: boolean | undefined;
+	strikethrough: boolean | undefined;
+	foreground: string | undefined;
+	background: string | undefined;
+}

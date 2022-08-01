@@ -26,7 +26,12 @@ export interface IExtensionPackage {
 }
 
 
-
+/**
+ * Utility to read a file as a promise
+ */
+export function readFile(path:string) {
+    return new Promise((resolve, reject) => fs.readFile(path, (error, data) => error ? reject(error) : resolve(data)))
+}
 
 
 
@@ -91,10 +96,7 @@ export class LanguageLoader {
 	public static ReadLanguageFileAsync(languageCode: string) : Promise<string>|undefined {
 		const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
 		return (!filePath)? undefined : new Promise<string>((resolve, reject) => {
-			fs.readFile(filePath, 'utf-8', (error, content) => {
-				if (!error) resolve(content.toString());
-				else reject(error);
-			});
+			fs.readFile(filePath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
 		});
 	}
 
@@ -106,11 +108,13 @@ export class LanguageLoader {
 	public static ReadGrammarFileAsync(scopeName: string) : Promise<string>|undefined {
 		const grammarPath = LanguageLoader.scopeNameToPath.get(scopeName);
 		return (!grammarPath)? undefined : new Promise<string>((resolve, reject) => {
-			fs.readFile(grammarPath, 'utf-8', (error, content) => {
-				if (!error) resolve(content.toString());
-				else reject(error);
-			});
+			fs.readFile(grammarPath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
 		});
+	}
+
+
+	public static ReadFileAsync(path : string) {
+		return new Promise<string>((resolve, reject) => fs.readFile(path, 'utf-8', (error, data) => error ? reject(error) : resolve(data)))
 	}
 
 

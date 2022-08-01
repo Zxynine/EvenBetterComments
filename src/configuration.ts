@@ -20,6 +20,7 @@ export class Configuration {
 	 */
 	public UpdateLanguagesDefinitions() {
 		this.commentConfig.clear();
+		this.languageHasShebang.clear();
 		LanguageLoader.LoadLanguages();
 		for (const language of LanguageLoader.AllLanguageDefinitions) {
 			this.languageHasShebang.set(language.id, Boolean(language.firstLine));
@@ -44,7 +45,7 @@ export class Configuration {
 
 
 	public GetHasShebang(languageCode: string): boolean {
-		return (this.languageHasShebang.get(languageCode)??false)
+		return (this.languageHasShebang.get(languageCode) ?? false)
 	}
 
 
@@ -60,6 +61,40 @@ export class Configuration {
 		this.commentConfig.set(languageCode, comments);
 		return comments;
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	

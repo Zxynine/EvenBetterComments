@@ -17,6 +17,8 @@ export const ExtentionID = "evenbettercomments";
 
 /** All command ids contributed by this extension. */
  export const enum CommandIds {
+	ReloadDecorations = 'evenbettercomments.reloadDecorations',
+	ReloadConfiguration = 'evenbettercomments.reloadConfiguration',
 	ReloadDocuments = 'hscopes-booster.reloadDocuments',
 	ReloadGrammar = 'hscopes-booster.reloadGrammar',
 	ShowScope = 'vscode-show-scopes.show',
@@ -31,8 +33,8 @@ export const ExtentionID = "evenbettercomments";
 **/
 export function activate(context: vscode.ExtensionContext) {
 	let activeEditor: vscode.TextEditor;
-	let configuration: Configuration = new Configuration();
-	let parser: Parser = new Parser(configuration);
+	const configuration: Configuration = new Configuration();
+	const parser: Parser = new Parser(configuration);
 
 	// Called to handle events below
 	const updateDecorations = () => parser.UpdateDecorations(activeEditor);
@@ -48,10 +50,13 @@ export function activate(context: vscode.ExtensionContext) {
 		// Trigger update to set decorations for newly active file
 		triggerUpdateDecorations();
 	}
+
+	//TODO: incorporate this into the document script
 	function CheckUpdateDecorations(event : vscode.TextDocumentChangeEvent) {
 		// Trigger updates if the text was changed in the same document
 		if (activeEditor && event.document === activeEditor.document) triggerUpdateDecorations();
 	}
+	
 
 	// IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
 	var timeout: NodeJS.Timer;
@@ -64,9 +69,18 @@ export function activate(context: vscode.ExtensionContext) {
 	// Get the active editor for the first time and initialise the regex
 	if (vscode.window.activeTextEditor) SetActiveEditor(vscode.window.activeTextEditor);
 
+
+
+
+	//............................................................................
+	// * This section deals with comment decorations
+
 	context.subscriptions.push(vscode.extensions.onDidChange(configuration.UpdateLanguagesDefinitions)); // Handle extensions being added or removed
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(CheckSetActiveEditor)); // Handle active file changed
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(CheckUpdateDecorations)); // Handle file contents changed
+
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDecorations, updateDecorations));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadConfiguration, configuration.UpdateLanguagesDefinitions));
 
 
 	//............................................................................
@@ -83,8 +97,9 @@ export function activate(context: vscode.ExtensionContext) {
 	/** EXPORT API */
 	const api = GetGetScopeAtAPI();
 
-	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(DocumentLoader.openDocument));
-	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument));
+	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(DocumentLoader.openDocument)); //Handle documents being opened
+	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument)); //Handle documents bing closed
+
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDocuments, DocumentLoader.reloadDocuments));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, reloadGrammar));
 	//............................................................................
@@ -115,21 +130,23 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log("HyperScopes: show line command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
 		if (activeTextEditor) {
-
 			const tokenArray = api.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
 			if (tokenArray) {
-				for (const token of tokenArray) {
-					if (token) {
-						extensionOutputChannel.show(true);
-						extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-		
-						let counter = 0;
-						activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-						const intervalId = setInterval(() => {
-							if (counter++ > 5) clearInterval(intervalId);
-							activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [activeEditor.document.lineAt(token.range.start).range] : []);
-						}, 100);
-					} else console.log("HyperScopes: Token not found.");
+				const highlightRange : vscode.Range[] = [];
+				tokenArray.forEach(token => {
+					if (token) highlightRange.push(activeEditor.document.lineAt(token.range.start).range)
+				});
+				if (highlightRange.length) {
+					extensionOutputChannel.show(true);
+					for (const token of tokenArray) if (token) extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
+
+					let counter = 0;
+					activeTextEditor.setDecorations(highlighterDecoratiuon, []);
+					const intervalId = setInterval(() => {
+						if (counter++ > 5) clearInterval(intervalId);
+						activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? highlightRange : []);
+					}, 100);
+
 				}
 			}
 		}

@@ -1,4 +1,7 @@
+import { OrMask } from "../Utilities/Utils";
 
+
+//https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports/tokenization.ts
 export interface ITokenPresentation {
 	foreground: ColorId;
 	background: ColorId,
@@ -19,6 +22,8 @@ export const enum FontStyle {
 	Strikethrough = 8,
 }
 
+
+
 export const enum ColorId {
 	None = 0,
 	DefaultForeground = 1,
@@ -34,8 +39,42 @@ export const enum LanguageId {
 
 
 
+export function fontStyleToString(fontStyle: OrMask<FontStyle>) {
+	if (fontStyle === FontStyle.NotSet) return 'not set';
+
+	let style = '';
+	if (fontStyle & FontStyle.Italic) style += 'italic ';
+	if (fontStyle & FontStyle.Bold) style += 'bold ';
+	if (fontStyle & FontStyle.Underline) style += 'underline ';
+	if (fontStyle & FontStyle.Strikethrough) style += 'strikethrough ';
+	return (style === '')? 'none' : style.trim();
+}
+
+const STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex|regexp|meta\.embedded)\b/;
+export function toStandardTokenType(tokenType: string): StandardTokenType {
+	const m = tokenType.match(STANDARD_TOKEN_TYPE_REGEXP);
+	if (!m) return StandardTokenType.NotSet;
+	else switch (m[1]) {
+		case 'comment': return StandardTokenType.Comment;
+		case 'string': return StandardTokenType.String;
+		case 'regex': return StandardTokenType.RegEx;
+		case 'regexp': return StandardTokenType.RegEx;
+		case "meta.embedded": return StandardTokenType.Other;
+		default: throw new Error('Unexpected match for standard token type! - ' + m[1]);
+	}
+}
 
 
+export function TokenTypeToString(token : StandardTokenType) {
+	switch (token) {
+		case StandardTokenType.Other : return "Other";
+		case StandardTokenType.Comment : return "Comment";
+		case StandardTokenType.String : return "String";
+		case StandardTokenType.RegEx : return "RegEx";
+		case StandardTokenType.NotSet : return "Not Set";
+		default: return "????";
+	}
+}
 
 
 
@@ -79,6 +118,7 @@ export const enum MetadataConsts {
 
 	LANGUAGEID_OFFSET = 0, //0b00000000000000000000000000000001
 	TOKEN_TYPE_OFFSET = 8, //0b00000000000000000000000100000000
+	// BALANCED_BRACKETS_OFFSET = 10,
 	FONT_STYLE_OFFSET = 11,//0b00000000000000000000100000000000
 	FOREGROUND_OFFSET = 14,//0b00000000000000000100000000000000
 	BACKGROUND_OFFSET = 23,//0b00000000100000000000000000000000
@@ -105,15 +145,13 @@ export class TokenMetadata {
 
 	public static getClassNameFromMetadata(metadata: number): string {
 		const foreground = this.getForeground(metadata);
-		const background = this.getForeground(metadata);
 		const fontStyle = this.getFontStyle(metadata);
 
 		let className = 'mtk' + foreground;
-		className += ' mtk' + background;
-		if (fontStyle & FontStyle.Italic)    className += ' mtki';
-		if (fontStyle & FontStyle.Bold)      className += ' mtkb';
-		if (fontStyle & FontStyle.Underline) className += ' mtku';
-
+		if (fontStyle & FontStyle.Italic)        className += ' mtki';
+		if (fontStyle & FontStyle.Bold)          className += ' mtkb';
+		if (fontStyle & FontStyle.Underline)     className += ' mtku';
+		if (fontStyle & FontStyle.Strikethrough) className += ' mtks';
 		return className;
 	}
 
@@ -146,6 +184,26 @@ export class TokenMetadata {
 			strikethrough: Boolean(fontStyle & FontStyle.Strikethrough),
 		};
 	}
+
+
+	// public static decodeMetadata(metadata: number): IDecodedMetadata {
+	// 	const colorMap = this._themeService.getColorTheme().tokenColorMap;
+	// 	const languageId = TokenMetadata.getLanguageId(metadata);
+	// 	const tokenType = TokenMetadata.getTokenType(metadata);
+	// 	const fontStyle = TokenMetadata.getFontStyle(metadata);
+	// 	const foreground = TokenMetadata.getForeground(metadata);
+	// 	const background = TokenMetadata.getBackground(metadata);
+	// 	return {
+	// 		languageId: this._languageService.languageIdCodec.decodeLanguageId(languageId),
+	// 		tokenType: tokenType,
+	// 		bold: (fontStyle & FontStyle.Bold) ? true : undefined,
+	// 		italic: (fontStyle & FontStyle.Italic) ? true : undefined,
+	// 		underline: (fontStyle & FontStyle.Underline) ? true : undefined,
+	// 		strikethrough: (fontStyle & FontStyle.Strikethrough) ? true : undefined,
+	// 		foreground: colorMap[foreground],
+	// 		background: colorMap[background]
+	// 	};
+	// }
 }
 
 
@@ -157,6 +215,66 @@ export class TokenMetadata {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports.ts
+
+
+
+
+
+
+
+//  S=Start offset, E=End offset, M=metadata, T=Type
+//         Array[ i=0 , i=1 , i=2 , i=3 , i=4 , i=5 , i=6 , i=7 ] Describes the format of the Uint32Array used to represent tokens
+//              | E0  | M0  |     |     |     |     |     |     |
+//              | S1  |     | E1  | M1  |     |     |     |     |
+//              |     |     | S2  |     | E2  | M2  |     |     |
+//              |     |     |     |     | S3  |     | E3  | M3  |
+//              |  I-----------I-----------I-----------I---------...
+// Odd=metadata         T0          T1          T2          T3
+// Even=boundries
+
+//      Count = i >> 1;
 
 
 
@@ -233,32 +351,25 @@ export class TokenArray {
 
 	
 
-	public static GetTokenName(token : StandardTokenType) {
-		switch (token) {
-			case StandardTokenType.Other : return "Other";
-			case StandardTokenType.Comment : return "Comment";
-			case StandardTokenType.String : return "String";
-			case StandardTokenType.RegEx : return "Regex";
-			default: return "None";
-		}
-	}
+	public static readonly GetTokenName = TokenTypeToString;
+
+
+
+
+	// public static GetFullTokenData(grammar : IGrammar) {
+
+
+
+
+
+	// }
+
+
+
 
 }
 
 
-
-
-//  S=Start offset, E=End offset, M=metadata, T=Type
-//         Array[ i=0 , i=1 , i=2 , i=3 , i=4 , i=5 , i=6 , i=7 ] Describes the format of the Uint32Array used to represent tokens
-//              | E0  | M0  |     |     |     |     |     |     |
-//              | S1  |     | E1  | M1  |     |     |     |     |
-//              |     |     | S2  |     | E2  | M2  |     |     |
-//              |     |     |     |     | S3  |     | E3  | M3  |
-//              |  I-----------I-----------I-----------I---------...
-// Odd=metadata         T0          T1          T2          T3
-// Even=boundries
-
-//      Count = i >> 1;
 
 
 
@@ -401,41 +512,6 @@ export class StandardLineTokens {
 
 
 
-
-
-
-
-
-
-
-
-// export class FullLineTokens {
-// 	private readonly _tokensArr1: IToken1Array;
-// 	private readonly _tokensArr2: IToken2Array;
-// 	private readonly _tokensCount: number;
-// 	private readonly _tokensEndOffset: number;
-// 	private readonly _text: string;
-
-// 	private GetMetadata(tokenIndex:number) {
-// 		return this._tokensArr2[(tokenIndex << 1) + 1];
-// 	}
-
-
-// 	constructor(type1Tokens : IToken1Array, type2Tokens: IToken2Array, text: string) {
-// 		this._tokensArr1 = type1Tokens;
-// 		this._tokensArr2 = type2Tokens;
-// 		this._tokensCount = (this._tokensArr2.length >>> 1);
-// 		this._text = text;
-// 		this._tokensEndOffset = text.length;
-// 	}
-
-
-
-
-
-
-
-// }
 
 
 
@@ -696,6 +772,41 @@ export class SlicedLineTokens implements IViewLineTokens {
 
 
 
+
+
+
+
+
+
+
+
+// export class FullLineTokens {
+// 	private readonly _tokensArr1: IToken1Array;
+// 	private readonly _tokensArr2: IToken2Array;
+// 	private readonly _tokensCount: number;
+// 	private readonly _tokensEndOffset: number;
+// 	private readonly _text: string;
+
+// 	private GetMetadata(tokenIndex:number) {
+// 		return this._tokensArr2[(tokenIndex << 1) + 1];
+// 	}
+
+
+// 	constructor(type1Tokens : IToken1Array, type2Tokens: IToken2Array, text: string) {
+// 		this._tokensArr1 = type1Tokens;
+// 		this._tokensArr2 = type2Tokens;
+// 		this._tokensCount = (this._tokensArr2.length >>> 1);
+// 		this._text = text;
+// 		this._tokensEndOffset = text.length;
+// 	}
+
+
+
+
+
+
+
+// }
 
 
 
