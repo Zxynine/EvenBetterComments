@@ -1,6 +1,5 @@
 import { OrMask } from "../Utilities/Utils";
 
-
 //https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports/tokenization.ts
 export interface ITokenPresentation {
 	foreground: ColorId;

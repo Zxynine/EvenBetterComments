@@ -2,7 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import fs = require("fs");
 import { LanguageLoader } from "../providers/LanguageProvider";
-
+// import { IGrammar } from "vscode-textmate";
 // import { getRegexForBrackets } from "./bracketUtil";
 // import LanguageConfig from "./languageConfig";
 
