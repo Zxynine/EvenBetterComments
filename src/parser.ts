@@ -62,10 +62,8 @@ export class Parser {
 	
  	//TODO: just save the regex string, this.tags should not change.	
 	/** Build up regex matcher for custom delimiter tags */
-	private static CreateJoinedDelimiterArray(tags : Array<CommentTag>) : string {
-		let characters: Array<string> = [];
-		for (let commentTag of tags) characters.push(commentTag.escapedTag);
-		return characters.join('|');
+	private static JoinedDelimiterArray(tags : Array<CommentTag>) : string {
+		return tags.map(commentTag => commentTag.escapedTag).join('|');
 	}
 
 	
@@ -79,7 +77,6 @@ export class Parser {
 	/**
 	 * Static method used to create CommentTag objects.
 	 * @param itemTag The string that repesents the tag.
-	 * @param decorationType The decoration format definition.
 	 * @returns {CommentTag} The created CommentTag object.
 	 */
 	private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
@@ -103,6 +100,12 @@ export class Parser {
 		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 	}
 
+	private static *MatchAllInDocument(document:vscode.TextDocument, pattern:RegExp): Generator<RegExpExecArray> {
+		const text = document.getText();
+		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) {
+			yield match;
+		}
+	}
 
 	//===============================================================================================================================================
 	//TODO: preprocess to find lines with comment characters to pass to each function, save them the hassle of parsing the entire document.
@@ -146,7 +149,7 @@ export class Parser {
 		);
 		
 		// Apply all configurable comment start tags
-        this.expression += "(" + Parser.CreateJoinedDelimiterArray(this.tags) + ")+(.*)";
+        this.expression += "(" + Parser.JoinedDelimiterArray(this.tags) + ")+(.*)";
 
 
 
@@ -184,7 +187,14 @@ export class Parser {
 
 
 
-	/**
+
+
+
+
+
+
+
+	/**  .......................................................................................................................
 	 * Finds all single line comments delimited by a given delimiter and matching tags specified in package.json
 	 * @param activeEditor The active text editor containing the code document
 	**/
@@ -193,10 +203,11 @@ export class Parser {
 		// If highlight single line comments is off, single line comments are not supported for this language
 		if (!this.highlightMonolineComments) return;
 
-		const text = activeEditor.document.getText();
+		// const text = activeEditor.document.getText();
 
 		
-		for (let match:RegExpExecArray|null; (match = this.Expressions.MonoLine.exec(text));) {
+		// for (let match:RegExpExecArray|null; (match = this.Expressions.MonoLine.exec(text));) {
+		for (const match of Parser.MatchAllInDocument(activeEditor.document, this.Expressions.MonoLine)) {
 			const startPos = activeEditor.document.positionAt(match.index);
 			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
 			
@@ -206,7 +217,7 @@ export class Parser {
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.CreateJoinedDelimiterArray(this.tags) + ")+(.*$)"
+					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinedDelimiterArray(this.tags) + ")+(.*$)"
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
 					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
@@ -240,12 +251,6 @@ export class Parser {
 
 
 
-
-
-
-
-
-
 	/**
 	 * Finds block comments as indicated by start and end delimiter
 	 * @param activeEditor The active text editor containing the code document
@@ -259,7 +264,7 @@ export class Parser {
 
 		// Combine custom delimiters and the rest of the comment block matcher
 		let commentMatchString = (this.contributions.allowNestedHighlighting)? ("(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)(") : ("(^)+([ \\t]*[ \\t]*)(");
-		commentMatchString += Parser.CreateJoinedDelimiterArray(this.tags);
+		commentMatchString += Parser.JoinedDelimiterArray(this.tags);
 		commentMatchString += ")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 		
@@ -281,10 +286,11 @@ export class Parser {
 
 
 
-		const text = activeEditor.document.getText();
+		// const text = activeEditor.document.getText();
+		// for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLine.exec(text));) {
 
 		// Find the multiline comment block
-		for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLine.exec(text));) {
+		for (const match of Parser.MatchAllInDocument(activeEditor.document, this.Expressions.MultiLine)) {
 			const commentBlock = match[0];
 
 			// Find the line
@@ -320,7 +326,7 @@ export class Parser {
 
 		// Highlight after leading /** or *
 		let commentMatchString = (this.contributions.allowNestedHighlighting)? "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(" : "(^)+([ \\t]*\\*[ \\t]*)("; 
-		commentMatchString += Parser.CreateJoinedDelimiterArray(this.tags);
+		commentMatchString += Parser.JoinedDelimiterArray(this.tags);
 		commentMatchString += ")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
@@ -333,9 +339,10 @@ export class Parser {
 
 
 
-		const text = activeEditor.document.getText();
+		// const text = activeEditor.document.getText();
+		// for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLineJS.exec(text));) {
 		// Find the multiline comment block
-		for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLineJS.exec(text));) {
+		for (const match of Parser.MatchAllInDocument(activeEditor.document, this.Expressions.MultiLineJS)) {
 			const commentBlock = match[0];
 			// Find the line
 			for (let line:RegExpExecArray|null; (line = commentRegEx.exec(commentBlock));) {
@@ -353,7 +360,20 @@ export class Parser {
 	}
 
 
-	/**
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/** .......................................................................................................................
 	 * Apply decorations after finding all relevant comments
 	 * @param activeEditor The active text editor containing the code document
 	 */
