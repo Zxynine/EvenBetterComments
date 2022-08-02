@@ -29,10 +29,11 @@ The release of v4.1.0 marks my first major changes to the code and structure of 
 ### Work In Progress
 * Working on incremental document updating instead of full document parse on each update cycle.
 * Working on splitting comment parsing into two groups, basic (comments which are alone on a line) and mixed (when code and comments are on the same line).
-* Working on button to temporarily hide all comments.
 * Working on API for other extensions to use the token parsing to find comments.
 * Working on creating documentation for comment links and how to use them.
 * Working on creating settings to format document links.
+* Working on button to temporarily hide all comments.
+* Working on ability to format entire code block with a style.
 
 
 ## [4.0.2] (2022-06-26)

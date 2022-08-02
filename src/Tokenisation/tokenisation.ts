@@ -1,4 +1,4 @@
-import { OrMask } from "../Utilities/Utils";
+
 
 //https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports/tokenization.ts
 export interface ITokenPresentation {
@@ -10,8 +10,6 @@ export interface ITokenPresentation {
 	strikethrough: boolean;
 }
 
-
-
 export const enum FontStyle {
 	NotSet = -1,
 	None = 0,
@@ -20,8 +18,6 @@ export const enum FontStyle {
 	Underline = 4,
 	Strikethrough = 8,
 }
-
-
 
 export const enum ColorId {
 	None = 0,
@@ -78,9 +74,7 @@ export function TokenTypeToString(token : StandardTokenType) {
 
 
 
-export const enum IgnoreBracketsInTokens {
-	value = StandardTokenType.Comment | StandardTokenType.String | StandardTokenType.RegEx
-}
+export const enum IgnoreBracketsInTokens {value = StandardTokenType.Comment | StandardTokenType.String | StandardTokenType.RegEx}
 export function ignoreBracketsInToken(standardTokenType: StandardTokenType): boolean {
     return (standardTokenType & IgnoreBracketsInTokens.value) !== 0;
 }
@@ -174,7 +168,7 @@ export class TokenMetadata {
 		const background = this.getForeground(metadata);
 		const fontStyle = this.getFontStyle(metadata);
 
-		return {
+		return <ITokenPresentation>{
 			foreground: foreground,
 			background: background,
 			italic: Boolean(fontStyle & FontStyle.Italic),
@@ -347,24 +341,7 @@ export class TokenArray {
 	}
 
 	
-
-	
-
 	public static readonly GetTokenName = TokenTypeToString;
-
-
-
-
-	// public static GetFullTokenData(grammar : IGrammar) {
-
-
-
-
-
-	// }
-
-
-
 
 }
 
@@ -428,11 +405,11 @@ export class StandardLineTokens {
 
 
 
-	public getTokenType(tokenIndex: number): StandardTokenType { return TokenMetadata.getTokenType(this.GetMetadata(tokenIndex)); }
-	public getLanguageId(tokenIndex: number): LanguageId { return TokenMetadata.getLanguageId(this.GetMetadata(tokenIndex)); }
-	public getFontStyle(tokenIndex: number): FontStyle { return TokenMetadata.getFontStyle(this.GetMetadata(tokenIndex)); }
-	public getForeground(tokenIndex: number): ColorId { return TokenMetadata.getForeground(this.GetMetadata(tokenIndex)); }
-	public getBackground(tokenIndex: number): ColorId { return TokenMetadata.getBackground(this.GetMetadata(tokenIndex)); }
+	public getTokenType 	(tokenIndex: number){ return TokenMetadata.getTokenType(this.GetMetadata(tokenIndex)); 	}
+	public getLanguageId 	(tokenIndex: number){ return TokenMetadata.getLanguageId(this.GetMetadata(tokenIndex)); }
+	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle(this.GetMetadata(tokenIndex)); 	}
+	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground(this.GetMetadata(tokenIndex)); }
+	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground(this.GetMetadata(tokenIndex)); }
 
 
 	/**
@@ -460,9 +437,7 @@ export class StandardLineTokens {
 
 	public toTokenTypeArray() : Array<StandardTokenType> {
 		const types = new Array<StandardTokenType>(this._tokensCount);
-		for (let i = 0; i<this._tokensCount; i++) {
-			types[i] = this.getTokenType(i);
-		}
+		for (let i = 0; i<this._tokensCount; i++) types[i] = this.getTokenType(i);
 		return types;
 	}
 
@@ -619,9 +594,6 @@ export class LineTokens implements IViewLineTokens {
 		return LineTokens.findIndexInTokensArray(this._tokens, offset);
 	}
 
-	public inflate(): IViewLineTokens {
-		return this;
-	}
 
 	public sliceAndInflate(startOffset: number, endOffset: number, deltaOffset: number): IViewLineTokens {
 		return new SlicedLineTokens(this, startOffset, endOffset, deltaOffset);
@@ -644,8 +616,8 @@ export class LineTokens implements IViewLineTokens {
 		let high = (tokens.length >>> 1) - 1;
 
 		while (low < high) {
-			let mid = low + Math.floor((high - low) * 0.5);
-			let endOffset = tokens[(mid << 1)];
+			const mid = low + ((high - low) >>> 1);
+			const endOffset = tokens[(mid << 1)];
 
 			if (endOffset === desiredIndex) return mid+1;
 			else if (endOffset < desiredIndex) low = mid+1;

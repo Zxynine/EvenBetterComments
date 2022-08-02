@@ -15,7 +15,7 @@ function HyperScopeError(err : any, message : string, ...optionalParams : any[])
 
 export function LoadDocumentsAndGrammer() {
 	LanguageLoader.LoadLanguages();
-	reloadGrammar();
+	TMRegistry.ReloadGrammar();
 	DocumentLoader.reloadDocuments();
 }
 
@@ -34,10 +34,6 @@ export function LoadDocumentsAndGrammer() {
 
 
 
-
-export function reloadGrammar() {
-	TMRegistry.ReloadGrammar();
-}
 
 export function GetDocumentScopeAt(document:vscode.TextDocument, position:vscode.Position) {
 	return DocumentLoader.getDocument(document.uri)?.getScopeAt(position);
@@ -105,24 +101,22 @@ export class DocumentLoader {
 
 
 	public static async openDocument(document : vscode.TextDocument) {
-		DocumentLoader.documentsMap.get(document.uri)?.refresh(); //Refreshes if exists.
-		
-		const registry = TMRegistry.Current;
-		if (registry) {
-			const scopeName = LanguageLoader.languageToScopeName.get(document.languageId)
+		if (DocumentLoader.documentsMap.has(document.uri)) { //Refreshes if exists.
+			DocumentLoader.documentsMap.get(document.uri)!.refresh();
+		} else if (TMRegistry.Current) { //If it does not exist, open it.
+			const scopeName = LanguageLoader.languageToScopeName.get(document.languageId);
 			if (scopeName) {
-				const grammar = await registry.loadGrammar(scopeName);
-				if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+				TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
+					if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+				});
 			}
 		}
 	}
 
 	public static updateDocument(document: vscode.TextDocument) {
 		if (DocumentLoader.documentsMap.has(document.uri)) {
-			const documentController = DocumentLoader.documentsMap.get(document.uri);
-			documentController?.refresh();
+			DocumentLoader.documentsMap.get(document.uri)!.refresh();
 		}
-		
 	}
 
 	public static closeDocument(document:vscode.TextDocument) {
@@ -139,6 +133,7 @@ export class DocumentLoader {
 		DocumentLoader.unloadDocuments();
 		vscode.workspace.textDocuments.forEach(DocumentLoader.openDocument);
 		console.log("HyperScopes: Reloaded all documents.");
+		//TODO: add a trigger here to refresh comment parsing, first pass did not have access to token data.
 	}
 
 	public static unloadDocuments() {
@@ -153,16 +148,19 @@ export class DocumentLoader {
 
 
 
-
+abstract class DisposableContext implements vscode.Disposable {
+	protected readonly subscriptions: vscode.Disposable[] = [];
+	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
+}
 
 
 
 
 // //TODO: add notification delay
 
-// export class DocumentMonitor implements vscode.Disposable {
-// 	private readonly subscriptions: vscode.Disposable[] = [];
-// 	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
+// export class DocumentMonitor extends DisposableContext {
+// 	// private readonly subscriptions: vscode.Disposable[] = [];
+// 	// public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
 
 // 	// Stores the state for each line
 // 	public readonly document: vscode.TextDocument;
@@ -173,7 +171,7 @@ export class DocumentLoader {
 // 	private static readonly GetRangeLinecount = (range : vscode.Range) => (range.end.line - range.start.line);
 
 
-// 	public constructor(doc: vscode.TextDocument) {
+// 	public constructor(doc: vscode.TextDocument) { super();
 // 		this.document = doc;
 // 		/* Store content changes. Will be clear when calling `getScopeAt()`. */
 // 		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange));
@@ -182,8 +180,7 @@ export class DocumentLoader {
 
 // 	private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
 // 		if (event.document == this.document && event.contentChanges.length) { //Validates changes
-// 			const sortedChanges = [...event.contentChanges].sort(DocumentMonitor.ChangeSorter); //Sorts changes to apply so that line changes can just reparse the rest of the doc.
-// 			this.applyChanges(sortedChanges);
+// 			this.applyChanges([...event.contentChanges].sort(DocumentMonitor.ChangeSorter)); //Sorts changes to apply so that line changes can just reparse the rest of the doc.
 // 		}
 // 	}
 
@@ -218,10 +215,7 @@ export class DocumentLoader {
 
 //TODO: look into content changes array and see what its used or if its needed
 
-export class DocumentController implements vscode.Disposable {
-	private readonly subscriptions: vscode.Disposable[] = [];
-	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
-
+export class DocumentController extends DisposableContext {
 	// Stores the state for each line
 	private readonly grammar: IGrammar;
 	public readonly document: vscode.TextDocument;
@@ -232,11 +226,9 @@ export class DocumentController implements vscode.Disposable {
 
 	//Tools
 	private static readonly ChangeSorter = (ChangeL:ChangeEvent, ChangeR:ChangeEvent) => ChangeL.range.start.isAfter(ChangeR.range.start) ? 1 : -1;
-	private static readonly GetTextLinecount = (text : string) => text.match(/[\r\n]+/g)?.length ?? 0;
-	private static readonly GetRangeLinecount = (range : vscode.Range) => (range.end.line - range.start.line);
-
 
 	public constructor(doc: vscode.TextDocument, textMateGrammar: IGrammar) {
+		super();
 		this.grammar = textMateGrammar;
 		this.document = doc;
 		this.parseEntireDocument();
@@ -246,8 +238,8 @@ export class DocumentController implements vscode.Disposable {
 
 	private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
 		if (event.document == this.document && event.contentChanges.length) { //Validates changes
-			const sortedChanges = [...event.contentChanges].sort(DocumentController.ChangeSorter); //Sorts changes to apply so that line changes can just reparse the rest of the doc.
-			this.applyChanges(sortedChanges);
+			//Sorts changes to apply so that line changes can just reparse the rest of the doc.
+			this.applyChanges([...event.contentChanges].sort(DocumentController.ChangeSorter));
 		}
 	}
 
@@ -259,10 +251,9 @@ export class DocumentController implements vscode.Disposable {
 			const initState = this.tokensArray[changeEndLine]?.ruleStack;
 			this.parseRange(change.range);
 			const lastState = this.tokensArray[changeEndLine]?.ruleStack;
-
 			// if (insert line count !== replaced content line count || ruleStack !== init ruleStack) then: parse the rest of document and return;
-			if((DocumentController.GetRangeLinecount(change.range) !== DocumentController.GetTextLinecount(change.text)) || (initState !== lastState)){
-				this.parseRange(new vscode.Range(changeEndLine+1, 0 , this.document.lineCount, 0));
+			if((change.range.lineCount !== change.text.lineCount) || (initState !== lastState)){
+				this.parseLines(changeEndLine+1, this.document.lineCount);
 				return;
 			}
 		}
@@ -364,8 +355,7 @@ export class DocumentController implements vscode.Disposable {
 		this.contentChangesArray.length = 0; //clears changes
 
 		const tok2arr = this.tokens2Array[linePosition.line];
-		if (tok2arr) return new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text);
-		else return undefined;
+		return (tok2arr)? new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text) : undefined;
 	}
 
 	public getLinesTokenData(lineRange : vscode.Range) : Array<StandardLineTokens> {
@@ -415,13 +405,9 @@ export class DocumentController implements vscode.Disposable {
 		if(!this.grammar) return;
 		// Update text content
 		this.documentText[line.lineNumber] = line.text;
-		if ((line.text.length > 20000)) { // Don't tokenize line if too long
-			this.tokensArray[line.lineNumber] = undefined;
-			this.tokens2Array[line.lineNumber] = undefined;
-		} else {
-			this.tokensArray[line.lineNumber] = this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1));
-			this.tokens2Array[line.lineNumber] = this.grammar.tokenizeLine2(line.text, this.getLineState2(line.lineNumber-1));
-		}
+		const TooLong = ((line.text.length > 20000)); // Don't tokenize line if too long
+		this.tokensArray[line.lineNumber]  = (!TooLong)? this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1)) : undefined;
+		this.tokens2Array[line.lineNumber] = (!TooLong)? this.grammar.tokenizeLine2(line.text, this.getLineState2(line.lineNumber-1)) : undefined;
 	}
 
 	private parseLines(startLine:number, endLine:number){
@@ -439,13 +425,6 @@ export class DocumentController implements vscode.Disposable {
 		this.parseLines(0, this.document.lineCount-1);
 	}
 
-	//...............................................................................
-
-	public *getDocumentLines() {
-		for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
-			yield this.document.lineAt(lineIndex);
-		}
-	}
 	//...............................................................................
 	
 	private getLineState(lineIndex:number) { return (lineIndex >= 0)? this.tokensArray[lineIndex]?.ruleStack : undefined; }
@@ -534,6 +513,11 @@ export class TokenInfo {
 
 
 
+// public *getDocumentLines() {
+// 	for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
+// 		yield this.document.lineAt(lineIndex);
+// 	}
+// }
 
 
 
