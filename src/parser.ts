@@ -295,7 +295,7 @@ export class Parser {
 				// Find which custom delimiter was used in order to add it to the collection
 				const matchString = (line[3] as string).toLowerCase();
 				if (this.tagsMap.has(matchString)) {
-					const lineMatchIndex = line.index + match.index;
+					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					// length of leading delimeter and spaces        //length of line
 					const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 					
