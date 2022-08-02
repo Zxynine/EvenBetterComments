@@ -17,6 +17,10 @@ With this extension, you will be able to categorise your annotations into:
 
 This extension can be configured in User Settings or Workspace settings.
 
+`"evenbettercomments.monolineComments": true`  
+This setting will control whether monoline comments are styled using the annotation tags.
+When false, monoline comments will be presented without decoration.
+
 `"evenbettercomments.multilineComments": true`  
 This setting will control whether multiline comments are styled using the annotation tags.
 When false, multiline comments will be presented without decoration.
@@ -25,10 +29,8 @@ When false, multiline comments will be presented without decoration.
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first non-whitespace character on a line.
 
-`"evenbettercomments.ignoreShebangFormat": false`  
-This setting will force the parser to check if it is about to style the first line of code, and if
-it is, it will check that the first two characters are not `#!`. If it detects the shebang delimiter,
-formatting for that line will not be applied.
+`"evenbettercomments.allowNestedHighlighting": true`  
+This setting will tell the parser whether it should parse multiple tags on the same line or not.
 
 `evenbettercomments.tags`  
 The tags are the characters or sequences used to mark a comment for decoration.
@@ -40,6 +42,7 @@ The default 5 can be modified to change the styles, and more can be added.
 		"tag": "!",
 		"aliases": ["Issue", "problem"],
 		"color": "#FF2D00",
+		"overline": false,
 		"strikethrough": false,
 		"underline": false,
 		"backgroundColor": "transparent",
@@ -49,6 +52,7 @@ The default 5 can be modified to change the styles, and more can be added.
 		"tag": "?",
 		"aliases": ["Idea", "Info"],
 		"color": "#3498DB",
+		"overline": false,
 		"strikethrough": false,
 		"underline": false,
 		"backgroundColor": "transparent",
@@ -58,14 +62,16 @@ The default 5 can be modified to change the styles, and more can be added.
 		"tag": "//",
 		"aliases": ["-----"],
 		"color": "#474747",
+		"overline": false,
 		"strikethrough": true,
 		"underline": false,
 		"backgroundColor": "transparent",
 		"bold": false,
 		"italic": false
 	}, {
-		"tag": "todo",
+		"tag": "TODO",
 		"color": "#FF8C00",
+		"overline": false,
 		"strikethrough": false,
 		"underline": false,
 		"backgroundColor": "transparent",
@@ -75,6 +81,7 @@ The default 5 can be modified to change the styles, and more can be added.
 		"tag": "*",
 		"aliases": ["Important", "Wip", "~~~~~"],
 		"color": "#98C379",
+		"overline": false,
 		"strikethrough": false,
 		"underline": false,
 		"backgroundColor": "transparent",
@@ -84,10 +91,36 @@ The default 5 can be modified to change the styles, and more can be added.
 ]
 ```
 
+## Commands added
+	"title": "EvenBetterComments: Reload Configuration",
+	"command": "evenbettercomments.reloadConfiguration"
+	
+	"title": "EvenBetterComments: Reload Decorations",
+	"command": "evenbettercomments.reloadDecorations"
+
+	"title": "HyperScopes: Show Scopes",
+	"command": "vscode-show-scopes.show",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Show Scopes Full Line",
+	"command": "vscode-show-scopes.show-line",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Show Inspector",
+	"command": "vscode-show-scopes.show-inspector",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Reload Document Tokens",
+	"command": "hscopes-booster.reloadDocuments"
+
+	"title": "HyperScopes: Reload Grammar Scopes",
+	"command": "hscopes-booster.reloadGrammar"
+
 ## Supported Languages
 
 * Ada
 * AL
+* Ansible
 * Apex
 * AsciiDoc
 * BrightScript
@@ -106,8 +139,9 @@ The default 5 can be modified to change the styles, and more can be added.
 * Erlang
 * F#
 * Fortran
-* gdscript
+* Gdscript
 * GenStat
+* Gleam
 * Go
 * GraphQL
 * Groovy
@@ -131,6 +165,7 @@ The default 5 can be modified to change the styles, and more can be added.
 * MATLAB
 * Objective-C
 * Objective-C++
+* ObjectPascal
 * Pascal
 * Perl
 * Perl 6
@@ -166,4 +201,5 @@ The default 5 can be modified to change the styles, and more can be added.
 * Vue.js
 * XML
 * YAML
+
 And more! Most languages which are properly configured should be supported.
