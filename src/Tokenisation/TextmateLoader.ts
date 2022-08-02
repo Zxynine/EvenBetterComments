@@ -57,25 +57,25 @@ export class TMRegistry {
 
 
 
-export class LanguageConfig {
-	public readonly grammar: IGrammar;
-	public readonly regex: RegExp;
-	public readonly bracketToId: Map<string, { open: boolean, key: number }>;
+// export class LanguageConfig {
+// 	public readonly grammar: IGrammar;
+// 	public readonly regex: RegExp;
+// 	public readonly bracketToId: Map<string, { open: boolean, key: number }>;
 
-	constructor(grammar: IGrammar, regex: RegExp, bracketToId: Map<string, { open: boolean, key: number }>) {
-		this.grammar = grammar;
-		this.regex = regex;
-		this.bracketToId = bracketToId;
-	}
-}
+// 	constructor(grammar: IGrammar, regex: RegExp, bracketToId: Map<string, { open: boolean, key: number }>) {
+// 		this.grammar = grammar;
+// 		this.regex = regex;
+// 		this.bracketToId = bracketToId;
+// 	}
+// }
 
-export const enum AstNodeKind {
-	Text = 0,
-	Bracket = 1,
-	Pair = 2,
-	UnexpectedClosingBracket = 3,
-	List = 4,
-}
+// export const enum AstNodeKind {
+// 	Text = 0,
+// 	Bracket = 1,
+// 	Pair = 2,
+// 	UnexpectedClosingBracket = 3,
+// 	List = 4,
+// }
 
 
 

@@ -26,12 +26,12 @@ export interface IExtensionPackage {
 }
 
 
-/**
- * Utility to read a file as a promise
- */
-export function readFile(path:string) {
-    return new Promise((resolve, reject) => fs.readFile(path, (error, data) => error ? reject(error) : resolve(data)))
-}
+// /**
+//  * Utility to read a file as a promise
+//  */
+// export function readFile(path:string) {
+//     return new Promise((resolve, reject) => fs.readFile(path, (error, data) => error ? reject(error) : resolve(data)))
+// }
 
 
 

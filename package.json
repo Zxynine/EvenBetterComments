@@ -45,31 +45,31 @@
 				"command": "evenbettercomments.reloadDecorations"
 			},
 			{
-				"title": "HyperScopes: Show Scopes",
+				"title": "BetterHyperScopes: Show Scopes",
 				"command": "vscode-show-scopes.show",
 				"when": "editorTextFocus"
 			},
 			{
-				"title": "HyperScopes: Show Scopes Full Line",
+				"title": "BetterHyperScopes: Show Scopes Full Line",
 				"command": "vscode-show-scopes.show-line",
 				"when": "editorTextFocus"
 			},
 			{
-				"title": "HyperScopes: Show Inspector",
+				"title": "BetterHyperScopes: Show Inspector",
 				"command": "vscode-show-scopes.show-inspector",
 				"when": "editorTextFocus"
 			},
 			{
-				"title": "HyperScopes: Reload Document Tokens",
+				"title": "BetterHyperScopes: Reload Document Tokens",
 				"command": "hscopes-booster.reloadDocuments"
 			},
 			{
-				"title": "HyperScopes: Reload Grammar Scopes",
+				"title": "BetterHyperScopes: Reload Grammar Scopes",
 				"command": "hscopes-booster.reloadGrammar"
 			}
 		],
 		"configuration": {
-			"title": "Better Comments configuration",
+			"title": "EvenBetterComments configuration",
 			"properties": {
 				"evenbettercomments.monolineComments": {
 					"type": "boolean",

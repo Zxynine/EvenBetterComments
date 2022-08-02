@@ -6,7 +6,8 @@ import * as vscode from 'vscode';
 import { Configuration } from './configuration';
 import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
-import { LoadDocumentsAndGrammer, DocumentLoader, reloadGrammar, GetGetScopeAtAPI } from "./document";
+import { LoadDocumentsAndGrammer, DocumentLoader, GetGetScopeAtAPI } from "./document";
+import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { highlighterDecoratiuon } from './providers/DecorationProvider';
 
 
@@ -101,7 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument)); //Handle documents bing closed
 
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDocuments, DocumentLoader.reloadDocuments));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, reloadGrammar));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, TMRegistry.ReloadGrammar));
 	//............................................................................
 	
 	// * This section deals with displaying scopes in editor

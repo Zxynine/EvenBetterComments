@@ -4,9 +4,10 @@ interface CommentTag {
 	tag: string;
 	escapedTag: string;
 	lowerTag: string;
-	decoration: any;
-	ranges: Array<any>;
+	decoration: import('vscode').TextEditorDecorationType;
+	ranges: Array<import('vscode').DecorationOptions>;
 }
+
 
 interface Contributions {
 	monolineComments: boolean;
@@ -14,22 +15,28 @@ interface Contributions {
 	useJSDocStyle: boolean;
 	highlightPlainText: boolean;
 	allowNestedHighlighting: boolean;
-	tags: [{
-		tag: string;
-		aliases: Array<string>;
-		color: string;
-		overline: boolean;
-		strikethrough: boolean;
-		underline: boolean;
-		bold: boolean;
-		italic: boolean;
-		backgroundColor: string;
-	}];
+	tags: Array<TagDefinition>;
 }
 
 
+interface TagDefinition {
+	tag: string;
+	aliases: Array<string>;
+	color: string;
+	overline: boolean;
+	strikethrough: boolean;
+	underline: boolean;
+	bold: boolean;
+	italic: boolean;
+	backgroundColor: string;
+}
 
 
+/** A union of given const enum values. **/
+type Flags<T extends number> = number;
+/** A union of given const enum values. **/
+type OrMask<T extends number> = number;
+type nulldefined = null|undefined;
 
 //  /** The 'package.json' file of an app. */
 // interface AppPackageJSON {
@@ -66,6 +73,3 @@ interface Contributions {
 // (/\*\*)\n.+\*(.*)\n.*( \*/)
 // $1$2$3
 
-
-/** A union of given const enum values. **/
-type Flags<T extends number> = number;
