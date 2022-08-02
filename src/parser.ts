@@ -78,14 +78,13 @@ export class Parser {
 	 */
 	private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
 		let escapedSequence = itemTag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
-		let newTag : CommentTag = {
+		return <CommentTag>{
 			tag: itemTag,
 			escapedTag: Parser.escapeSlashes(escapedSequence),  //? hardcoded to escape slashes
 			lowerTag: itemTag.toLowerCase(), //? used for comparison
 			ranges: [],
 			decoration: vscode.window.createTextEditorDecorationType(options)
 		};
-		return newTag;
 	}
 
 	private static TagDefinitionToDecorationOptions(tag : TagDefinition) {
