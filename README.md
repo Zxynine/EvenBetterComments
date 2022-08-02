@@ -91,6 +91,31 @@ The default 5 can be modified to change the styles, and more can be added.
 ]
 ```
 
+## Commands added
+	"title": "EvenBetterComments: Reload Configuration",
+	"command": "evenbettercomments.reloadConfiguration"
+	
+	"title": "EvenBetterComments: Reload Decorations",
+	"command": "evenbettercomments.reloadDecorations"
+
+	"title": "HyperScopes: Show Scopes",
+	"command": "vscode-show-scopes.show",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Show Scopes Full Line",
+	"command": "vscode-show-scopes.show-line",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Show Inspector",
+	"command": "vscode-show-scopes.show-inspector",
+	"when": "editorTextFocus"
+
+	"title": "HyperScopes: Reload Document Tokens",
+	"command": "hscopes-booster.reloadDocuments"
+
+	"title": "HyperScopes: Reload Grammar Scopes",
+	"command": "hscopes-booster.reloadGrammar"
+
 ## Supported Languages
 
 * Ada
