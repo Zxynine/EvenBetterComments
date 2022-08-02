@@ -154,6 +154,8 @@ export class Parser {
 		// if the language isn't supported, we don't need to go any further
 		if (!this.supportedLanguage) return;
 
+
+		//..............................................
 		
 		const expression = ((this.isPlainText && this.contributions.highlightPlainText)
 			// start by tying the regex to the first character in a line
@@ -162,12 +164,6 @@ export class Parser {
 			: "(" + this.delimiter + ")+[ \\t]*"
 		// Apply all configurable comment start tags
 		) + "("+ Parser.JoinedDelimiterArray(this.tags) +")+(.*)";
-
-
-
-
-		//..............................................
-
 		// we have to do mutliline regex to catch the start of the line with ^ and end with $
 		this.Expressions.MonoLine = new RegExp(expression, "igm");
 

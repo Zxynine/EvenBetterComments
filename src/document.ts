@@ -105,11 +105,9 @@ export class DocumentLoader {
 			DocumentLoader.documentsMap.get(document.uri)!.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
 			const scopeName = LanguageLoader.languageToScopeName.get(document.languageId);
-			if (scopeName) {
-				TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
-					if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
-				});
-			}
+			if (scopeName) TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
+				if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+			});
 		}
 	}
 
