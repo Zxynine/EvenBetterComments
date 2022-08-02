@@ -1,6 +1,6 @@
 # Change Log
 
-## [4.1.0] (2022-08-01)
+## [4.1.0] (2022-08-02)
 ### Development
 The release of v4.1.0 marks my first major changes to the code and structure of the extension.
 
@@ -23,8 +23,16 @@ The release of v4.1.0 marks my first major changes to the code and structure of 
 ### Bug Fixes
 * Added temp fix for `ObjectPascal` language not working.
 * Fixed my workaround for ([vscode:prepublish bug](https://github.com/microsoft/vscode-vsce/issues/747)) (I was dumb).
-* Improved comment parsing means no more highlights for strings which contain the comment and delimiter.
 * Fixed odd bug where the end delimiter on code blocks could sometimes be highlighted.
+* Improved comment parsing means no more highlights for strings which contain the comment and delimiter.
+
+### Work In Progress
+* Working on incremental document updating instead of full document parse on each update cycle.
+* Working on splitting comment parsing into two groups, basic (comments which are alone on a line) and mixed (when code and comments are on the same line).
+* Working on button to temporarily hide all comments.
+* Working on API for other extensions to use the token parsing to find comments.
+* Working on creating documentation for comment links and how to use them.
+* Working on creating settings to format document links.
 
 
 ## [4.0.2] (2022-06-26)
