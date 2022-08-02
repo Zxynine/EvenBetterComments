@@ -283,9 +283,6 @@ export class Parser {
 		*/
 
 
-
-
-
 		// const text = activeEditor.document.getText();
 		// for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLine.exec(text));) {
 
