@@ -1,6 +1,6 @@
 # Change Log
 
-## [4.1.0] (2022-xx-xx) WIP...
+## [4.1.0] (2022-08-01)
 ### Development
 The release of v4.1.0 marks my first major changes to the code and structure of the extension.
 
@@ -10,19 +10,21 @@ The release of v4.1.0 marks my first major changes to the code and structure of 
 * Added support for the `overline` decoration.
 * Added ability to disable formatting monoline comments.
 * Added colour picker to hex string of tag settings. (My personal favourite addition)
+* Added new commands to refresh the extension or grammars or document.
+* Added special comment links which let you link to local project files in comments and open them directly.
 
 ### HouseKeeping
 * Abstracted code functions and changed some to be static.
 * Added more code comments for some functions.
+* Added textmate scope parsing for each document which allows differentiating comments from strings.
 * Upgraded dependencies.
+* Greatly reduced amount of needless objects being created each time the extension checks the document.
 
 ### Bug Fixes
 * Added temp fix for `ObjectPascal` language not working.
 * Fixed my workaround for ([vscode:prepublish bug](https://github.com/microsoft/vscode-vsce/issues/747)) (I was dumb).
-
-### Planned
-* Rework regex parsing to be more consistent.
-* Add internal ability to find languages group pairs to prevent unplanned comment formatting.
+* Improved comment parsing means no more highlights for strings which contain the comment and delimiter.
+* Fixed odd bug where the end delimiter on code blocks could sometimes be highlighted.
 
 
 ## [4.0.2] (2022-06-26)

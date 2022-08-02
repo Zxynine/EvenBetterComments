@@ -189,93 +189,44 @@ export class Parser {
 	 * @param activeEditor The active text editor containing the code document
 	**/
 	public FindSingleLineComments(activeEditor: vscode.TextEditor): void {
+		
 		// If highlight single line comments is off, single line comments are not supported for this language
 		if (!this.highlightMonolineComments) return;
-		this.FindSingleLineCommentsSimple(activeEditor);
-		this.FindSingleLineCommentsMixed(activeEditor);
-	}
 
-
-
-
-	/**
-	 * Finds all single line comments which are the only content on a given line delimited by a given delimiter and matching tags specified in package.json
-	 * @param activeEditor The active text editor containing the code document
-	**/
-	public FindSingleLineCommentsSimple(activeEditor: vscode.TextEditor): void {
 		const text = activeEditor.document.getText();
 
-		// const regexString = "(^)[ \\t]*(//)[ \\t]*(.*)";
-		const regexString = "(^)+([ \\t]*)("+ this.delimiter +")+([ \\t]*)("+ Parser.CreateJoinedDelimiterArray(this.tags) +")+(.*$)";
-		const SimpleMonoline = new RegExp(regexString, "igm");
-
-		for (let match:RegExpExecArray|null; (match = SimpleMonoline.exec(text));) {
-			const startPos = activeEditor.document.positionAt(match.index);
-			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
-
-			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
-			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
-			// Find which custom delimiter was used in order to add it to the collection
-			
-			const matchString = (match[5] as string).toLowerCase();
-			// console.log(SimpleMonoline, "\n", matchString, "\n", startPos, "\n", endPos, "\n");
-
-			if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(<vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) });
-		}
-	}
-
-
-
-	/**
-	 * Finds all single line comments which are the only content on a given line delimited by a given delimiter and matching tags specified in package.json
-	 * @param activeEditor The active text editor containing the code document
-	**/
-	public FindSingleLineCommentsMixed(activeEditor: vscode.TextEditor): void {
-		const text = activeEditor.document.getText();
-
-		// const regexString = (^[ \\t]*(?!//)\\S.*?)(//)(.*)
-		const regexString = "(^)+([ \\t]*(?!"+ this.delimiter +")\\S*.*?)("+ this.delimiter +")+([ \\t]*)("+ Parser.CreateJoinedDelimiterArray(this.tags) +")+(.*$)";
-		const MixedMonoline = new RegExp(regexString, "igm");
-
-		for (let match:RegExpExecArray|null; (match = MixedMonoline.exec(text));) {
+		
+		for (let match:RegExpExecArray|null; (match = this.Expressions.MonoLine.exec(text));) {
 			const startPos = activeEditor.document.positionAt(match.index);
 			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
 			
-
 			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
-
 
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
-			if (LineArray && LineArray.hasTokenType(StandardTokenType.Comment)) {
-				const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.CreateJoinedDelimiterArray(this.tags) + ")+(.*$)"
-				
-				const offset = LineArray.offsetOf(StandardTokenType.Comment);
-				const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
-				if (matchResult) {
-					// Find which custom delimiter was used in order to add it to the collection
-					const matchString = (matchResult[2] as string).toLowerCase();
-					if (this.tagsMap.has(matchString)) {
-						const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
-						console.log(searchRegex, "\n", activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range, "\n", LineArray.toTokenTypeArray());
-						this.tagsMap.get(matchString)!.ranges.push(<vscode.DecorationOptions>{range:range});
+			if (LineArray) {
+				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
+					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.CreateJoinedDelimiterArray(this.tags) + ")+(.*$)"
+					
+					const offset = LineArray.offsetOf(StandardTokenType.Comment);
+					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
+					if (matchResult) {
+						// Find which custom delimiter was used in order to add it to the collection
+						const matchString = (matchResult[3] as string).toLowerCase();
+						if (this.tagsMap.has(matchString)) {
+							const range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, startPos.character, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
+							// console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
+							this.tagsMap.get(matchString)!.ranges.push(range);
+						}
 					}
 				}
+			}  else {
+				// Find which custom delimiter was used in order to add it to the collection
+				const matchString = (match[3] as string).toLowerCase();
+				if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(<vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) });
 			}
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -565,63 +516,6 @@ export class Parser {
 
 
 
-//The idea is that monoline comments which are the only content on the line are easy to identify
-//same goes for block comments which span multiple lines, however,
-//identifying comments which are on the same line as actual code/text, is near impossible to properly support without parsing grammar.
-//So it stands to reason that using simple regex to find the easy cases combined with the more intensive grammar parsing on possible matches 
-//Will enable a fast decoration while handling all of the edge cases as they appear in the more accurate but worst performance way would be ideal.
-
-//Plan:
-//Use regex for finding monoline comments which are the only content on the line,
-//Use refex for finding multiline block comments which span many lines
-
-//Use regex to identify possible mixed lines and pass to the token parser to extract those comments to maintain consitant highlightning.
-
-//.................................
-//(^)[ \t]*(//)[ \t]*(\*|Todo)([ :].*)
-//.................................
-//? Finds all basic monoline comments
-//(^)[ \t]*(//)[ \t]*(.*)
-//? Finds all basic multiline comments
-//(^)[ \t]*(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-
-//? Finds all possible mixed monoline comments
-//(^[ \t]*(?!//)\S.*?)(//)(.*)
-//? Finds all possible mixed multiline comments
-//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-
-//For possible mixed comments, check the token just before if its a comment, if it is then ignore the match.
-
-
-
-
-
-//TODO: on multiline, check if starts with delimiter
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -684,280 +578,3 @@ export class Parser {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// public GetAllCommentRanges(activeEditor: vscode.TextEditor): void {
-	// 	const AllTokens = TryGetDocumentScopeFullFlat(activeEditor.document);
-	// 	if (!AllTokens) return;
-
-	// 	const commentRanges : vscode.Range[] = [];
-	// 	AllTokens.forEach((Token) => {
-	// 		if (Token.IsComment()) commentRanges.push(Token.range);
-	// 	});
-
-
-
-	// 	this.tags[0].ranges = commentRanges.map(element => <vscode.DecorationOptions>{ range: element });
-	// 	console.log(commentRanges);
-	// }
-
-
-
-
-
-
-
-
-	// public ApplyHide(activeEditor: vscode.TextEditor):void {
-	// 	// for (let tag of this.tags) {
-	// 	// 	activeEditor.setDecorations(tag.decoration, []); //Removes current decorations
-	// 	// }
-	// 	const newRange:vscode.Range[] = this.tags.flatMap((tag)=> tag.ranges);
-
-	// 	activeEditor.setDecorations(hiddenCommentDecoration, newRange);
-	// 	this.tags.forEach((tag)=> tag.ranges.length = 0);
-
-	// }
-
-
-	// /**
-	//  * Clears all active decorations.
-	//  * @param activeEditor The active text editor containing the code document
-	//  */
-	// public RemoveDecorations(activeEditor: vscode.TextEditor): void {
-	// 	for (let tag of this.tags) {
-	// 		activeEditor.setDecorations(tag.decoration, []);
-	// 		tag.ranges.length = 0; // clear the ranges for the next pass
-	// 	}
-	// 	activeEditor.setDecorations(linkedCommentDecoration, []);
-	// }
-
-
-
-
-
-
-
-// const enum CommentTokens {
-// 	NoComments = (0<<0),
-// 	MonoLine = (1<<0),
-// 	MultiLine = (1<<1),
-// }
-
-
-
-
-
-
-
-
-		// const WS = "[ \\t]*"
-		// const NL = "[\\r\\n]*"
-		// const notNL = "[^\\r\\n]*"
-		// const SpacesColon = "([]*|[:])+"
-		// const skipGroupsCb = "(?:\{[^\}]*\})*";
-		// const skipGroupsBr = "(?:\[[^\]]*\])*";
-		// const skipAllGroups = "((?:\{[^\}]*\})*|(?:\[[^\]]*\])*|.*?(?=//))*";
-
-
-
-
-
-
-
-
-			//https://github.com/davidhewitt/shebang-language-associator
-
-	//https://github.com/aaron-bond/better-comments/issues/404
-	//https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide#theming
-	//https://code.visualstudio.com/api/extension-guides/color-theme#syntax-colors
-	//https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide
-
-
-
-
-
-
-	
-
-
-		//https://regex101.com
-		//[!\?].*([^!\?]*\n)*
-		//(^)+([ \t]*(?:\/\*\*|\*)[ \t]*)([\!|\?])([ ]*|[:])+(.*(?:[^!|\?]*\n)*)
-
-		//G1=^	G2=*...	G3=[?!] G4=indexstart	G5=content
-
-		//((?:(?!\*\/).)*[\r\n]*(?:(?:(?!\*\/)(?!\!|\?).)*\n)*)
-
-
-
-
-
-
-
-		
-
-
-		/**! */
-		/**!*/
-		
-		/*! */
-		/*!*/
-
-		/*.! */
-		/*.!*/
-
-		/* ! */
-		/* !*/
-
-
-	//https://github.com/estruyf/vscode-hide-comments
-	//https://github.com/kingsimba/vscode-tsdoc-comment
-	//https://github.com/baendlorel/cpp-comment-generator
-	//https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.bettercomment
-	//https://marketplace.visualstudio.com/search?term=comments&target=VSCode&category=Other&sortBy=Relevance
-
-
-
-
-
-	// private static groupRegExp(start:string, end:string) : string {
-	// 	return "(?:"+start+"[^"+end+"]*("+end+"|[ \\t])+)"
-		
-	// 	const skipGroupsBr = "(?:\[[^\]]*\])*";
-	// }
-
-
-
-
-
-
-
-
-	
-			// let currentLine = activeEditor.document.lineAt(startPos.line);
-
-			// let groupFinder = "";
-			// currentLine.text
-
-
-
-			
-
-
-
-
-
-
-
-
-		/* testing chained comments */ /* ! let groupFinder = "";
-		Testing 123
-			 currentLine.text */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-						
-			// if (!this.isPlainText) {
-			// 	const LineScopes = TryGetDocumentScopeLine(activeEditor.document, startPos);
-			// 	if (LineScopes) {
-			// 		const commentStart = LineScopes[LineScopes.firstIndex((Token)=> Token.IsComment())].range.start
-			// 		const lineSlice = activeEditor.document.lineAt(startPos.line).text.substring(commentStart.character);
-
-			// 		const lineParse = lineSlice.match(this.expression);
-			// 		if (lineParse) {
-			// 			let range: vscode.DecorationOptions = { range: new vscode.Range(commentStart, endPos) };
-						
-			// 			// Find which custom delimiter was used in order to add it to the collection
-			// 			let matchString = (lineParse[3] as string).toLowerCase();
-			// 			let matchTag = this.tags.find(item => item.lowerTag === matchString);
-			// 			if (matchTag) matchTag.ranges.push(range);
-			// 			continue;
-			// 		}
-			// 	}
-			// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			
-		
-		// // If highlight single line comments is off, single line comments are not supported for this language
-		// if (!this.highlightMonolineComments) return;
-
-		// const text = activeEditor.document.getText();
-
-		
-		// for (let match:RegExpExecArray|null; (match = this.Expressions.MonoLine.exec(text));) {
-		// 	const startPos = activeEditor.document.positionAt(match.index);
-		// 	const endPos = activeEditor.document.positionAt(match.index + match[0].length);
-			
-		// 	// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
-		// 	if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
-
-		// 	const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
-		// 	if (LineArray) {
-		// 		if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-		// 			const searchRegex = "^.*?(" + this.delimiter + ")+( |\t)*(" + Parser.CreateJoinedDelimiterArray(this.tags) + ")+(.*$)"
-					
-		// 			const offset = LineArray.offsetOf(StandardTokenType.Comment);
-		// 			const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
-		// 			if (matchResult) {
-		// 				// Find which custom delimiter was used in order to add it to the collection
-		// 				const matchString = (matchResult[3] as string).toLowerCase();
-		// 				if (this.tagsMap.has(matchString)) {
-		// 					const range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, startPos.character, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
-		// 					// console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
-		// 					this.tagsMap.get(matchString)!.ranges.push(range);
-		// 				}
-		// 			}
-		// 		}
-		// 	}  else {
-		// 		// Find which custom delimiter was used in order to add it to the collection
-		// 		const matchString = (match[3] as string).toLowerCase();
-		// 		if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(<vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) });
-		// 	}
-		// }
