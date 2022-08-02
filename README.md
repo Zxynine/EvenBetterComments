@@ -130,7 +130,7 @@ The default 5 can be modified to change the styles, and more can be added.
 * JSON with comments
 * Julia
 * Kotlin
-* LaTex (inlc. Bibtex/Biblatex)
+* LaTeX (inlc. Bibtex/Biblatex)
 * Less
 * Lisp
 * Lua
