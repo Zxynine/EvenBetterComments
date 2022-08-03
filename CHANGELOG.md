@@ -69,6 +69,7 @@ The release of v4.0.0 marks the start of the `Even Better Comments` extension, w
 * Added 2-3 more language examples
 
 ---
+---
 
 ## [3.0.0] (2022-04-05)
 ### Features

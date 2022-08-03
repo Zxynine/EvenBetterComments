@@ -156,15 +156,16 @@ export class Parser {
 
 		//..............................................
 		
-		const expression = ((this.isPlainText && this.contributions.highlightPlainText)
+		let expression = ((this.isPlainText && this.contributions.highlightPlainText)
 			// start by tying the regex to the first character in a line
 			? "(^)+([ \\t]*[ \\t]*)"
 			// start by finding the delimiter (//, --, #, ') with optional spaces or tabs
 			: "(" + this.delimiter + ")+[ \\t]*"
 		// Apply all configurable comment start tags
-		) + "("+ Parser.JoinedDelimiterArray(this.tags) +")+(.*)";
+		);
+		expression += "("+ Parser.JoinedDelimiterArray(this.tags) +")+(.*)"
 		// we have to do mutliline regex to catch the start of the line with ^ and end with $
-		this.Expressions.MonoLine = new RegExp(expression, "igm");
+		this.Expressions.MonoLine = new RegExp(expression, (this.isPlainText)? "igm" : "ig");
 
 		//..............................................
 		
@@ -215,10 +216,10 @@ export class Parser {
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinedDelimiterArray(this.tags) + ")+(.*$)"
+					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinedDelimiterArray(this.tags) + ")+(.*)"
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
-					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
+					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "im"));
 					if (matchResult) {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();

@@ -17,6 +17,7 @@ export const enum FontStyle {
 	Bold = 2,
 	Underline = 4,
 	Strikethrough = 8,
+	Overline = 16,
 }
 
 export const enum ColorId {
@@ -38,10 +39,11 @@ export function fontStyleToString(fontStyle: OrMask<FontStyle>) {
 	if (fontStyle === FontStyle.NotSet) return 'not set';
 
 	let style = '';
+	if (fontStyle & FontStyle.Strikethrough) style += 'strikethrough ';
+	if (fontStyle & FontStyle.Underline) style += 'underline ';
+	if (fontStyle & FontStyle.Overline) style += " overline";
 	if (fontStyle & FontStyle.Italic) style += 'italic ';
 	if (fontStyle & FontStyle.Bold) style += 'bold ';
-	if (fontStyle & FontStyle.Underline) style += 'underline ';
-	if (fontStyle & FontStyle.Strikethrough) style += 'strikethrough ';
 	return (style === '')? 'none' : style.trim();
 }
 
@@ -136,8 +138,9 @@ export class TokenMetadata {
 	public static getForeground(metadata: number): ColorId          { return (metadata & MetadataConsts.FOREGROUND_MASK) >>> MetadataConsts.FOREGROUND_OFFSET; }
 	public static getBackground(metadata: number): ColorId          { return (metadata & MetadataConsts.BACKGROUND_MASK) >>> MetadataConsts.BACKGROUND_OFFSET; }
 
-	public static getClassNameFromMetadata(metadata: number): string {
+	public static getClassName(metadata: number): string {
 		const foreground = this.getForeground(metadata);
+		// const background = this.getBackground(metadata);
 		const fontStyle = this.getFontStyle(metadata);
 
 		let className = 'mtk' + foreground;
@@ -145,12 +148,13 @@ export class TokenMetadata {
 		if (fontStyle & FontStyle.Bold)          className += ' mtkb';
 		if (fontStyle & FontStyle.Underline)     className += ' mtku';
 		if (fontStyle & FontStyle.Strikethrough) className += ' mtks';
+		if (fontStyle & FontStyle.Overline)      className += ' mtko';
 		return className;
 	}
 
-	public static getInlineStyleFromMetadata(metadata: number, colorMap: string[]): string {
+	public static getInlineStyle(metadata: number, colorMap: string[]): string {
 		const foreground = this.getForeground(metadata);
-		const background = this.getForeground(metadata);
+		const background = this.getBackground(metadata);
 		const fontStyle = this.getFontStyle(metadata);
 		let result = '';
 
@@ -163,9 +167,9 @@ export class TokenMetadata {
 	}
 
 	
-	public static getPresentationFromMetadata(metadata: number): ITokenPresentation {
+	public static getPresentation(metadata: number): ITokenPresentation {
 		const foreground = this.getForeground(metadata);
-		const background = this.getForeground(metadata);
+		const background = this.getBackground(metadata);
 		const fontStyle = this.getFontStyle(metadata);
 
 		return <ITokenPresentation>{
@@ -203,6 +207,30 @@ export class TokenMetadata {
 
 
 
+
+// export function toBinaryStr(encodedTokenAttributes: EncodedTokenAttributes): string {
+// 	let r = encodedTokenAttributes.toString(2);
+// 	while (r.length < 32) {
+// 		r = "0" + r;
+// 	}
+// 	return r;
+// }
+
+// export function print(encodedTokenAttributes: EncodedTokenAttributes): void {
+// 	const languageId = EncodedTokenAttributes.getLanguageId(encodedTokenAttributes);
+// 	const tokenType = EncodedTokenAttributes.getTokenType(encodedTokenAttributes);
+// 	const fontStyle = EncodedTokenAttributes.getFontStyle(encodedTokenAttributes);
+// 	const foreground = EncodedTokenAttributes.getForeground(encodedTokenAttributes);
+// 	const background = EncodedTokenAttributes.getBackground(encodedTokenAttributes);
+
+// 	console.log({
+// 		languageId: languageId,
+// 		tokenType: tokenType,
+// 		fontStyle: fontStyle,
+// 		foreground: foreground,
+// 		background: background,
+// 	});
+// }
 
 
 
@@ -347,6 +375,135 @@ export class TokenArray {
 
 
 
+export abstract class AbstractTokenArray {
+	protected readonly _tokens: IToken2Array;
+	protected readonly _tokensCount: number;
+	protected readonly _tokensEndOffset: number;
+	protected readonly _text: string;
+
+	public get count(): number { return this._tokensCount; }
+	public get text(): string { return this._text; }
+
+	constructor(tokens: IToken2Array, text: string) {
+		this._tokensCount = (tokens.length >>> 1);
+		this._tokensEndOffset = text.length;
+		this._tokens = tokens;
+		this._text = text;
+	}
+
+	public Metadata(tokenIndex:number): number {
+		return this._tokens[(tokenIndex << 1) + 1];
+	}
+	public StartOffset(tokenIndex: number): number {
+		return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0;
+	}
+	public EndOffset(tokenIndex: number): number {
+		return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset;
+	}
+
+	/** Gets the combined metadata of all tokens in the line, this allows for easy queries. */
+	public get LineMetadata() {
+		let metaResult = 0;
+		for (let i = 0; i<this._tokensCount; i++) metaResult |= this._tokens[(i<<1)+1];
+		return metaResult;
+	}
+
+	public getTokenType 	(tokenIndex: number){ return TokenMetadata.getTokenType 	(this.Metadata(tokenIndex));}
+	public getLanguageId 	(tokenIndex: number){ return TokenMetadata.getLanguageId 	(this.Metadata(tokenIndex));}
+	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle 	(this.Metadata(tokenIndex));}
+	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground 	(this.Metadata(tokenIndex));}
+	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground 	(this.Metadata(tokenIndex));}
+
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Conversions
+
+	public toOffsetArray() : Array<number> {
+		const offsets = new Array<number>(this._tokensCount+2);
+
+		//Represents the start of the line
+		offsets[0] = this.EndOffset(0);
+		for (let i = 1; i<this._tokensCount; i++) offsets[i+1] = this.EndOffset(i);
+		//Represents token at end of the line.
+		offsets[this._tokensCount+1] = this._tokensEndOffset;
+
+		return offsets;
+	}
+
+	public toTokenTypeArray() : Array<StandardTokenType> {
+		const types = new Array<StandardTokenType>(this._tokensCount);
+		for (let i = 0; i<this._tokensCount; i++) types[i] = this.getTokenType(i);
+		return types;
+	}
+
+	public getToken(index:number):IToken2 {
+		return <IToken2> {
+			startOffset: index>0? this._tokens[(index-1) << 1] : 0,
+			endOffset: index<this._tokensCount? this._tokens[index<<1] : this._tokensEndOffset,
+			metaData: index<this._tokensCount? this._tokens[(index<<1)+1] : this._tokens[(this._tokensCount<<1)-1]
+		};
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Queries
+
+	/**
+	 * Find the token containing offset `offset` //Talking about column offset.
+	 * @param offset The search offset
+	 * @return The index of the token containing the offset.
+	 */
+	 public IndexOf(offset: number): number {
+		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
+	}
+
+	public Contains(tokenType:StandardTokenType) {
+		return (TokenMetadata.getTokenType(this.LineMetadata) & tokenType) === tokenType;
+	}
+
+	public FindIndexOf(tokenType:StandardTokenType) {
+		for (let i = 0; i<this._tokensCount; i++) {
+			if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) == tokenType) return i;
+		}
+		return -1;
+	}
+
+	
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Iterators
+	protected *Enumerate(): Generator<number> { for (let i = 0; i<this._tokensCount; i++) yield i; }
+	
+	public *Metadatas() { for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)+1]; }
+	public *Offsets() {
+		for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)];
+		yield this._tokensEndOffset;
+	}	
+	
+	
+	
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//Static functions
+	//Binary search
+	public static findIndexInTokensArray(tokens: IToken2Array, desiredIndex: number): number {
+		if (tokens.length <= 2) return 0;
+
+		let low = 0;
+		let high = (tokens.length >>> 1)-1;
+		while (low < high) {
+			const mid = low + ((high - low) >>> 1);
+			const endOffset = tokens[(mid << 1)];
+
+			if (endOffset === desiredIndex) return mid+1;
+			else if (endOffset < desiredIndex) low = mid+1;
+			else if (endOffset > desiredIndex) high = mid;
+		}
+
+		return low;
+	}
+}
+
+
 
 
 export class StandardLineTokens {
@@ -405,11 +562,11 @@ export class StandardLineTokens {
 
 
 
-	public getTokenType 	(tokenIndex: number){ return TokenMetadata.getTokenType(this.GetMetadata(tokenIndex)); 	}
-	public getLanguageId 	(tokenIndex: number){ return TokenMetadata.getLanguageId(this.GetMetadata(tokenIndex)); }
-	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle(this.GetMetadata(tokenIndex)); 	}
-	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground(this.GetMetadata(tokenIndex)); }
-	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground(this.GetMetadata(tokenIndex)); }
+	public getTokenType 	(tokenIndex: number){ return TokenMetadata.getTokenType 	(this.GetMetadata(tokenIndex));}
+	public getLanguageId 	(tokenIndex: number){ return TokenMetadata.getLanguageId 	(this.GetMetadata(tokenIndex));}
+	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle 	(this.GetMetadata(tokenIndex));}
+	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground 	(this.GetMetadata(tokenIndex));}
+	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground 	(this.GetMetadata(tokenIndex));}
 
 
 	/**
@@ -573,12 +730,12 @@ export class LineTokens implements IViewLineTokens {
 
 	public getClassName(tokenIndex: number): string {
 		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getClassNameFromMetadata(metadata);
+		return TokenMetadata.getClassName(metadata);
 	}
 
 	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {
 		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getInlineStyleFromMetadata(metadata, colorMap);
+		return TokenMetadata.getInlineStyle(metadata, colorMap);
 	}
 
 	public getEndOffset(tokenIndex: number): number {

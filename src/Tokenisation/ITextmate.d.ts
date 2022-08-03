@@ -5,7 +5,7 @@ declare const enum StandardTokenType {
     Other = 0,
     Comment = 1,
     String = 2,
-    RegEx = 3,
+    RegEx = 4,
 	// Indicates that no token type is set.
 	NotSet = 8
 }
