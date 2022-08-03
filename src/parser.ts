@@ -214,10 +214,11 @@ export class Parser {
 			if (this.ignoreFirstLine && (startPos.line === 0 && startPos.character === 0)) continue;
 
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
+			// console.log("Has Document: ", (DocumentLoader.getDocument(activeEditor.document.uri) !== undefined));
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*)"
-					console.log("Has comment token");
+					const searchRegex = "(.*?)("+ this.delimiter +")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*)"
+					// console.log("Has comment token");
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
 					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
@@ -225,8 +226,8 @@ export class Parser {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();
 						if (this.tagsMap.has(matchString)) {
-							const range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, startPos.character, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
-							// console.log(searchRegex, "\n", lineSub, "\n", offset, "\n", matchResult, "\n", range);
+							const range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
+							// console.log(searchRegex, "\n",  activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range);
 							this.tagsMap.get(matchString)!.ranges.push(range);
 						}
 					}
@@ -565,3 +566,47 @@ export class Parser {
 	/** ! */
 	/* ! **/
 	/** ! **/
+
+
+
+
+
+
+
+
+
+
+
+	
+//The idea is that monoline comments which are the only content on the line are easy to identify
+//same goes for block comments which span multiple lines, however,
+//identifying comments which are on the same line as actual code/text, is near impossible to properly support without parsing grammar.
+//So it stands to reason that using simple regex to find the easy cases combined with the more intensive grammar parsing on possible matches 
+//Will enable a fast decoration while handling all of the edge cases as they appear in the more accurate but worst performance way would be ideal.
+
+//Plan:
+//Use regex for finding monoline comments which are the only content on the line,
+//Use refex for finding multiline block comments which span many lines
+
+//Use regex to identify possible mixed lines and pass to the token parser to extract those comments to maintain consitant highlightning.
+
+//.................................
+//(^)[ \t]*(//)[ \t]*(\*|Todo)([ :].*)
+//.................................
+//? Finds all basic monoline comments
+//(^)[ \t]*(//)[ \t]*(.*)
+//? Finds all basic multiline comments
+//(^)[ \t]*(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
+
+//? Finds all possible mixed monoline comments
+//(^[ \t]*(?!//)\S.*?)(//)(.*)
+//? Finds all possible mixed multiline comments
+//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
+
+//For possible mixed comments, check the token just before if its a comment, if it is then ignore the match.
+
+
+
+
+
+//TODO: on multiline, check if starts with delimiter
