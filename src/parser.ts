@@ -59,7 +59,7 @@ export class Parser {
 	
  	//TODO: just save the regex string, this.tags should not change.	
 	/** Build up regex matcher for custom delimiter tags */
-	private static JoinedDelimiterArray(tags : Array<CommentTag>) : string {
+	private static JoinDelimiterArray(tags : Array<CommentTag>) : string {
 		return tags.map(commentTag => commentTag.escapedTag).join('|');
 	}
 
@@ -160,11 +160,11 @@ export class Parser {
 			// start by tying the regex to the first character in a line
 			? "(^)+([ \\t]*[ \\t]*)"
 			// start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-			: "(" + this.delimiter + ")+[ \\t]*"
+			: "(" + this.delimiter + ")+([ \\t])*"
 		// Apply all configurable comment start tags
 		);
-		expression += "("+ Parser.JoinedDelimiterArray(this.tags) +")+(.*)"
-		// we have to do mutliline regex to catch the start of the line with ^ and end with $
+		expression += "("+ Parser.JoinDelimiterArray(this.tags) +")+(.*)"
+		// if it's plain text, we have to do mutliline regex to catch the SOL with ^ and EOL with $
 		this.Expressions.MonoLine = new RegExp(expression, (this.isPlainText)? "igm" : "ig");
 
 		//..............................................
@@ -216,10 +216,11 @@ export class Parser {
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinedDelimiterArray(this.tags) + ")+(.*)"
+					const searchRegex = "^.*?("+ this.delimiter +")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*)"
+					console.log("Has comment token");
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
-					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "im"));
+					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
 					if (matchResult) {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();
@@ -260,7 +261,7 @@ export class Parser {
 		
 
 		// Combine custom delimiters and the rest of the comment block matcher
-		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinedDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
+		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 		
 		/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
@@ -309,7 +310,7 @@ export class Parser {
 		if (!this.highlightMultilineComments && !this.highlightJSDoc) return;
 
 		// Highlight after leading /** or *
-		const commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+ Parser.JoinedDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
+		const commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
 		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
