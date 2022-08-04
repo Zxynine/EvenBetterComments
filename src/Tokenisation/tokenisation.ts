@@ -236,76 +236,17 @@ export class TokenMetadata {
 
 
 
+export class TokenTools {
+	public static Count(tokens: IToken2Array) { return (tokens.length >>> 1); }
+	
+	public static Metadata(tokens: IToken2Array, index:int) { return tokens[(index << 1) + 1] }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports.ts
-
-
-
-
-
-
-
-//  S=Start offset, E=End offset, M=metadata, T=Type
-//         Array[ i=0 , i=1 , i=2 , i=3 , i=4 , i=5 , i=6 , i=7 ] Describes the format of the Uint32Array used to represent tokens
-//              | E0  | M0  |     |     |     |     |     |     |
-//              | S1  |     | E1  | M1  |     |     |     |     |
-//              |     |     | S2  |     | E2  | M2  |     |     |
-//              |     |     |     |     | S3  |     | E3  | M3  |
-//              |  I-----------I-----------I-----------I---------...
-// Odd=metadata         T0          T1          T2          T3
-// Even=boundries
-
-//      Count = i >> 1;
-
-
-
-
-
-export class TokenArray {
-	public static readonly EMPTY_LINE_TOKENS = (new Uint32Array(0)).buffer;
-
-	public static Count(tokens: IToken2Array) {
-		return (tokens.length >>> 1);
+	public static StartOffset(tokens: IToken2Array, index: number): number {
+		return (index>0)? tokens[(index-1) << 1] : 0;
+	}
+	public static EndOffset(tokens: IToken2Array, index: number): number {
+		const count = (tokens.length >>> 1);
+		return (index<=count)? tokens[index << 1] : tokens[(count << 1) - 1];
 	}
 
 	public static *Iterate(tokens: IToken2Array) : Generator<number> {
@@ -371,9 +312,92 @@ export class TokenArray {
 	
 	public static readonly GetTokenName = TokenTypeToString;
 
+
+
+
+
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports.ts
+
+
+
+
+
+
+
+//  S=Start offset, E=End offset, M=metadata, T=Type
+//         Array[ i=0 , i=1 , i=2 , i=3 , i=4 , i=5 , i=6 , i=7 ] Describes the format of the Uint32Array used to represent tokens
+//              | E0  | M0  |     |     |     |     |     |     |
+//              | S1  |     | E1  | M1  |     |     |     |     |
+//              |     |     | S2  |     | E2  | M2  |     |     |
+//              |     |     |     |     | S3  |     | E3  | M3  |
+//              |  I-----------I-----------I-----------I---------...
+// Odd=metadata         T0          T1          T2          T3
+// Even=boundries
+
+//      Count = i >> 1;
+
+
+
+
+
+
+
+
+
+
+
+
+export interface IViewLineTokens {
+	readonly count : int;
+
+	equals(other: IViewLineTokens): boolean;
+	getForeground(tokenIndex: number): ColorId;
+	getEndOffset(tokenIndex: number): number;
+	getClassName(tokenIndex: number): string;
+	getInlineStyle(tokenIndex: number, colorMap: string[]): string;
+	findTokenIndexAtOffset(offset: number): number;
+}
 
 export abstract class AbstractTokenArray {
 	protected readonly _tokens: IToken2Array;
@@ -431,9 +455,7 @@ export abstract class AbstractTokenArray {
 	}
 
 	public toTokenTypeArray() : Array<StandardTokenType> {
-		const types = new Array<StandardTokenType>(this._tokensCount);
-		for (let i = 0; i<this._tokensCount; i++) types[i] = this.getTokenType(i);
-		return types;
+		return this.FromEnumerate(this.getTokenType);
 	}
 
 	public getToken(index:number):IToken2 {
@@ -477,9 +499,19 @@ export abstract class AbstractTokenArray {
 	public *Offsets() {
 		for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)];
 		yield this._tokensEndOffset;
-	}	
+	}
 	
-	
+	protected FromEnumerate<T>(func: Func<[int], T>) {
+		const returnArray = new Array<T>(this._tokensCount);
+		for (let i = 0; i<this._tokensCount; i++) returnArray[i] = func(i);
+		return returnArray;
+	}
+
+	protected ForEnumerate<T>(func: Action<[int]>) {
+		const returnArray = new Array<T>(this._tokensCount);
+		for (let i = 0; i<this._tokensCount; i++) func(i);
+		return returnArray;
+	}
 	
 	
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -506,52 +538,45 @@ export abstract class AbstractTokenArray {
 
 
 
-export class StandardLineTokens {
-	private readonly _tokens: IToken2Array;
-	private readonly _tokensCount: number;
-	private readonly _tokensEndOffset: number;
-	private readonly _text: string;
-
-	private GetMetadata(tokenIndex:number): number {
-		return this._tokens[(tokenIndex << 1) + 1];
-	}
-	public getStartOffset(tokenIndex: number): number {
-		return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0;
-	}
-	public getEndOffset(tokenIndex: number): number {
-		return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset;
-	}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export class StandardLineTokens extends AbstractTokenArray {
 	constructor(tokens: IToken2Array, text: string) {
-		this._tokens = tokens;
-		this._tokensCount = (this._tokens.length >>> 1);
-		this._text = text;
-		this._tokensEndOffset = text.length;
-	}
-
-	public get count(): number { return this._tokensCount; }
-	public get LineText(): string { return this._text; }
-	//Gets the combined metadata of all tokens in the line, this allows for easy queries.
-	public get LineMetadata() {
-		let metaResult = 0;
-		for (let i = 0; i<this._tokensCount; i++) metaResult |= this._tokens[(i<<1)+1];
-		return metaResult;
+		super(tokens, text);
 	}
 
 	public hasTokenType(tokenType:StandardTokenType) {
-		return TokenArray.containsTokenType(this._tokens, tokenType);
+		return TokenTools.containsTokenType(this._tokens, tokenType);
 	}
 
 	public indexOf(tokenType:StandardTokenType) {
-		return TokenArray.findIndexOfType(this._tokens, tokenType);
+		return TokenTools.findIndexOfType(this._tokens, tokenType);
 	}
 
 	public offsetOf(tokenType:StandardTokenType) {
-		const Index = TokenArray.findIndexOfType(this._tokens, tokenType);
-		return (Index === -1)? -1 : this.getEndOffset(Index);
+		const Index = TokenTools.findIndexOfType(this._tokens, tokenType);
+		return (Index === -1)? -1 : this.EndOffset(Index);
 	}
-
 
 	public getOffsetDelta(tokenIndex: number): number {
 		if (tokenIndex <= 0) return 0;
@@ -562,81 +587,14 @@ export class StandardLineTokens {
 
 
 
-	public getTokenType 	(tokenIndex: number){ return TokenMetadata.getTokenType 	(this.GetMetadata(tokenIndex));}
-	public getLanguageId 	(tokenIndex: number){ return TokenMetadata.getLanguageId 	(this.GetMetadata(tokenIndex));}
-	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle 	(this.GetMetadata(tokenIndex));}
-	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground 	(this.GetMetadata(tokenIndex));}
-	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground 	(this.GetMetadata(tokenIndex));}
-
-
 	/**
 	 * Find the token containing offset `offset` //Talking about column offset.
 	 * @param offset The search offset
 	 * @return The index of the token containing the offset.
 	 */
 	public findTokenIndexAtOffset(offset: number): number {
-		return LineTokens.findIndexInTokensArray(this._tokens, offset);
+		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
 	}
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//Conversions
-
-	public toOffsetArray() : Array<number> {
-		const offsets = new Array<number>(this._tokensCount+2);
-
-		//Represents the start of the line
-		offsets[0] = this.getEndOffset(0);
-		for (let i = 1; i<this._tokensCount; i++) offsets[i+1] = this.getEndOffset(i);
-		//Represents token at end of the line.
-		offsets[this._tokensCount+1] = this._tokensEndOffset;
-
-		return offsets;
-	}
-
-	public toTokenTypeArray() : Array<StandardTokenType> {
-		const types = new Array<StandardTokenType>(this._tokensCount);
-		for (let i = 0; i<this._tokensCount; i++) types[i] = this.getTokenType(i);
-		return types;
-	}
-
-	public getToken(index:number):IToken2 {
-		return <IToken2> {
-			startOffset: index>0? this._tokens[(index-1) << 1] : 0,
-			endOffset: index<this._tokensCount? this._tokens[index<<1] : this._tokensEndOffset,
-			metaData: index<this._tokensCount? this._tokens[(index<<1)+1] : this._tokens[(this._tokensCount<<1)-1]
-		};
-	}
-
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//Iterators
-	public *Metadatas() { for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)+1]; }
-	public *Offsets() {
-		for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)];
-		yield this._tokensEndOffset;
-	}
-
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//Static functions
-	//Binary search
-	public static findIndexInTokensArray(tokens: IToken2Array, desiredIndex: number): number {
-		if (tokens.length <= 2) return 0;
-
-		let low = 0;
-		let high = (tokens.length >>> 1)-1;
-		while (low < high) {
-			const mid = low + ((high - low) >>> 1);
-			const endOffset = tokens[(mid << 1)];
-
-			if (endOffset === desiredIndex) return mid+1;
-			else if (endOffset < desiredIndex) low = mid+1;
-			else if (endOffset > desiredIndex) high = mid;
-		}
-
-		return low;
-	}
-
-
 }
 
 
@@ -662,30 +620,14 @@ export class StandardLineTokens {
 
 
 
-export interface IViewLineTokens {
-	equals(other: IViewLineTokens): boolean;
-	getCount(): number;
-	getForeground(tokenIndex: number): ColorId;
-	getEndOffset(tokenIndex: number): number;
-	getClassName(tokenIndex: number): string;
-	getInlineStyle(tokenIndex: number, colorMap: string[]): string;
-	findTokenIndexAtOffset(offset: number): number;
-}
 
 
 
 
-export class LineTokens implements IViewLineTokens {
+export class LineTokens extends AbstractTokenArray implements IViewLineTokens {
 	// _lineTokensBrand: void;
-
-	private readonly _tokens: IToken2Array;
-	private readonly _tokensCount: number;
-	private readonly _text: string;
-
 	constructor(tokens: IToken2Array, text: string) {
-		this._tokens = tokens;
-		this._tokensCount = (this._tokens.length >>> 1);
-		this._text = text;
+		super(tokens, text);
 	}
 
 	public equals(other: IViewLineTokens): boolean {
@@ -707,40 +649,24 @@ export class LineTokens implements IViewLineTokens {
 	}
 
 	public getLineContent(): string { return this._text; }
-	public getCount(): number { return this._tokensCount; }
 
 	public getStartOffset(tokenIndex: number): number {
 		return (tokenIndex>0)? this._tokens[(tokenIndex - 1) << 1] : 0;
 	}
-
-	public getLanguageId(tokenIndex: number): LanguageId {
-		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getLanguageId(metadata);
-	}
-
-	public getStandardTokenType(tokenIndex: number): StandardTokenType {
-		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getTokenType(metadata);
-	}
-
-	public getForeground(tokenIndex: number): ColorId {
-		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getForeground(metadata);
-	}
-
-	public getClassName(tokenIndex: number): string {
-		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getClassName(metadata);
-	}
-
-	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {
-		const metadata = this._tokens[(tokenIndex << 1) + 1];
-		return TokenMetadata.getInlineStyle(metadata, colorMap);
-	}
-
 	public getEndOffset(tokenIndex: number): number {
 		return this._tokens[tokenIndex << 1];
 	}
+
+
+
+	public getClassName(tokenIndex: number): string {
+		return TokenMetadata.getClassName(this.Metadata(tokenIndex));
+	}
+
+	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {
+		return TokenMetadata.getInlineStyle(this.Metadata(tokenIndex), colorMap);
+	}
+
 
 	/**
 	 * Find the token containing offset `offset` //Talking about column offset.
@@ -748,7 +674,7 @@ export class LineTokens implements IViewLineTokens {
 	 * @return The index of the token containing the offset.
 	 */
 	public findTokenIndexAtOffset(offset: number): number {
-		return LineTokens.findIndexInTokensArray(this._tokens, offset);
+		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
 	}
 
 
@@ -763,25 +689,6 @@ export class LineTokens implements IViewLineTokens {
 			tokens[tokenIndex << 1] = tokens[(tokenIndex + 1) << 1];
 		}
 		tokens[lastTokenIndex << 1] = lineTextLength;
-	}
-
-	//Binary search
-	public static findIndexInTokensArray(tokens: IToken2Array, desiredIndex: number): number {
-		if (tokens.length <= 2) return 0;
-
-		let low = 0;
-		let high = (tokens.length >>> 1) - 1;
-
-		while (low < high) {
-			const mid = low + ((high - low) >>> 1);
-			const endOffset = tokens[(mid << 1)];
-
-			if (endOffset === desiredIndex) return mid+1;
-			else if (endOffset < desiredIndex) low = mid+1;
-			else if (endOffset > desiredIndex) high = mid;
-		}
-
-		return low;
 	}
 }
 
@@ -811,7 +718,7 @@ export class SlicedLineTokens implements IViewLineTokens {
 		this._firstTokenIndex = source.findTokenIndexAtOffset(startOffset);
 
 		this._tokensCount = 0;
-		for (let i = this._firstTokenIndex, len = source.getCount(); i < len; i++) {
+		for (let i = this._firstTokenIndex, len = source.count; i < len; i++) {
 			if (source.getStartOffset(i) >= endOffset) break;
 			else this._tokensCount++;
 		}
@@ -829,9 +736,7 @@ export class SlicedLineTokens implements IViewLineTokens {
 		return false;
 	}
 
-	public getCount(): number {
-		return this._tokensCount;
-	}
+	public get count() { return this._tokensCount; }
 
 	public getForeground(tokenIndex: number): ColorId {
 		return this._source.getForeground(this._firstTokenIndex + tokenIndex);

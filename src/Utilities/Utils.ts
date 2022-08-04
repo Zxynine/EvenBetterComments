@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { homedir } from 'os';
-
+import { KeyValPair } from '../typings/Collections';
+import { statSync } from 'fs';
 
 /**
  * Escapes regular expression characters in a given string
@@ -9,6 +10,57 @@ import { homedir } from 'os';
 export function escapeRegExpCharacters(value: string): string {
 	return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, '\\$&');
 }
+
+
+
+
+/**
+ * From { "lib": "libraries", "other": "otherpath" }
+ * To [ { key: "lib", value: "libraries" }, { key: "other", value: "otherpath" } ]
+ * @param mappings { "lib": "libraries" }
+ */
+ export function parseMappings(mappings: { [key: string]: string }): KeyValPair<string,string>[] {
+	return Object.entries(mappings).map(([Key, Val]) => ({ Key, Val }));
+}
+
+
+
+
+
+/**
+ * Replace ${workspaceRoot} with workfolder.uri.path
+ *
+ * @param mappings
+ * @param workfolder
+ */
+export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], workfolder?: vscode.WorkspaceFolder): KeyValPair<string,string>[] {
+	const rootPath = workfolder?.uri.path;
+	if (rootPath) {
+		// Replace placeholder with workspace folder
+		return mappings.map(({ Key, Val }) => ({
+			Key, Val: replaceWorkspaceFolderWithRootPath(Val, rootPath),
+		}));
+	} else {
+		// Filter items out which contain a workspace root
+		return mappings.filter(({ Val }) => !valueContainsWorkspaceFolder(Val));
+	}
+}
+
+/**
+ * Replaces both placeholders with the rootpath
+ * - ${workspaceRoot}    // old way and only legacy support
+ * - ${workspaceFolder}  // new way
+ *
+ * @param value
+ * @param rootPath
+ */
+ function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
+	return value.replace('${workspaceRoot}', rootPath).replace('${workspaceFolder}', rootPath);
+  }
+  
+  function valueContainsWorkspaceFolder(value: string): boolean {
+	return value.includes('${workspaceFolder}') || value.includes('${workspaceRoot}');
+  }
 
 
 
@@ -78,9 +130,7 @@ function cloneObj(obj: any): any {
 
 
 export function mergeObjects(target: any, ...sources: any[]): any {
-	sources.forEach(source => {
-		for (const key in source) target[key] = source[key];
-	});
+	sources.forEach(source => { for (const key in source) target[key] = source[key]; });
 	return target;
 }
 
@@ -187,3 +237,139 @@ export const MarkdownFormat = {
 	/** Return markdown text with a striketrhough format. */
 	toStrikethrough: (text:string):string => `~~${text}~~`,
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// type TrailingCommaOption = "none" | "es5" | "all";
+
+// export type PackageManagers = "npm" | "yarn" | "pnpm";
+
+
+// type PrettierSupportLanguage = {
+// 	vscodeLanguageIds?: string[];
+// 	extensions?: string[];
+// 	parsers: string[];
+//   };
+//   type PrettierFileInfoResult = {
+// 	ignored: boolean;
+// 	inferredParser?: PrettierBuiltInParserName | null;
+//   };
+//   type PrettierBuiltInParserName = string;
+//   type PrettierResolveConfigOptions = ResolveConfigOptions;
+//   type PrettierOptions = Options;
+//   type PrettierFileInfoOptions = FileInfoOptions;
+  
+//   type PrettierModule = {
+// 	format(source: string, options?: Options): string;
+// 	getSupportInfo(): { languages: PrettierSupportLanguage[] };
+// 	getFileInfo(
+// 	  filePath: string,
+// 	  options?: PrettierFileInfoOptions
+// 	): Promise<PrettierFileInfoResult>;
+//   };
+
+  
+// export type PrettierVSCodeConfig = IExtensionConfig & Options;
+
+// export class TemplateService {
+// 	constructor(
+// 	// private loggingService: LoggingService,
+// 	private prettierModule: PrettierModule
+// 	) {}
+// 	public async writeConfigFile(folderPath: Uri) {
+// 	const settings = { tabWidth: 2, useTabs: false };
+
+// 	const outputPath = Uri.joinPath(folderPath, ".prettierrc");
+
+// 	const formatterOptions: PrettierOptions = {
+// 		/* cspell: disable-next-line */
+// 		filepath: outputPath.scheme === "file" ? outputPath.fsPath : undefined,
+// 		tabWidth: settings.tabWidth,
+// 		useTabs: settings.useTabs,
+// 	};
+
+// 	const templateSource = this.prettierModule.format(
+// 		JSON.stringify(settings, null, 2),
+// 		formatterOptions
+// 	);
+
+// 	// this.loggingService.logInfo(`Writing .prettierrc to '${outputPath}'`);
+// 	await workspace.fs.writeFile(outputPath, new TextEncoder().encode(templateSource));
+// 	}
+// }
+
+// export type createConfigFileFunction = () => Promise<void>;
+
+// export const createConfigFile = (templateService: TemplateService): createConfigFileFunction=>
+//   async () => {
+//     const folderResult = await vscode.window.showOpenDialog({
+//       canSelectFiles: false,
+//       canSelectFolders: true,
+//       canSelectMany: false,
+//     });
+//     if (folderResult && folderResult.length === 1) {
+//       const folderUri = folderResult[0];
+//       await templateService.writeConfigFile(folderUri);
+//     }
+//   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export class FileInfo {
+	isFile: boolean;
+	constructor(public filePath: string, public file: string) {
+	this.isFile = statSync(path.join(filePath, file)).isFile();
+	}
+}
+
+// function filterFile(filename: string, config: Config) {
+// 	if (config.showHiddenFiles) {
+// 	return true;
+// 	}
+
+// 	return !isFileHidden(filename, config);
+// }
+
+// function isFileHidden(filename: string, config: Config) {
+// 	return filename.startsWith('.') || isFileHiddenByVsCode(filename, config);
+// }
+
+
+// // files.exclude has the following form. key is the glob
+// // {
+// //    "**//*.js": true
+// //    "**//*.js": true "*.git": true
+// // }
+// function isFileHiddenByVsCode(filename: string, config: Config) {
+// 	if (!config.filesExclude) {
+// 	return false;
+// 	}
+
+// 	for (const key of Object.keys(config.filesExclude)) {
+// 	if (minimatch(filename, key)) {
+// 		return true;
+// 	}
+// 	}
+// 	return false;
+// }

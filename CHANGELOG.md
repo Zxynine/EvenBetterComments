@@ -1,5 +1,10 @@
 # Change Log
 
+## [4.1.1] (2022-08-03)
+### Development
+This is a hotfix for the extension, update 4.1.0 had a problem which caused single line comments to fail spectacularly. I honestly have no idea what caused the problems nor how I fixed it, all I know is tried a bunch of stuff, nothing worked, I went to work and when I got back things were working again.
+
+
 ## [4.1.0] (2022-08-02)
 ### Development
 The release of v4.1.0 marks my first major changes to the code and structure of the extension.

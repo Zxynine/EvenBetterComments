@@ -39,6 +39,8 @@ declare global {
 		count<T>(this:Array<T>, conditional:Action<[T]>) : number;
 
 		collect<C,T>(this:Array<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C;
+
+		chunkArray<T>(this: Array<T>, chunkSize: number): Array<T[]>;
     }
 
     interface ReadonlyArray<T> {
@@ -190,4 +192,21 @@ Array.prototype.collect = function <C,T>(this:Array<T>, initialValue:C, callback
 	let collector = initialValue;
 	for (const item of this) collector = callback(collector, item);
 	return collector;
+}
+
+
+
+/**
+ * Return equal parts of an array
+ * @template T
+ * @param chunkSize Size of each part.
+ */
+Array.prototype.chunkArray = function sliceArray<T>(this: Array<T>, chunkSize: number): Array<T[]> {
+	if(chunkSize == 0) return [];
+
+	let slices = [];
+	for (let i = 0; i < this.length; i += chunkSize) {
+		slices.push(this.slice(i, i + chunkSize));
+	}
+	return slices;
 }

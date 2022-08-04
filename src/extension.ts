@@ -96,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// * This section deals with loading scopes of documents
 	LoadDocumentsAndGrammer();
 	/** EXPORT API */
-	const api = GetGetScopeAtAPI();
+	const API = GetGetScopeAtAPI;
 
 	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(DocumentLoader.openDocument)); //Handle documents being opened
 	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument)); //Handle documents bing closed
@@ -113,7 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log("HyperScopes: show command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
 		if (activeTextEditor) {
-			const token = api.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
+			const token = API.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
 			if (token) {
 				extensionOutputChannel.show(true);
 				extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
@@ -131,7 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log("HyperScopes: show line command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
 		if (activeTextEditor) {
-			const tokenArray = api.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
+			const tokenArray = API.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
 			if (tokenArray) {
 				const highlightRange : vscode.Range[] = [];
 				tokenArray.forEach(token => {
@@ -161,7 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
 	//............................................................................
 	/** EXPORT API */
-	return api;
+	return API;
 }
 
 export function deactivate() { DocumentLoader.unloadDocuments() }

@@ -5,7 +5,7 @@ interface CommentTag {
 	escapedTag: string;
 	lowerTag: string;
 	decoration: import('vscode').TextEditorDecorationType;
-	ranges: Array<import('vscode').DecorationOptions>;
+	ranges: Array<import('vscode').Range>;
 }
 
 
@@ -36,7 +36,19 @@ interface TagDefinition {
 type Flags<T extends number> = number;
 /** A union of given const enum values. **/
 type OrMask<T extends number> = number;
+
+
+
+type Func<TArgs extends any[], TResult> = (...args: TArgs) => TResult; 
+// Syntax sugar
+type Action<TArgs extends any[]> = Func<TArgs, undefined>; 
+type Callable<T> = () => T;
+
+
 type nulldefined = null|undefined;
+
+
+
 
 //  /** The 'package.json' file of an app. */
 // interface AppPackageJSON {
@@ -73,3 +85,9 @@ type nulldefined = null|undefined;
 // (/\*\*)\n.+\*(.*)\n.*( \*/)
 // $1$2$3
 
+
+
+
+type bool = boolean;
+type int = number;
+type float = number;

@@ -11,9 +11,16 @@ import { LanguageLoader } from "../providers/LanguageProvider";
 
 
 
-function getNodeModulePath(moduleName: string) {return path.join(vscode.env.appRoot, 'node_modules.asar', moduleName);}
-function getNodeModule(moduleName: string) {return require(getNodeModulePath(moduleName));}
-
+export function getNodeModulePath(moduleName: string) {return path.join(vscode.env.appRoot, 'node_modules.asar', moduleName);}
+export function getNodeModule(moduleName: string) {return require(getNodeModulePath(moduleName));}
+/**
+ * Returns a node module installed with VSCode, or null if it fails.
+ */
+ export function getCoreNodeModule(moduleName: string) {
+	try { return require(path.join(vscode.env.appRoot, 'node_modules.asar', moduleName)); } catch (ex) { }
+	try { return require(path.join(vscode.env.appRoot, 'node_modules', moduleName)); } catch (ex) { }
+	return null;
+}
 
 // export function parseJSONGrammar(contents: string, filename: string | null): IRawGrammar {
 // 	return <IRawGrammar>JSON.parse(contents);

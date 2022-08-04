@@ -4,10 +4,9 @@ import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
+import { HashSet } from './typings/Collections';
 
-
-
-
+	// TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
 
 export class Parser {
@@ -63,11 +62,8 @@ export class Parser {
 		return tags.map(commentTag => commentTag.escapedTag).join('|');
 	}
 
-	
-	private static CreateRange(document: vscode.TextDocument, startIndex : number, endIndex : number) : vscode.DecorationOptions {
-		let startPos = document.positionAt(startIndex);
-		let endPos = document.positionAt(endIndex);
-		return <vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) };
+	private static CreateRange(document: vscode.TextDocument, startIndex : number, endIndex : number) : vscode.Range {
+		return new vscode.Range(document.positionAt(startIndex), document.positionAt(endIndex));
 	}
 
 	
@@ -77,7 +73,7 @@ export class Parser {
 	 * @returns {CommentTag} The created CommentTag object.
 	 */
 	private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
-		let escapedSequence = itemTag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
+		const escapedSequence = itemTag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
 		return <CommentTag>{
 			tag: itemTag,
 			escapedTag: Parser.escapeSlashes(escapedSequence),  //? hardcoded to escape slashes
@@ -108,13 +104,8 @@ export class Parser {
 	 * @param input The input string to be escaped
 	 * @returns {string} The escaped string
 	 */
-	private static escapeRegExp(input: string): string {
-		return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-	}
-
-	private static escapeSlashes(input: string): string {
-		return input.replace(/\//ig, "\\/");  //? hardcoded to escape slashes
-	}
+	private static escapeRegExp(input: string): string { return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } // $& means the whole matched string
+	private static escapeSlashes(input: string): string { return input.replace(/\//ig, "\\/"); } //? hardcoded to escape slashes
 
 	private static *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
 		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
@@ -156,14 +147,13 @@ export class Parser {
 
 		//..............................................
 		
-		let expression = ((this.isPlainText && this.contributions.highlightPlainText)
+		const expression = ((this.isPlainText && this.contributions.highlightPlainText)
 			// start by tying the regex to the first character in a line
 			? "(^)+([ \\t]*[ \\t]*)"
 			// start by finding the delimiter (//, --, #, ') with optional spaces or tabs
 			: "(" + this.delimiter + ")+([ \\t])*"
 		// Apply all configurable comment start tags
-		);
-		expression += "("+ Parser.JoinDelimiterArray(this.tags) +")+(.*)"
+		) + "("+ Parser.JoinDelimiterArray(this.tags) +")+(.*)";
 		// if it's plain text, we have to do mutliline regex to catch the SOL with ^ and EOL with $
 		this.Expressions.MonoLine = new RegExp(expression, (this.isPlainText)? "igm" : "ig");
 
@@ -226,7 +216,8 @@ export class Parser {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();
 						if (this.tagsMap.has(matchString)) {
-							const range: vscode.DecorationOptions = { range: new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length) };
+							// const DelimiterOffset = offset + matchResult[1].length;
+							const range = new vscode.Range(startPos.line, startPos.character, endPos.line, activeEditor.document.lineAt(startPos).text.length);
 							// console.log(searchRegex, "\n",  activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range);
 							this.tagsMap.get(matchString)!.ranges.push(range);
 						}
@@ -235,7 +226,7 @@ export class Parser {
 			}  else {
 				// Find which custom delimiter was used in order to add it to the collection
 				const matchString = (match[3] as string).toLowerCase();
-				if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(<vscode.DecorationOptions>{ range: new vscode.Range(startPos, endPos) });
+				if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(new vscode.Range(startPos, endPos));
 			}
 		}
 	}
@@ -264,16 +255,6 @@ export class Parser {
 		// Combine custom delimiters and the rest of the comment block matcher
 		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
-		
-		/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-			
-			"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
-		capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
-		at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
-		
-		              ([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
-		capture    any leading whitespace       dont index block start            any trailing whitespace
-		*/
 
 
 		// Find the multiline comment block
@@ -286,7 +267,7 @@ export class Parser {
 				if (this.tagsMap.has(matchString)) {
 					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					// length of leading delimeter and spaces        //length of line
-					const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
+					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 					
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
@@ -314,13 +295,6 @@ export class Parser {
 		const commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
-		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-		        "(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
-		one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
-
-						"([ \\t]*\\*[ \\t]*)"
-		*/
-
 
 		// const text = activeEditor.document.getText();
 		// for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLineJS.exec(text));) {
@@ -333,14 +307,16 @@ export class Parser {
 				const matchString = (line[3] as string).toLowerCase();
 				if (this.tagsMap.has(matchString)) {
 					const lineMatchIndex = line.index + match.index;
-																								// length of leading delimeter and spaces        //length of line
-					const range: vscode.DecorationOptions = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
+																		// length of leading delimeter and spaces        //length of line
+					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
 
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
 			}
 		}
 	}
+
+	//===============================================================================================================================================
 
 
 
@@ -362,14 +338,14 @@ export class Parser {
 	 */
 	public ApplyDecorations(activeEditor: vscode.TextEditor): void {
 		// this.ApplyHide(activeEditor);
-		for (let tag of this.tags) {
+		for (const tag of this.tags) {
 			activeEditor.setDecorations(tag.decoration, tag.ranges);
 			tag.ranges.length = 0; // clear the ranges for the next pass
 		}
 
 		//Provides highlighting for comment links 
 		if (this.highlightLinkedComments) {
-			const ranges = getLinksRangesDoc(activeEditor.document).map(element => <vscode.DecorationOptions>{ range: element });
+			const ranges = getLinksRangesDoc(activeEditor.document);
 			activeEditor.setDecorations(linkedCommentDecoration, ranges);
 		}
 	}
@@ -393,8 +369,8 @@ export class Parser {
 		if (config) {
 			this.supportedLanguage = true;
 
-			let blockCommentStart = config.blockComment ? config.blockComment[0] : null;
-			let blockCommentEnd = config.blockComment ? config.blockComment[1] : null;
+			const blockCommentStart = config.blockComment ? config.blockComment[0] : null;
+			const blockCommentEnd = config.blockComment ? config.blockComment[1] : null;
 
 			this.setCommentFormat(config.lineComment ?? blockCommentStart, blockCommentStart, blockCommentEnd);
 
@@ -436,8 +412,7 @@ export class Parser {
 
 	/** Sets the highlighting tags up for use by the parser */
 	private setTags(): void {
-		let items = this.contributions.tags;
-		for (let item of items) {
+		for (const item of this.contributions.tags) {
 			//Create the format used for the tag
 			const options = Parser.TagDefinitionToDecorationOptions(item);
 			
@@ -475,7 +450,7 @@ export class Parser {
 		// If no single line comment delimiter is passed, monoline comments are not supported
 		if (monoLine) {
 			this.highlightMonolineComments = this.contributions.monolineComments;
-			if (typeof monoLine === 'string') {
+			if (IsString(monoLine)) {
 				this.delimiter = Parser.escapeSlashes(Parser.escapeRegExp(monoLine));
 			} else if (monoLine.length > 0) {
 				// * if multiple delimiters are passed, the language has more than one single line comment format
@@ -497,6 +472,38 @@ export class Parser {
 
 
 
+export function IsString(item:any): item is String {return typeof item === 'string';}
+
+
+
+
+// function OffsetFromRegex(array:RegExpExecArray|RegExpMatchArray, index:number) {
+// 	let returnValue = 0;
+// 	const numberStop = (index >= 1 && index < array.length)? index : array.length;
+// 	for (let i:number=1; i<numberStop; i++) returnValue += array[i].length;
+// 	return returnValue;
+// }
+
+
+
+/**
+ * A set listing all of the "languages", like plaintext, that don't have comment syntax
+ * @returns {string[]} 
+ */
+export const TextLanguages = new HashSet<string>('code-text-binary', 'bibtex', 'log', 'Log', 'search-result', 'plaintext', 'juliamarkdown', 'scminput', 'properties', 'csv', 'tsv', 'excel');
+
+
+
+		
+		/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+			
+			"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
+		capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
+		at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
+		
+		              ([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
+		capture    any leading whitespace       dont index block start            any trailing whitespace
+		*/
 
 
 
@@ -507,11 +514,12 @@ export class Parser {
 
 
 
+		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+		        "(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
+		one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
 
-
-
-
-
+						"([ \\t]*\\*[ \\t]*)"
+		*/
 
 
 

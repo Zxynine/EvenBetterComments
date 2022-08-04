@@ -69,13 +69,11 @@ export async function TryGetGrammar(scopeName : string) : Promise<IGrammar|undef
 
 
 
-export function GetGetScopeAtAPI() {
-	return { 
-		getScopeAt: TryGetDocumentScopeAt, 
-		getScopeLine: TryGetDocumentScopeLine,
-		getGrammar: TryGetGrammar 
-	};
-}
+export const GetGetScopeAtAPI = { 
+	getScopeAt: TryGetDocumentScopeAt, 
+	getScopeLine: TryGetDocumentScopeLine,
+	getGrammar: TryGetGrammar 
+};
 
 
 
@@ -150,7 +148,6 @@ abstract class DisposableContext implements vscode.Disposable {
 	protected readonly subscriptions: vscode.Disposable[] = [];
 	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
 }
-
 
 
 
