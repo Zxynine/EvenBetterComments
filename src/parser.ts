@@ -18,6 +18,17 @@ export class Parser {
 		MonoLine: / /,
 		MultiLine: / /,
 		MultiLineJS: / /,
+
+
+
+		MonoLineSimple: / /,
+		MonoLineMixed: / /,
+
+		MultiLineSimple: / /,
+		MultiLineMixed: / /,
+
+		MultiLineJSSimple: / /,
+		MultiLineJSMixed: / /,
 	}
 
 
@@ -144,43 +155,53 @@ export class Parser {
 		// if the language isn't supported, we don't need to go any further
 		if (!this.supportedLanguage) return;
 
+		const TagArray = Parser.JoinDelimiterArray(this.tags);
+
 
 		//..............................................
 		
 		const expression = ((this.isPlainText && this.contributions.highlightPlainText)
 			// start by tying the regex to the first character in a line
-			? "(^)+([ \\t]*[ \\t]*)"
+			? "(^)+([ \\t]*)"
 			// start by finding the delimiter (//, --, #, ') with optional spaces or tabs
 			: "(" + this.delimiter + ")+([ \\t])*"
 		// Apply all configurable comment start tags
-		) + "("+ Parser.JoinDelimiterArray(this.tags) +")+(.*)";
+		) + "("+TagArray+")+(.*)";
 		// if it's plain text, we have to do mutliline regex to catch the SOL with ^ and EOL with $
 		this.Expressions.MonoLine = new RegExp(expression, (this.isPlainText)? "igm" : "ig");
+
+		const MonoLineCommon = "("+this.delimiter+")+([ \\t]*)("+TagArray+")+(.*$)";
+		this.Expressions.MonoLineSimple = new RegExp("(^)([ \\t]*)"+MonoLineCommon, "igm");
+		this.Expressions.MonoLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+")\\S*.*?)"+MonoLineCommon, "igm");
+
+
 
 		//..............................................
 		
 		// Use start and end delimiters to find block comments
-		this.Expressions.MultiLine = new RegExp("(^|[ \\t])(" + this.blockCommentStart + "[^\\*])+([\\s\\S]*?)(" + this.blockCommentEnd + ")", "gm");
-		/*                         "(^|[ \\t])(this.blockCommentStart[\\s])+([\\s\\S]*?)(this.blockCommentEnd)"
+		this.Expressions.MultiLine = new RegExp("(^|[ \\t])(" + this.blockCommentStart + "[^\\*])+([\\s\\S]*?)(" + this.blockCommentEnd + ")", "igm");
 		
-		        "(^|[ \\t])                 (this.blockCommentStart[\\s])+               ([\\s\\S]*?)          (this.blockCommentEnd)"
-		capture newline or whitespace   capture block start and whitespace char     capture any characters        capture block end
-		     single character                       at least one                        all non greedy                single char    
-		*/
-
+		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
+		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
+		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
+		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?"+this.blockCommentEnd+"?))"+MultiLineCommon, "igm");
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
 		this.Expressions.MultiLineJS = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*?\*\/)/gm; // Find rows of comments matching pattern /** */
-		/*                               /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm
-		        (^|[ \t])                         (\/\*\*)+            ([\s\S]*?)                 (\*\/)                gm
-		begining of line or whitespace       one or more '/ **'    all characters non greedy    one match '*-/'   global multiline
-		*/
 	}
 
+/* /* 
+ */
 
+/* 
+ dwada*/   /* 
+ */
 
-
+ /* 
+ wad */           /*  */
+ 
+/*  */         /*  */
 
 
 
@@ -204,20 +225,18 @@ export class Parser {
 			if (this.ignoreFirstLine && (startPos.line === 0 && startPos.character === 0)) continue;
 
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
-			// console.log("Has Document: ", (DocumentLoader.getDocument(activeEditor.document.uri) !== undefined));
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
 					const searchRegex = "(.*?)("+ this.delimiter +")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*)"
-					// console.log("Has comment token");
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
-					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(searchRegex);
+					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "i"));
 					if (matchResult) {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();
 						if (this.tagsMap.has(matchString)) {
 							// const DelimiterOffset = offset + matchResult[1].length;
-							const range = new vscode.Range(startPos.line, startPos.character, endPos.line, activeEditor.document.lineAt(startPos).text.length);
+							const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
 							// console.log(searchRegex, "\n",  activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range);
 							this.tagsMap.get(matchString)!.ranges.push(range);
 						}
@@ -230,6 +249,73 @@ export class Parser {
 			}
 		}
 	}
+
+
+
+
+
+	/**
+	 * Finds all single line comments which are the only content on a given line delimited by a given delimiter and matching tags specified in package.json
+	 * @param activeEditor The active text editor containing the code document
+	**/
+	public FindSingleLineCommentsSimple(activeEditor: vscode.TextEditor): void {
+		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MonoLineSimple)) {
+			const startPos = activeEditor.document.positionAt(match.index);
+			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+
+			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
+			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
+			// Find which custom delimiter was used in order to add it to the collection
+			
+			const matchString = (match[5] as string).toLowerCase();
+			this.tagsMap.get(matchString)?.ranges.push(new vscode.Range(startPos, endPos));
+		}
+	}
+
+
+	/**
+	 * Finds all single line comments which are the only content on a given line delimited by a given delimiter and matching tags specified in package.json
+	 * @param activeEditor The active text editor containing the code document
+	**/
+	public FindSingleLineCommentsMixed(activeEditor: vscode.TextEditor): void {
+		const MixedMonoline = new RegExp("(^)+([ \\t]*(?!"+ this.delimiter +")\\S*.*?)("+ this.delimiter +")+([ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")+(.*$)", "igm");
+		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), MixedMonoline)) {
+			const startPos = activeEditor.document.positionAt(match.index);
+			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+			
+			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
+			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
+
+			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
+			if (LineArray && LineArray.hasTokenType(StandardTokenType.Comment)) {
+				const searchRegex = "^.*?("+this.delimiter+")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*$)"
+				
+				const offset = LineArray.offsetOf(StandardTokenType.Comment);
+				const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "i"));
+				if (matchResult) {
+					// Find which custom delimiter was used in order to add it to the collection
+					const matchString = (matchResult[2] as string).toLowerCase();
+					if (this.tagsMap.has(matchString)) {
+						const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
+						console.log(searchRegex, "\n", activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range, "\n", LineArray.toTokenTypeArray());
+						this.tagsMap.get(matchString)!.ranges.push(range);
+					}
+				}
+			}
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -268,7 +354,6 @@ export class Parser {
 					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					// length of leading delimeter and spaces        //length of line
 					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
-					
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
 			}
@@ -309,7 +394,6 @@ export class Parser {
 					const lineMatchIndex = line.index + match.index;
 																		// length of leading delimeter and spaces        //length of line
 					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
-
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
 			}
@@ -489,43 +573,47 @@ export function IsString(item:any): item is String {return typeof item === 'stri
 /**
  * A set listing all of the "languages", like plaintext, that don't have comment syntax
  * @returns {string[]} 
- */
+ */ /* */
 export const TextLanguages = new HashSet<string>('code-text-binary', 'bibtex', 'log', 'Log', 'search-result', 'plaintext', 'juliamarkdown', 'scminput', 'properties', 'csv', 'tsv', 'excel');
 
 
 
+
+/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+	
+	"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
+capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
+at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
+
+				([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
+capture    any leading whitespace       dont index block start            any trailing whitespace
+*/
+
+
+
+/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
+		"(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
+one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
+
+				"([ \\t]*\\*[ \\t]*)"
+*/
+
+
+
+
+
+		/*                         "(^|[ \\t])(this.blockCommentStart[\\s])+([\\s\\S]*?)(this.blockCommentEnd)"
 		
-		/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-			
-			"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
-		capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
-		at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
-		
-		              ([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
-		capture    any leading whitespace       dont index block start            any trailing whitespace
+		        "(^|[ \\t])                 (this.blockCommentStart[\\s])+               ([\\s\\S]*?)          (this.blockCommentEnd)"
+		capture newline or whitespace   capture block start and whitespace char     capture any characters        capture block end
+		     single character                       at least one                        all non greedy                single char    
 		*/
 
 
-
-
-
-
-
-
-
-
-		/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-		        "(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
-		one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
-
-						"([ \\t]*\\*[ \\t]*)"
+		/*                               /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm
+		        (^|[ \t])                         (\/\*\*)+            ([\s\S]*?)                 (\*\/)                gm
+		begining of line or whitespace       one or more '/ **'    all characters non greedy    one match '*-/'   global multiline
 		*/
-
-
-
-
-
-
 
 
 
@@ -550,8 +638,6 @@ export const TextLanguages = new HashSet<string>('code-text-binary', 'bibtex', '
 	 *
 	 * [[Hello ]] dadw [[    ]]
 	**/
-
-
 
 
 
