@@ -184,7 +184,7 @@ export class Parser {
 		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
 		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
 		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?"+this.blockCommentEnd+"?))"+MultiLineCommon, "igm");
+		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?(?:"+this.blockCommentEnd+")?))"+MultiLineCommon, "igm");
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
