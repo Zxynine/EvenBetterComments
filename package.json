@@ -45,21 +45,6 @@
 				"command": "evenbettercomments.reloadDecorations"
 			},
 			{
-				"title": "BetterHyperScopes: Show Scopes",
-				"command": "vscode-show-scopes.show",
-				"when": "editorTextFocus"
-			},
-			{
-				"title": "BetterHyperScopes: Show Scopes Full Line",
-				"command": "vscode-show-scopes.show-line",
-				"when": "editorTextFocus"
-			},
-			{
-				"title": "BetterHyperScopes: Show Inspector",
-				"command": "vscode-show-scopes.show-inspector",
-				"when": "editorTextFocus"
-			},
-			{
 				"title": "BetterHyperScopes: Reload Document Tokens",
 				"command": "hscopes-booster.reloadDocuments"
 			},

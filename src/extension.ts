@@ -8,7 +8,6 @@ import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
 import { LoadDocumentsAndGrammer, DocumentLoader, GetGetScopeAtAPI } from "./document";
 import { TMRegistry } from './Tokenisation/TextmateLoader';
-import { highlighterDecoratiuon } from './providers/DecorationProvider';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,9 +21,6 @@ export const ExtentionID = "evenbettercomments";
 	ReloadConfiguration = 'evenbettercomments.reloadConfiguration',
 	ReloadDocuments = 'hscopes-booster.reloadDocuments',
 	ReloadGrammar = 'hscopes-booster.reloadGrammar',
-	ShowScope = 'vscode-show-scopes.show',
-	ShowLineScopes = 'vscode-show-scopes.show-line',
-	ShowScopeInspector = 'vscode-show-scopes.show-inspector',
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,8 +91,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// * This section deals with loading scopes of documents
 	LoadDocumentsAndGrammer();
-	/** EXPORT API */
-	const API = GetGetScopeAtAPI;
 
 	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(DocumentLoader.openDocument)); //Handle documents being opened
 	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(DocumentLoader.closeDocument)); //Handle documents bing closed
@@ -105,63 +99,10 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadGrammar, TMRegistry.ReloadGrammar));
 	//............................................................................
 	
-	// * This section deals with displaying scopes in editor
-	
 
-	const extensionOutputChannel = vscode.window.createOutputChannel('scopes', 'yaml');
-	async function HyperscopesDisplayScopes() {
-		console.log("HyperScopes: show command run!");
-		const activeTextEditor = vscode.window.activeTextEditor;
-		if (activeTextEditor) {
-			const token = API.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
-			if (token) {
-				extensionOutputChannel.show(true);
-				extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-
-				let counter = 0;
-				activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-				const intervalId = setInterval(() => {
-					if (counter++ > 5) clearInterval(intervalId);
-					activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [token.range] : []);
-				}, 100);
-			} else console.log("HyperScopes: Token not found.");
-		}
-	}
-	async function HyperscopesDisplayScopesLine() {
-		console.log("HyperScopes: show line command run!");
-		const activeTextEditor = vscode.window.activeTextEditor;
-		if (activeTextEditor) {
-			const tokenArray = API.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
-			if (tokenArray) {
-				const highlightRange : vscode.Range[] = [];
-				tokenArray.forEach(token => {
-					if (token) highlightRange.push(activeEditor.document.lineAt(token.range.start).range)
-				});
-				if (highlightRange.length) {
-					extensionOutputChannel.show(true);
-					for (const token of tokenArray) if (token) extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-
-					let counter = 0;
-					activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-					const intervalId = setInterval(() => {
-						if (counter++ > 5) clearInterval(intervalId);
-						activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? highlightRange : []);
-					}, 100);
-
-				}
-			}
-		}
-	}
-
-	const StartScopeInspector = async () => { if (vscode.window.activeTextEditor) vscode.commands.executeCommand('editor.action.inspectTMScopes'); }
-	
-
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScope, HyperscopesDisplayScopes));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineScopes, HyperscopesDisplayScopesLine));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
 	//............................................................................
 	/** EXPORT API */
-	return API;
+	return GetGetScopeAtAPI;
 }
 
 export function deactivate() { DocumentLoader.unloadDocuments() }
