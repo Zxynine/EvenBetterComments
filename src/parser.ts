@@ -227,7 +227,7 @@ export class Parser {
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
 			if (LineArray) {
 				if (LineArray.hasTokenType(StandardTokenType.Comment)) {
-					const searchRegex = "(.*?)("+ this.delimiter +")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*)"
+					const searchRegex = "(.*?)("+this.delimiter+")+[ \\t]*("+Parser.JoinDelimiterArray(this.tags)+")+(.*)"
 					
 					const offset = LineArray.offsetOf(StandardTokenType.Comment);
 					const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "i"));
@@ -278,7 +278,8 @@ export class Parser {
 	 * @param activeEditor The active text editor containing the code document
 	**/
 	public FindSingleLineCommentsMixed(activeEditor: vscode.TextEditor): void {
-		const MixedMonoline = new RegExp("(^)+([ \\t]*(?!"+ this.delimiter +")\\S*.*?)("+ this.delimiter +")+([ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")+(.*$)", "igm");
+		const MixedMonoline = new RegExp("(^)+([ \\t]*(?!"+
+		this.delimiter+")\\S*.*?)("+ this.delimiter +")+([ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")+(.*$)", "igm");
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), MixedMonoline)) {
 			const startPos = activeEditor.document.positionAt(match.index);
 			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
@@ -287,7 +288,7 @@ export class Parser {
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
 
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
-			if (LineArray && LineArray.hasTokenType(StandardTokenType.Comment)) {
+			if (LineArray?.hasTokenType(StandardTokenType.Comment)) {
 				const searchRegex = "^.*?("+this.delimiter+")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*$)"
 				
 				const offset = LineArray.offsetOf(StandardTokenType.Comment);
@@ -380,9 +381,6 @@ export class Parser {
 		const commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
-
-		// const text = activeEditor.document.getText();
-		// for (let match:RegExpExecArray|null; (match = this.Expressions.MultiLineJS.exec(text));) {
 		// Find the multiline comment block
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineJS)) {
 			const commentBlock = match[0];
