@@ -4,10 +4,9 @@ import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
-import { HashSet } from './typings/Collections';
 
-	// TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
+// TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
 export class Parser {
 	private readonly tags: CommentTag[] = [];
@@ -63,8 +62,6 @@ export class Parser {
 	}
 
 	//TODO: Allow multiline block comment formatting by placing the tag on the same line just after the start delimiter. 
-
-	//TODO: create a map for tags to avoid using find for everey match every update.
 	//Tools==========================================================================================================================================
 	
  	//TODO: just save the regex string, this.tags should not change.	
@@ -116,7 +113,7 @@ export class Parser {
 	 * @returns {string} The escaped string
 	 */
 	private static escapeRegExp(input: string): string { return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } // $& means the whole matched string
-	private static escapeSlashes(input: string): string { return input.replace(/\//ig, "\\/"); } //? hardcoded to escape slashes
+	private static escapeSlashes(input: string): string { return input.replace(/\//ig, "\\/"); } // /? hardcoded to escape slashes
 
 	private static *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
 		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
@@ -174,8 +171,6 @@ export class Parser {
 		this.Expressions.MonoLineSimple = new RegExp("(^)([ \\t]*)"+MonoLineCommon, "igm");
 		this.Expressions.MonoLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+")\\S*.*?)"+MonoLineCommon, "igm");
 
-
-
 		//..............................................
 		
 		// Use start and end delimiters to find block comments
@@ -184,7 +179,7 @@ export class Parser {
 		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
 		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
 		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?(?:"+this.blockCommentEnd+")?))"+MultiLineCommon, "igm");
+		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
@@ -278,9 +273,7 @@ export class Parser {
 	 * @param activeEditor The active text editor containing the code document
 	**/
 	public FindSingleLineCommentsMixed(activeEditor: vscode.TextEditor): void {
-		const MixedMonoline = new RegExp("(^)+([ \\t]*(?!"+
-		this.delimiter+")\\S*.*?)("+ this.delimiter +")+([ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")+(.*$)", "igm");
-		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), MixedMonoline)) {
+		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MonoLineMixed)) {
 			const startPos = activeEditor.document.positionAt(match.index);
 			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
 			
@@ -298,7 +291,7 @@ export class Parser {
 					const matchString = (matchResult[2] as string).toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
-						console.log(searchRegex, "\n", activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range, "\n", LineArray.toTokenTypeArray());
+						// console.log(searchRegex, "\n", activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range, "\n", LineArray.toTokenTypeArray());
 						this.tagsMap.get(matchString)!.ranges.push(range);
 					}
 				}
@@ -308,7 +301,7 @@ export class Parser {
 
 
 
-
+	//TODO: work on making map of lines which contain simple comments to use to prevent overlaps. Use numbers for bit manipulation.
 
 
 
@@ -438,6 +431,15 @@ export class Parser {
 	//#region  Private Methods.......................................................................................................................
 
 	/**
+	 * A set listing all of the "languages", like plaintext, that don't have comment syntax
+	 */ /* */
+	private static readonly TextLanguages = new Set([
+		'code-text-binary', 'bibtex', 'log', 'Log', 'search-result', 
+		'plaintext', 'juliamarkdown', 'scminput', 'properties', 'csv', 'tsv', 'excel'
+	]);
+
+
+	/**
 	 * Sets the comment delimiter [//, #, --, '] of a given language
 	 * @param languageCode The short code of the current language
 	 * https://code.visualstudio.com/docs/languages/identifiers
@@ -454,7 +456,7 @@ export class Parser {
 			const blockCommentStart = config.blockComment ? config.blockComment[0] : null;
 			const blockCommentEnd = config.blockComment ? config.blockComment[1] : null;
 
-			this.setCommentFormat(config.lineComment ?? blockCommentStart, blockCommentStart, blockCommentEnd);
+			this.setCommentFormat(config.lineComment ?? null, blockCommentStart, blockCommentEnd);
 
 			this.ignoreFirstLine = this.configuration.GetHasShebang(languageCode);
 		}
@@ -487,6 +489,13 @@ export class Parser {
 				this.isPlainText = true;
 				// If highlight plaintext is enabled, this is a supported language
 				this.supportedLanguage = this.contributions.highlightPlainText;
+				break;
+			default:
+				if (Parser.TextLanguages.has(languageCode)) {
+					this.isPlainText = true;
+					// If highlight plaintext is enabled, this is a supported language
+					this.supportedLanguage = this.contributions.highlightPlainText;
+				}
 				break;
 		}
 	}
@@ -566,13 +575,6 @@ export function IsString(item:any): item is String {return typeof item === 'stri
 // 	return returnValue;
 // }
 
-
-
-/**
- * A set listing all of the "languages", like plaintext, that don't have comment syntax
- * @returns {string[]} 
- */ /* */
-export const TextLanguages = new HashSet<string>('code-text-binary', 'bibtex', 'log', 'Log', 'search-result', 'plaintext', 'juliamarkdown', 'scminput', 'properties', 'csv', 'tsv', 'excel');
 
 
 

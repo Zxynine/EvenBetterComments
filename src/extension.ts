@@ -27,6 +27,7 @@ export const ExtentionID = "evenbettercomments";
 	ShowScopeInspector = 'vscode-show-scopes.show-inspector',
 }
 
+const AllLanguages : vscode.DocumentSelector = { language: "*" };
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * MAIN ACTIVATE FUNCTION
@@ -88,8 +89,8 @@ export function activate(context: vscode.ExtensionContext) {
 	// * This section deals with the comment links and lens
 		
 	// Register our CodeLens provider and push to the context so it can be disposed of later
-	context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: "*" }, new CommentLinkLensProvider()));
-	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({ language: "*" }, new DocumentCommentLinkProvider()));
+	context.subscriptions.push(vscode.languages.registerCodeLensProvider(AllLanguages, new CommentLinkLensProvider()));
+	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(AllLanguages, new DocumentCommentLinkProvider()));
 
 	//............................................................................
 
@@ -149,7 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
 					}, 100);
 
 				}
-			}
+			} else console.log("HyperScopes: Token Array not found.");
 		}
 	}
 

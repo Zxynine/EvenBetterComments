@@ -217,7 +217,6 @@ export class DocumentController extends DisposableContext {
 	private tokensArray : Array<ITokenizeLineResult | undefined> = [];
 	private tokens2Array : Array<ITokenizeLineResult2 | undefined> = [];
 	private documentText : Array<string> = [];
-	private contentChangesArray : Array<vscode.TextDocumentContentChangeEvent> = []; // Stores text-change
 
 	//Tools
 	private static readonly ChangeSorter = (ChangeL:ChangeEvent, ChangeR:ChangeEvent) => ChangeL.range.start.isAfter(ChangeR.range.start) ? 1 : -1;
@@ -259,7 +258,6 @@ export class DocumentController extends DisposableContext {
 	public refresh() {
 		this.tokensArray = [];
 		this.tokens2Array = [];
-		this.contentChangesArray = [];
 		this.parseEntireDocument();
 	}
 
@@ -269,9 +267,7 @@ export class DocumentController extends DisposableContext {
 	public getScopeAt(position : vscode.Position) : TokenInfo{
 		if (!this.grammar) return TokenInfo.Default(position);
 		position = this.document.validatePosition(position);
-		
 		this.validateLine(position.line);
-		this.contentChangesArray.length = 0; //clears changes
 
 		const token = this.tokensArray[position.line]?.tokens.last(token=> token.startIndex <= position.character);
 		return (token)? TokenInfo.Create(this.document, position.line, token) : TokenInfo.Default(position);
@@ -281,9 +277,7 @@ export class DocumentController extends DisposableContext {
 	public getLineScopes(linePosition : vscode.Position) : Array<TokenInfo> {
 		if (!this.grammar) return [];
 		linePosition = this.document.validatePosition(linePosition);
-		
 		this.validateLine(linePosition.line);
-		this.contentChangesArray.length = 0; //clears changes
 
 		const lineTokens = this.tokensArray[linePosition.line];
 		return (lineTokens)? TokenInfo.CreateLineArray(this.document, linePosition.line, lineTokens) : [];
@@ -292,9 +286,7 @@ export class DocumentController extends DisposableContext {
 	public getScopesForLines(lineRange : vscode.Range) : Array<Array<TokenInfo>> {
 		if (!this.grammar) return [];
 		lineRange = this.document.validateRange(lineRange);
-
-		this.validateLines(lineRange.start.line, lineRange.end.line);
-		this.contentChangesArray.length = 0; //clears changes
+		this.validateRange(lineRange);
 
 		const lineCount = lineRange.end.line - lineRange.start.line;
 		const returnTokens : TokenInfo[][] = new Array(lineCount+1); //same line is 0 so array length of 1
@@ -310,9 +302,7 @@ export class DocumentController extends DisposableContext {
 
 	public getAllScopes() : Array<Array<TokenInfo>> {
 		if (!this.grammar) return [];
-		
 		this.validateDocument();
-		this.contentChangesArray.length = 0; //clears changes
 		//We should now have an up to date varsion of all tokens.
 
 		const returnTokens : TokenInfo[][] = new Array(this.document.lineCount);
@@ -326,12 +316,10 @@ export class DocumentController extends DisposableContext {
 
 	public getAllScopesFlat() : Array<TokenInfo> {
 		if (!this.grammar) return [];
-		
 		this.validateDocument();
-		this.contentChangesArray.length = 0; //clears changes
 		//We should now have an up to date varsion of all tokens.
 
-		const returnTokens : TokenInfo[] = [];
+		const returnTokens : TokenInfo[] = new Array(this.document.lineCount);
 		for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
 			const lineTokensArray = this.tokensArray[lineIndex];
 			if (lineTokensArray) returnTokens.push.apply(TokenInfo.CreateLineArray(this.document, lineIndex, lineTokensArray));
@@ -341,13 +329,13 @@ export class DocumentController extends DisposableContext {
 	}
 
 	//...............................................................................
+	//* Getting token data
 
 	public getLineTokenData(linePosition : vscode.Position) : StandardLineTokens|undefined {
 		if (!this.grammar) return;
 		linePosition = this.document.validatePosition(linePosition);
 		
 		this.validateLine(linePosition.line);
-		this.contentChangesArray.length = 0; //clears changes
 
 		const tok2arr = this.tokens2Array[linePosition.line];
 		return (tok2arr)? new StandardLineTokens(tok2arr.tokens, this.document.lineAt(linePosition).text) : undefined;
@@ -358,7 +346,6 @@ export class DocumentController extends DisposableContext {
 		lineRange = this.document.validateRange(lineRange);
 		
 		this.validateLines(lineRange.start.line, lineRange.end.line);
-		this.contentChangesArray.length = 0; //clears changes
 
 		const lineCount = lineRange.end.line - lineRange.start.line;
 		const returnTokens : StandardLineTokens[] = new Array(lineCount+1); //same line is 0 so array length of 1
@@ -369,14 +356,26 @@ export class DocumentController extends DisposableContext {
 		return returnTokens;
 	}
 
+	public getDocumentTokenData() : Array<StandardLineTokens> {
+		if (!this.grammar) return [];
+		this.validateDocument();
+		
+		const lineCount = this.document.lineCount;
+		const returnTokens : StandardLineTokens[] = new Array(lineCount); //same line is 0 so array length of 1
+		for (let lineIndex = 0; (lineIndex < lineCount); lineIndex++){
+			const lineTokensArray = this.tokens2Array[lineIndex];
+			if (lineTokensArray) returnTokens[lineIndex] = new StandardLineTokens(lineTokensArray.tokens, this.document.lineAt(lineIndex).text);
+		}
+		return returnTokens;
+	}
+
 	//...............................................................................
 	// * Validation
 	// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
 
 	private validateLine(lineIndex : number) {
-		if(this.documentText[lineIndex] !== this.document.lineAt(lineIndex).text){
-			this.parseLine(this.document.lineAt(lineIndex));
-		}
+		const line : vscode.TextLine = this.document.lineAt(lineIndex);
+		if (this.documentText[lineIndex] !== line.text) this.parseLine(line);
 	}
 
 	private validateLines(startLine:number, endLine:number) {
@@ -384,19 +383,23 @@ export class DocumentController extends DisposableContext {
 			this.validateLine(lineIndex);
 		}
 	}
+	
+	private validateRange(range: vscode.Range) {
+		this.validateLines(range.start.line, range.end.line);
+	}
 
 	private validateDocument() {
 		//If line counts are the same, validate each line. If different, reparse entire document.
 		if (this.documentText.length === this.document.lineCount) {
-			for (let lineIndex = 0; (lineIndex < this.document.lineCount); lineIndex++){
-				this.validateLine(lineIndex);
-			}
+			this.validateLines(0, this.document.lineCount-1);
 		} else this.refresh();
 	}
 
+
+
 	//...............................................................................
 	// * Parsing
-	private parseLine(line : vscode.TextLine) {
+	private parseLine(line : vscode.TextLine) : void {
 		if(!this.grammar) return;
 		// Update text content
 		this.documentText[line.lineNumber] = line.text;
@@ -405,13 +408,13 @@ export class DocumentController extends DisposableContext {
 		this.tokens2Array[line.lineNumber] = (!TooLong)? this.grammar.tokenizeLine2(line.text, this.getLineState2(line.lineNumber-1)) : undefined;
 	}
 
-	private parseLines(startLine:number, endLine:number){
+	private parseLines(startLine:number, endLine:number) : void {
 		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++){
 			this.parseLine(this.document.lineAt(lineIndex));
 		}
 	}
 
-	private parseRange(range : vscode.Range){
+	private parseRange(range : vscode.Range) : void {
 		range = this.document.validateRange(range);
 		this.parseLines(range.start.line, range.end.line);
 	}
@@ -419,6 +422,9 @@ export class DocumentController extends DisposableContext {
 	private parseEntireDocument() : void {
 		this.parseLines(0, this.document.lineCount-1);
 	}
+
+
+
 
 	//...............................................................................
 	
@@ -429,6 +435,18 @@ export class DocumentController extends DisposableContext {
 
 
 //.........................................................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
