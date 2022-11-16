@@ -93,10 +93,11 @@ export class LanguageLoader {
 		return (filePath)? fs.readFileSync(filePath, { encoding: 'utf8' }) : undefined;
 	}
 	// Get the filepath from the map
-	public static ReadLanguageFileAsync(languageCode: string) : Promise<string>|undefined {
+	public static async ReadLanguageFileAsync(languageCode: string) : Promise<string|undefined> {
 		const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
-		return (!filePath)? undefined : new Promise<string>((resolve, reject) => {
-			fs.readFile(filePath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
+		return new Promise<string|undefined>((resolve, reject) => {
+			if (!filePath) resolve(undefined);
+			else fs.readFile(filePath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
 		});
 	}
 
@@ -105,15 +106,16 @@ export class LanguageLoader {
 		return (grammarPath)? fs.readFileSync(grammarPath, { encoding: 'utf8' }) : undefined;
 	}
 
-	public static ReadGrammarFileAsync(scopeName: string) : Promise<string>|undefined {
+	public static async ReadGrammarFileAsync(scopeName: string) : Promise<string|undefined> {
 		const grammarPath = LanguageLoader.scopeNameToPath.get(scopeName);
-		return (!grammarPath)? undefined : new Promise<string>((resolve, reject) => {
-			fs.readFile(grammarPath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
+		return new Promise<string|undefined>((resolve, reject) => {
+			if (!grammarPath) resolve(undefined);
+			else fs.readFile(grammarPath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
 		});
 	}
 
 
-	public static ReadFileAsync(path : string) {
+	public static async ReadFileAsync(path : string) {
 		return new Promise<string>((resolve, reject) => fs.readFile(path, 'utf-8', (error, data) => error ? reject(error) : resolve(data)))
 	}
 

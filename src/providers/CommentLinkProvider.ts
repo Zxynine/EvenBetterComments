@@ -25,6 +25,7 @@ const CLEAN_LINK = /(\[|\])/g;
 const commentRegex = /^\*|^\/\/|^\/\*|^\#|^<!--/;
 // const URLRegex = /[a-zA-z0-9.-_~+#,%&=*;:@]/
 
+//TODO: use sementic tokens/parser to find comments.
 const isComment = (line: string) => Boolean(line.replace(/\s/g, "").match(commentRegex));
 // const isPath = (line: string) => Boolean(line.match(/.+[/.].*|.*[./].+/));
 

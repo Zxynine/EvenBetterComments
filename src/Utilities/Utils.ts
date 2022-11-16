@@ -249,22 +249,80 @@ export const MarkdownFormat = {
 /**
  * Checks whether the input value is the type 'string'
  */
-export function IsString(item:any): item is String {return typeof item === 'string';}
+export function IsString(item:unknown): item is String {return typeof item === 'string';}
 
+/**
+ * @returns whether the provided parameter is a JavaScript Array and each element in the array is a string.
+ */
+ export function IsStringArray(value: unknown): value is string[] {return Array.isArray(value) && (<unknown[]>value).every(elem => IsString(elem));}
 
 /**
  * Checks whether the input value is a integer. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false. The number '1.0' yields true. The number '1.1' yields false.
  */
- export function IsInteger(value : any) : value is int { return IsNumber(value) && Math.floor(value) === value; }
+ export function IsInteger(value : unknown) : value is int { return IsNumber(value) && Math.floor(value) === value; }
 
 /**
  * Checks whether the input value is a number. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false.
  */
- export function IsNumber(value : any) : value is number { return typeof value === 'number'; }
+ export function IsNumber(value : unknown) : value is number { return typeof value === 'number'; }
+
+/**
+ * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
+ */
+ export function IsTypedArray(obj: unknown): obj is Object {
+	const TypedArray = Object.getPrototypeOf(Uint8Array);
+	return typeof obj === 'object' && obj instanceof TypedArray;
+}
+
+/**
+ * @returns whether the provided parameter is an Iterable, casting to the given generic
+ */
+ export function IsIterable<T>(obj: unknown): obj is Iterable<T> {
+	return !!obj && typeof (obj as any)[Symbol.iterator] === 'function';
+}
+
+/**
+ * @returns whether the provided parameter is a JavaScript Boolean or not.
+ */
+ export function IsBoolean(obj: unknown): obj is boolean { return (obj === true || obj === false); }
+
+/**
+ * @returns whether the provided parameter is undefined.
+ */
+ export function IsUndefined(obj: unknown): obj is undefined { return (typeof obj === 'undefined'); }
+
+/**
+ * @returns whether the provided parameter is null.
+ */
+ export function IsNull(obj: unknown): obj is null { return (obj === null); }
 
 
+/**
+ * @returns whether the provided parameter is undefined or null.
+ */
+ export function IsUndefinedOrNull(obj: unknown): obj is undefined|null { return (IsUndefined(obj) || obj === null); }
+
+/**
+ * @returns whether the provided parameter is defined.
+ */
+ export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUndefinedOrNull(arg); }
+
+
+
+/**
+ * @returns whether the provided parameter is a JavaScript Function or not.
+ */
+ export function IsFunction(obj: unknown): obj is Function {return (typeof obj === 'function');}
+
+
+/**
+ * @returns whether the provided parameters is are JavaScript Function or not.
+ */
+ export function AreFunctions(...objects: unknown[]): boolean {
+	return objects.length > 0 && objects.every(IsFunction);
+}
 
 
 // type TrailingCommaOption = "none" | "es5" | "all";

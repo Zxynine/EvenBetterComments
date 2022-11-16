@@ -61,6 +61,17 @@ export class Parser {
 		this.setTags();
 	}
 
+	
+	public reloadSettings(): void {
+		const activeEditor = vscode.window.activeTextEditor;
+		if (activeEditor) this.RemoveDecorations(activeEditor);
+		this.contributions = vscode.workspace.getConfiguration('evenbettercomments') as any;
+		this.setTags();
+		if (activeEditor) this.UpdateDecorations(activeEditor);
+		console.log("EvenBetterComments: User refreshed tag settings.");
+	}
+
+
 	//TODO: Allow multiline block comment formatting by placing the tag on the same line just after the start delimiter. 
 	//Tools==========================================================================================================================================
 	
@@ -99,7 +110,7 @@ export class Parser {
 
 		//TODO: add line styles like dotted wavy etc... - https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
 		if (tag.overline) options.textDecoration += " overline";
-		if (tag.strikethrough) options.textDecoration += "line-through";
+		if (tag.strikethrough) options.textDecoration += " line-through";
 		if (tag.underline) options.textDecoration += " underline";
 		if (tag.bold) options.fontWeight = "bold";
 		if (tag.italic) options.fontStyle = "italic";
@@ -187,7 +198,8 @@ export class Parser {
 		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
 		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
 		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.blockCommentStart+")\\S*.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
+		//^[ \t]*(?!/\*|//)\S+.*?(?:\*/)?(/\*[^\*])([\s\S\n]*?)(\*/)
+		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+"|"+this.blockCommentStart+")\\S+.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
@@ -207,7 +219,7 @@ export class Parser {
 /*  */         /*  */
 
 
-
+//  /* not selected */
 
 
 
@@ -432,6 +444,23 @@ export class Parser {
 			activeEditor.setDecorations(linkedCommentDecoration, ranges);
 		}
 	}
+
+	/**
+	 * Clears all active decorations.
+	 * @param activeEditor The active text editor containing the code document
+	 */
+	 public RemoveDecorations(activeEditor: vscode.TextEditor): void {
+		for (const tag of this.tags) {
+			activeEditor.setDecorations(tag.decoration, []);
+			tag.ranges.length = 0; // clear the ranges for the next pass
+		}
+		activeEditor.setDecorations(linkedCommentDecoration, []);
+		
+		// activeEditor.setDecorations(this.hideCommentsTag.decoration, []);
+		// this.hideCommentsTag.ranges.length = 0; // clear the ranges for the next pass
+	}
+
+
 
 
 
