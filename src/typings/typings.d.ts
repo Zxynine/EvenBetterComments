@@ -47,7 +47,7 @@ type Callable<T> = () => T;
 
 type nulldefined = null|undefined;
 
-
+type Nullable<T> = T | null;
 
 
 //  /** The 'package.json' file of an app. */
@@ -109,6 +109,29 @@ type float = number;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+type Bit = 0|1|true|false;
 
 
 

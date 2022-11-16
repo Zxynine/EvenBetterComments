@@ -3,6 +3,8 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { KeyValPair } from '../typings/Collections';
 import { statSync } from 'fs';
+// import { Color } from 'vscode';
+
 
 /**
  * Escapes regular expression characters in a given string
@@ -244,7 +246,23 @@ export const MarkdownFormat = {
 
 
 
+/**
+ * Checks whether the input value is the type 'string'
+ */
+export function IsString(item:any): item is String {return typeof item === 'string';}
 
+
+/**
+ * Checks whether the input value is a integer. Anything that could be parsed as a number will yield false.
+ * Example: The string '1' yields false. The number '1.0' yields true. The number '1.1' yields false.
+ */
+ export function IsInteger(value : any) : value is int { return IsNumber(value) && Math.floor(value) === value; }
+
+/**
+ * Checks whether the input value is a number. Anything that could be parsed as a number will yield false.
+ * Example: The string '1' yields false.
+ */
+ export function IsNumber(value : any) : value is number { return typeof value === 'number'; }
 
 
 
@@ -373,3 +391,60 @@ export class FileInfo {
 // 	}
 // 	return false;
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+export function reverseEndianness(arr: Uint8Array): void {
+	for (let i = 0, len = arr.length; i < len; i += 4) {
+		// flip bytes 0<->3 and 1<->2
+		const b0 = arr[i + 0];
+		const b1 = arr[i + 1];
+		const b2 = arr[i + 2];
+		const b3 = arr[i + 3];
+		arr[i + 0] = b3;
+		arr[i + 1] = b2;
+		arr[i + 2] = b1;
+		arr[i + 3] = b0;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Insert `insertArr` inside `target` at `insertIndex`.
+ * Please don't touch unless you understand https://jsperf.com/inserting-an-array-within-an-array
+ */
+ export function arrayInsert<T>(target: T[], insertIndex: number, insertArr: T[]): T[] {
+	const before = target.slice(0, insertIndex);
+	const after = target.slice(insertIndex);
+	return before.concat(insertArr, after);
+}

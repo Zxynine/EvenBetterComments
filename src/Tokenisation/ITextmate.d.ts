@@ -5,10 +5,30 @@ declare const enum StandardTokenType {
     Other = 0,
     Comment = 1,
     String = 2,
-    RegEx = 4,
+    RegEx = 3,
 	// Indicates that no token type is set.
 	NotSet = 8
 }
+
+
+// Must have the same values as `StandardTokenType`!
+declare const enum OptionalStandardTokenType {
+	Other = 0,
+	Comment = 1,
+	String = 2,
+	RegEx = 3,
+	// Indicates that no token type is set.
+	NotSet = 8
+}
+
+
+
+
+
+
+
+
+
 
 
 /**

@@ -115,6 +115,14 @@ export class Parser {
 	private static escapeRegExp(input: string): string { return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } // $& means the whole matched string
 	private static escapeSlashes(input: string): string { return input.replace(/\//ig, "\\/"); } // /? hardcoded to escape slashes
 
+	// private static escapeMarkdownSyntaxTokens(text: string): string {
+	// 	return text.replace(/[.,_~-*+/;:^`'"!?%#&$@<=>()[\]{|}]/g, '\\$&');
+	// }
+	
+	// private static removeMarkdownEscapes(text: string): string {
+	// 	return text.replace(/\\([.,_~-*+/;:^`'"!?%#&$@<=>()[\]{|}])/g, '$1');
+	// }
+
 	private static *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
 		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
 	}

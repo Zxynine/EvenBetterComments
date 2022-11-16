@@ -22,3 +22,15 @@ export function Max(...values:number[]):number {
 export function Sign(value:number):1|-1 {
 	return (value < 0)? -1 : 1;
 }
+
+
+
+
+
+
+
+
+export function Round(number: number, decimalPoints: number): number {
+	const decimal = Math.pow(10, decimalPoints);
+	return Math.round(number * decimal) / decimal;
+}

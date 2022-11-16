@@ -8,7 +8,7 @@ import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
 import { LoadDocumentsAndGrammer, DocumentLoader, GetGetScopeAtAPI } from "./document";
 import { TMRegistry } from './Tokenisation/TextmateLoader';
-import { highlighterDecoratiuon } from './providers/DecorationProvider';
+import { highlighterDecoratiuon as highlighterDecoration } from './providers/DecorationProvider';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,48 +107,39 @@ export function activate(context: vscode.ExtensionContext) {
 	//............................................................................
 	
 	// * This section deals with displaying scopes in editor
-	
+	async function PulseRange(editor: vscode.TextEditor, range : readonly vscode.Range[]) {
+		let counter = 0;
+		editor.setDecorations(highlighterDecoration, []);
+		const intervalId = setInterval(() => {
+			if (counter++ > 5) clearInterval(intervalId);
+			editor.setDecorations(highlighterDecoration, ((counter%2)===0)? range : []);
+		}, 100);
+	}
 
-	const extensionOutputChannel = vscode.window.createOutputChannel('scopes', 'yaml');
+	const extensionOutputChannel = vscode.window.createOutputChannel('HyperScopes', 'yaml');
 	async function HyperscopesDisplayScopes() {
-		console.log("HyperScopes: show command run!");
+		console.log("HyperScopes: show scope command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
 		if (activeTextEditor) {
 			const token = API.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
 			if (token) {
 				extensionOutputChannel.show(true);
 				extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-
-				let counter = 0;
-				activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-				const intervalId = setInterval(() => {
-					if (counter++ > 5) clearInterval(intervalId);
-					activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? [token.range] : []);
-				}, 100);
+				PulseRange(activeTextEditor, [token.range]);
 			} else console.log("HyperScopes: Token not found.");
 		}
 	}
 	async function HyperscopesDisplayScopesLine() {
-		console.log("HyperScopes: show line command run!");
+		console.log("HyperScopes: show line scopes command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
 		if (activeTextEditor) {
 			const tokenArray = API.getScopeLine(activeTextEditor.document, activeTextEditor.selection.active);
 			if (tokenArray) {
-				const highlightRange : vscode.Range[] = [];
-				tokenArray.forEach(token => {
-					if (token) highlightRange.push(activeEditor.document.lineAt(token.range.start).range)
-				});
+				const highlightRange = tokenArray.mappedFilter(token => Boolean(token), token => activeEditor.document.lineAt(token.range.start).range);
 				if (highlightRange.length) {
 					extensionOutputChannel.show(true);
 					for (const token of tokenArray) if (token) extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
-
-					let counter = 0;
-					activeTextEditor.setDecorations(highlighterDecoratiuon, []);
-					const intervalId = setInterval(() => {
-						if (counter++ > 5) clearInterval(intervalId);
-						activeTextEditor.setDecorations(highlighterDecoratiuon, ((counter%2)===0)? highlightRange : []);
-					}, 100);
-
+					PulseRange(activeTextEditor, highlightRange);
 				}
 			} else console.log("HyperScopes: Token Array not found.");
 		}

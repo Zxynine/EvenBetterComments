@@ -264,7 +264,7 @@ export class DocumentController extends DisposableContext {
 	//...............................................................................
 	// * Getting Scopes/API
 
-	public getScopeAt(position : vscode.Position) : TokenInfo{
+	public getScopeAt(position : vscode.Position) : TokenInfo {
 		if (!this.grammar) return TokenInfo.Default(position);
 		position = this.document.validatePosition(position);
 		this.validateLine(position.line);
@@ -334,7 +334,6 @@ export class DocumentController extends DisposableContext {
 	public getLineTokenData(linePosition : vscode.Position) : StandardLineTokens|undefined {
 		if (!this.grammar) return;
 		linePosition = this.document.validatePosition(linePosition);
-		
 		this.validateLine(linePosition.line);
 
 		const tok2arr = this.tokens2Array[linePosition.line];
@@ -344,7 +343,21 @@ export class DocumentController extends DisposableContext {
 	public getLinesTokenData(lineRange : vscode.Range) : Array<StandardLineTokens> {
 		if (!this.grammar) return [];
 		lineRange = this.document.validateRange(lineRange);
-		
+		this.validateLines(lineRange.start.line, lineRange.end.line);
+
+		const lineCount = lineRange.end.line - lineRange.start.line;
+		const returnTokens : StandardLineTokens[] = new Array(lineCount+1); //same line is 0 so array length of 1
+		for (let lineIndex = 0; (lineIndex <= lineCount); lineIndex++){
+			const lineTokensArray = this.tokens2Array[lineRange.start.line + lineIndex];
+			if (lineTokensArray) returnTokens[lineIndex] = new StandardLineTokens(lineTokensArray.tokens, this.document.lineAt(lineRange.start.line + lineIndex).text);
+		}
+		return returnTokens;
+	}
+
+	
+	public getRangeTokenData(lineRange : vscode.Range) : Array<StandardLineTokens> {
+		if (!this.grammar) return [];
+		lineRange = this.document.validateRange(lineRange);
 		this.validateLines(lineRange.start.line, lineRange.end.line);
 
 		const lineCount = lineRange.end.line - lineRange.start.line;
@@ -369,6 +382,13 @@ export class DocumentController extends DisposableContext {
 		return returnTokens;
 	}
 
+
+
+
+
+
+
+
 	//...............................................................................
 	// * Validation
 	// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
@@ -379,7 +399,7 @@ export class DocumentController extends DisposableContext {
 	}
 
 	private validateLines(startLine:number, endLine:number) {
-		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++){
+		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++) {
 			this.validateLine(lineIndex);
 		}
 	}
@@ -647,164 +667,10 @@ export class TokenInfo {
 
 
 
-
-
-
-
-// /**
-//  * The state of the tokenizer between two lines.
-//  * It is useful to store flags such as in multiline comment, etc.
-//  * The model will clone the previous line's state and pass it in to tokenize the next line.
-//  */
-//  export interface IState {
-// 	clone(): IState;
-// 	equals(other: IState): boolean;
-// }
-
-
-//  export const enum LanguageId {
-// 	Null = 0, PlainText = 1
-// }
-
-// export class Token {
-// 	_tokenBrand: void = undefined;
-
-// 	public readonly offset: number;
-// 	public readonly type: string;
-// 	public readonly language: string;
-
-// 	constructor(offset: number, type: string, language: string) {
-// 		this.offset = offset;
-// 		this.type = type;
-// 		this.language = language;
-// 	}
-
-// 	public toString(): string { return `(${this.offset}, ${this.type})`; }
-// }
-
-
-// export class TokenizationResult {
-// 	_tokenizationResultBrand: void = undefined;
-
-// 	public readonly tokens: Token[];
-// 	public readonly endState: IState;
-
-// 	constructor(tokens: Token[], endState: IState) {
-// 		this.tokens = tokens;
-// 		this.endState = endState;
-// 	}
-// }
-
-//  export interface ITokenizationSupport {
-// 	getInitialState(): IState;
-// 	tokenize(line: string, hasEOL: boolean, state: IState): TokenizationResult;
-// 	tokenizeEncoded(line: string, hasEOL: boolean, state: IState): EncodedTokenizationResult;
-// }
 // https://github.com/microsoft/vscode/blob/9776b9d4378ad95aa7b815a3413eed003cb6024b/src/vs/workbench/services/textMate/browser/abstractTextMateService.ts#L159
 
 
 
-//  export class EncodedTokenizationResult {
-// 	_encodedTokenizationResultBrand: void = undefined;
-
-// 	/** The tokens in binary format. Each token occupies two array indices. For token i:
-// 	 *  - at offset 2*i => startIndex
-// 	 *  - at offset 2*i + 1 => metadata
-// 	 */
-// 	public readonly tokens: Uint32Array;
-// 	public readonly endState: IState;
-
-// 	constructor(tokens: Uint32Array, endState: IState) {
-// 		this.tokens = tokens;
-// 		this.endState = endState;
-// 	}
-// }
-
-//  export interface ILanguageIdCodec {
-// 	encodeLanguageId(languageId: string): LanguageId;
-// 	decodeLanguageId(languageId: LanguageId): string;
-// }
-
-// /**
-//  * Helpers to manage the "collapsed" metadata of an entire StackElement stack.
-//  * The following assumptions have been made:
-//  *  - languageId < 256 => needs 8 bits
-//  *  - unique color count < 512 => needs 9 bits
-//  *
-//  * The binary format is:
-//  * - -------------------------------------------
-//  *     3322 2222 2222 1111 1111 1100 0000 0000
-//  *     1098 7654 3210 9876 5432 1098 7654 3210
-//  * - -------------------------------------------
-//  *     xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
-//  *     bbbb bbbb ffff ffff fFFF FBTT LLLL LLLL
-//  * - -------------------------------------------
-//  *  - L = LanguageId (8 bits)
-//  *  - T = StandardTokenType (2 bits)
-//  *  - B = Balanced bracket (1 bit)
-//  *  - F = FontStyle (4 bits)
-//  *  - f = foreground color (9 bits)
-//  *  - b = background color (9 bits)
-//  */
-//  export const enum MetadataConsts {
-// 	LANGUAGEID_MASK = 0b00000000000000000000000011111111,
-// 	TOKEN_TYPE_MASK = 0b00000000000000000000001100000000,
-// 	BALANCED_BRACKETS_MASK = 0b00000000000000000000010000000000,
-// 	FONT_STYLE_MASK = 0b00000000000000000111100000000000,
-// 	FOREGROUND_MASK = 0b00000000111111111000000000000000,
-// 	BACKGROUND_MASK = 0b11111111000000000000000000000000,
-
-// 	ITALIC_MASK = 0b00000000000000000000100000000000,
-// 	BOLD_MASK = 0b00000000000000000001000000000000,
-// 	UNDERLINE_MASK = 0b00000000000000000010000000000000,
-// 	STRIKETHROUGH_MASK = 0b00000000000000000100000000000000,
-
-// 	// Semantic tokens cannot set the language id, so we can
-// 	// use the first 8 bits for control purposes
-// 	SEMANTIC_USE_ITALIC = 0b00000000000000000000000000000001,
-// 	SEMANTIC_USE_BOLD = 0b00000000000000000000000000000010,
-// 	SEMANTIC_USE_UNDERLINE = 0b00000000000000000000000000000100,
-// 	SEMANTIC_USE_STRIKETHROUGH = 0b00000000000000000000000000001000,
-// 	SEMANTIC_USE_FOREGROUND = 0b00000000000000000000000000010000,
-// 	SEMANTIC_USE_BACKGROUND = 0b00000000000000000000000000100000,
-
-// 	LANGUAGEID_OFFSET = 0,
-// 	TOKEN_TYPE_OFFSET = 8,
-// 	BALANCED_BRACKETS_OFFSET = 10,
-// 	FONT_STYLE_OFFSET = 11,
-// 	FOREGROUND_OFFSET = 15,
-// 	BACKGROUND_OFFSET = 24
-// }
-
-
-// /**
-//  * A standard token type.
-//  */
-//  export const enum StandardTokenType {
-// 	Other = 0,
-// 	Comment = 1,
-// 	String = 2,
-// 	RegEx = 3
-// }
-
-
-// export function nullTokenize(languageId: string, state: IState): TokenizationResult {
-// 	return new TokenizationResult([new Token(0, '', languageId)], state);
-// }
-
-// export function nullTokenizeEncoded(languageId: LanguageId, state: IState | null): EncodedTokenizationResult {
-// 	const tokens = new Uint32Array(2);
-// 	tokens[0] = 0;
-// 	tokens[1] = (
-// 		(languageId << MetadataConsts.LANGUAGEID_OFFSET)
-// 		| (StandardTokenType.Other << MetadataConsts.TOKEN_TYPE_OFFSET)
-// 		| (FontStyle.None << MetadataConsts.FONT_STYLE_OFFSET)
-// 		| (ColorId.DefaultForeground << MetadataConsts.FOREGROUND_OFFSET)
-// 		| (ColorId.DefaultBackground << MetadataConsts.BACKGROUND_OFFSET)
-// 	) >>> 0;
-
-// 	return new EncodedTokenizationResult(tokens, state === null ? NullState : state);
-// }
 
 // /**
 //  * Open ended enum at runtime
