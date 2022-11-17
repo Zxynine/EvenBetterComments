@@ -371,3 +371,40 @@
 	U_FULLWIDTH_SEMICOLON = 0xFF1B,							// U+FF1B	FULLWIDTH SEMICOLON
 	U_FULLWIDTH_COMMA = 0xFF0C,								// U+FF0C	FULLWIDTH COMMA
 }
+
+
+
+
+
+
+
+namespace CharCodes {
+	export function IsDigit(code : number) {
+		return (CharCode.Digit0 <= code && code <= CharCode.Digit9);
+	}
+
+	export function IsLetter(code : number) {
+		return (CharCode.A <= code && code <= CharCode.Z) || (CharCode.a <= code && code <= CharCode.z);
+	}
+
+	export function IsLetterUppercase(code : number) {
+		return (CharCode.A <= code && code <= CharCode.Z);
+	}
+
+	export function IsLetterLowercase(code : number) {
+		return (CharCode.a <= code && code <= CharCode.z);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

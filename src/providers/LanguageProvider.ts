@@ -115,6 +115,9 @@ export class LanguageLoader {
 	}
 
 
+	public static ReadFileSync(path : string) {
+		return fs.readFileSync(path, 'utf-8')
+	}
 	public static async ReadFileAsync(path : string) {
 		return new Promise<string>((resolve, reject) => fs.readFile(path, 'utf-8', (error, data) => error ? reject(error) : resolve(data)))
 	}
@@ -122,8 +125,14 @@ export class LanguageLoader {
 
 	public static get AllLanguageDefinitions() { return LanguageLoader.languageToDefinition.values(); }
 	public static get AllGrammarDefinitions() { return LanguageLoader.scopeNameToDefinition.values(); }
-}
 
+
+	public static GetLanguageScopeName(languageID : string) {
+		try { return LanguageLoader.languageToScopeName.get(languageID); } 
+		catch (error) { console.log("HyperScopes: Unable to get language scope name", error); }
+		return undefined;
+	}
+}
 
 
 

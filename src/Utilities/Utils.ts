@@ -506,3 +506,79 @@ export function reverseEndianness(arr: Uint8Array): void {
 	const after = target.slice(insertIndex);
 	return before.concat(insertArr, after);
 }
+
+
+
+
+
+
+
+export function strcmp(a: string, b: string): number {
+	if (a < b) {
+		return -1;
+	}
+	if (a > b) {
+		return 1;
+	}
+	return 0;
+}
+
+
+export function strArrCmp(a: string[] | null, b: string[] | null): number {
+	if (a === null && b === null) {
+		return 0;
+	}
+	if (!a) {
+		return -1;
+	}
+	if (!b) {
+		return 1;
+	}
+	const len1 = a.length;
+	const len2 = b.length;
+	if (len1 === len2) {
+		for (let i = 0; i < len1; i++) {
+			let res = strcmp(a[i], b[i]);
+			if (res !== 0) return res;
+		}
+		return 0;
+	} else return len1 - len2;
+}
+
+
+
+export function isValidHexColor(hex: string): boolean {
+	if (hex.length === 0) return false;
+	else if (/^#[0-9a-fA-F]{6}$/i.test(hex)) return true; // #rrggbb
+	else if (/^#[0-9a-fA-F]{8}$/i.test(hex)) return true; // #rrggbbaa
+	else if (/^#[0-9a-fA-F]{4}$/i.test(hex)) return true; // #rgba
+	else if (/^#[0-9a-fA-F]{3}$/i.test(hex)) return true; // #rgb
+	else return false;
+}
+
+
+/**
+ * Replace linebreaks with the one whitespace symbol.
+ */
+ export function replaceLinebreaks(str: string, replaceSymbol: string): string {
+	return str.replace(/[\n\r\t]+/g, replaceSymbol);
+}
+
+
+
+
+
+
+
+
+
+
+export function hash(value: string | undefined): number {
+    let hash: number = 0;
+ 
+    if (!value || value.length === 0) return hash;
+    for (let i = 0; i < value.length; i++, hash = hash&hash) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(i);
+    }
+    return hash;
+}

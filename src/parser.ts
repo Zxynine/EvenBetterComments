@@ -6,6 +6,8 @@ import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
 
 
+// const window = vscode.window;
+
 // TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
 export class Parser {
@@ -741,3 +743,58 @@ one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all 
 
 
 //TODO: on multiline, check if starts with delimiter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // 'sticky' flag is not yet supported :(
+// const lineEndingRE = /([^\r\n]*)(\r\n|\r|\n)?/;
+
+// function getContent(lineText:string, match:RegExpMatchArray) {
+//     return lineText.substring(lineText.indexOf(match[0]), lineText.length);
+// };
+
+
+// function createStatusBarItem() {
+//     var statusBarItem = window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+//     statusBarItem.text = defaultIcon + defaultMsg;
+//     statusBarItem.tooltip = 'List annotations';
+//     statusBarItem.command = 'todohighlight.showOutputChannel';
+//     return statusBarItem;
+// };
+
+
+
+// function errorHandler(err) {
+//     window.processing = true;
+//     setStatusMsg(defaultIcon, defaultMsg);
+//     console.log('todohighlight err:', err);
+// }
+
+
+// function setStatusMsg(icon, msg, tooltip) {
+// 	window.sta
+//     if (window.statusBarItem) {
+//         window.statusBarItem.text = `${icon} ${msg}` || '';
+//         if (tooltip) {
+//             window.statusBarItem.tooltip = tooltip;
+//         }
+//         window.statusBarItem.show();
+//     }
+// }

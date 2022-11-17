@@ -102,7 +102,7 @@ export class DocumentLoader {
 		if (DocumentLoader.documentsMap.has(document.uri)) { //Refreshes if exists.
 			DocumentLoader.documentsMap.get(document.uri)!.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
-			const scopeName = LanguageLoader.languageToScopeName.get(document.languageId);
+			const scopeName = LanguageLoader.GetLanguageScopeName(document.languageId);
 			if (scopeName) TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
 				if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
 			});
@@ -423,7 +423,7 @@ export class DocumentController extends DisposableContext {
 		if(!this.grammar) return;
 		// Update text content
 		this.documentText[line.lineNumber] = line.text;
-		const TooLong = ((line.text.length > 20000)); // Don't tokenize line if too long
+		const TooLong = (line.text.length > 20000); // Don't tokenize line if too long
 		this.tokensArray[line.lineNumber]  = (!TooLong)? this.grammar.tokenizeLine(line.text, this.getLineState(line.lineNumber-1)) : undefined;
 		this.tokens2Array[line.lineNumber] = (!TooLong)? this.grammar.tokenizeLine2(line.text, this.getLineState2(line.lineNumber-1)) : undefined;
 	}

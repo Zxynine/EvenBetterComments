@@ -1,7 +1,6 @@
 import { Color, Position, Range } from "vscode";
 import { arrayInsert } from "../Utilities/Utils";
 import { readUInt32BE, writeUInt32BE } from "../Utilities/Buffer";
-// import { IsString } from "../Utilities/Utils";
 
 //https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports/tokenization.ts
 export interface ITokenPresentation {
@@ -169,7 +168,7 @@ export const enum MetadataConsts {
 	SEMANTIC_USE_STRIKETHROUGH = 0b00000000000000000000000000001000,
 	SEMANTIC_USE_FOREGROUND    = 0b00000000000000000000000000010000,
 	SEMANTIC_USE_BACKGROUND    = 0b00000000000000000000000000100000,
-	SEMANTIC_USE_OVERLINE      = 0b00000000000000000000000001000000,
+	// SEMANTIC_USE_OVERLINE      = 0b00000000000000000000000001000000,
 	
 	ITALIC_MASK        = 0b00000000000000000000100000000000,
 	BOLD_MASK          = 0b00000000000000000001000000000000,
@@ -261,6 +260,13 @@ export class TokenMetadata {
 	// 		background: colorMap[background]
 	// 	};
 	// }
+
+
+	//Utilities...
+
+
+	public static ContainsTokenType(metadata:number, tokenType:StandardTokenType):bool { return (TokenMetadata.getTokenType(metadata) & tokenType) === tokenType;}
+	public static IsTokenType(metadata:number, tokenType:StandardTokenType):bool { return TokenMetadata.getTokenType(metadata) === tokenType;}
 }
 
 
@@ -277,7 +283,17 @@ function getDefaultMetadata(topLevelLanguageId: LanguageId): number {
 	) >>> 0;
 }
 
-
+function getSemanticMask(Metadata:number) {
+	return (
+		((Metadata & MetadataConsts.SEMANTIC_USE_ITALIC) ? MetadataConsts.ITALIC_MASK : 0)
+		| ((Metadata & MetadataConsts.SEMANTIC_USE_BOLD) ? MetadataConsts.BOLD_MASK : 0)
+		| ((Metadata & MetadataConsts.SEMANTIC_USE_UNDERLINE) ? MetadataConsts.UNDERLINE_MASK : 0)
+		| ((Metadata & MetadataConsts.SEMANTIC_USE_STRIKETHROUGH) ? MetadataConsts.STRIKETHROUGH_MASK : 0)
+		// | ((bMetadata & MetadataConsts.SEMANTIC_USE_OVERLINE) ? MetadataConsts.STRIKETHROUGH_MASK : 0)
+		| ((Metadata & MetadataConsts.SEMANTIC_USE_FOREGROUND) ? MetadataConsts.FOREGROUND_MASK : 0)
+		| ((Metadata & MetadataConsts.SEMANTIC_USE_BACKGROUND) ? MetadataConsts.BACKGROUND_MASK : 0)
+	) >>> 0;
+}
 
 
 
@@ -428,8 +444,6 @@ export class TokenTools {
 
 
 export class Token {
-	_tokenBrand: void = undefined;
-
 	public readonly offset: number;
 	public readonly type: string;
 	public readonly language: string;
@@ -539,15 +553,9 @@ export abstract class AbstractTokenArray {
 		this._text = text;
 	}
 
-	public Metadata(tokenIndex:number): number {
-		return this._tokens[(tokenIndex << 1) + 1];
-	}
-	public StartOffset(tokenIndex: number): number {
-		return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0;
-	}
-	public EndOffset(tokenIndex: number): number {
-		return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset;
-	}
+	public Metadata(tokenIndex:number): number { return this._tokens[(tokenIndex << 1) + 1]; }
+	public StartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0; }
+	public EndOffset(tokenIndex: number): number { return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset; }
 
 	/** Gets the combined metadata of all tokens in the line, this allows for easy queries. */
 	public get LineMetadata() {
@@ -561,7 +569,7 @@ export abstract class AbstractTokenArray {
 	public getFontStyle 	(tokenIndex: number){ return TokenMetadata.getFontStyle 	(this.Metadata(tokenIndex));}
 	public getForeground 	(tokenIndex: number){ return TokenMetadata.getForeground 	(this.Metadata(tokenIndex));}
 	public getBackground 	(tokenIndex: number){ return TokenMetadata.getBackground 	(this.Metadata(tokenIndex));}
-
+	public getClassName     (tokenIndex: number){ return TokenMetadata.getClassName     (this.Metadata(tokenIndex));}
 	// public containsBalancedBrackets(metadata: number){ return TokenMetadata.hasBalancedBrackets(this.Metadata(tokenIndex));}
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -579,9 +587,7 @@ export abstract class AbstractTokenArray {
 		return offsets;
 	}
 
-	public toTokenTypeArray() : Array<StandardTokenType> {
-		return this.FromEnumerate(this.getTokenType);
-	}
+	public toTokenTypeArray() : Array<StandardTokenType> { return this.FromEnumerate(this.getTokenType); }
 
 	public getToken(index:number):IToken2 {
 		return <IToken2> {
@@ -599,14 +605,8 @@ export abstract class AbstractTokenArray {
 	 * @param offset The search offset
 	 * @return The index of the token containing the offset.
 	 */
-	 public IndexOf(offset: number): number {
-		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
-	}
-
-	public Contains(tokenType:StandardTokenType) {
-		return (TokenMetadata.getTokenType(this.LineMetadata) & tokenType) === tokenType;
-	}
-
+	public IndexOf(offset: number): number { return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset); }
+	public Contains(tokenType:StandardTokenType) { return TokenMetadata.ContainsTokenType(this.LineMetadata, tokenType); }
 	public FindIndexOf(tokenType:StandardTokenType) {
 		for (let i = 0; i<this._tokensCount; i++) {
 			if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) == tokenType) return i;
@@ -614,6 +614,14 @@ export abstract class AbstractTokenArray {
 		return -1;
 	}
 
+	/**
+	 * Find the token containing offset `offset` //Talking about column offset.
+	 * @param offset The search offset
+	 * @return The index of the token containing the offset.
+	 */
+	public findTokenIndexAtOffset(offset: number): number {
+		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
+	}
 	
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -685,18 +693,56 @@ export abstract class AbstractTokenArray {
 
 
 
+
+export abstract class BaseTokenArray {
+	protected readonly _languageIdCodec: ILanguageIdCodec;
+
+	public constructor(languageIdCodec: ILanguageIdCodec) {
+		this._languageIdCodec = languageIdCodec;
+	}
+}
+
+
+
+export class SimpleTokenArray {
+	protected readonly _tokens: IToken2Array;
+	protected readonly _tokensCount: number;
+
+	public get count(): number { return this._tokensCount; }
+	
+	constructor(tokens: IToken2Array) {
+		this._tokensCount = (tokens.length >>> 1);
+		this._tokens = tokens;
+	}
+
+	public Metadata(tokenIndex:number): number { return this._tokens[(tokenIndex << 1) + 1]; }
+	public StartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0; }
+	public EndOffset(tokenIndex: number): number { return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : -1; }
+}
+
+
+
+
+export class SparseLineTokens {
+	protected readonly _tokens: IToken2Array;
+	constructor(tokens: IToken2Array) { this._tokens = tokens; }
+
+
+	public get count(): number { return this._tokens.length >> 2; }
+
+	public getStartCharacter(tokenIndex: number): number { return this._tokens[4 * tokenIndex + 1]; }
+	public getEndCharacter(tokenIndex: number): number { return this._tokens[4 * tokenIndex + 2]; }
+	public getMetadata(tokenIndex: number): number { return this._tokens[4 * tokenIndex + 3]; }
+}
+
+
+
+
 export class StandardLineTokens extends AbstractTokenArray {
-	constructor(tokens: IToken2Array, text: string) {
-		super(tokens, text);
-	}
+	constructor(tokens: IToken2Array, text: string) { super(tokens, text); }
 
-	public hasTokenType(tokenType:StandardTokenType) {
-		return TokenTools.containsTokenType(this._tokens, tokenType);
-	}
-
-	public indexOf(tokenType:StandardTokenType) {
-		return TokenTools.findIndexOfType(this._tokens, tokenType);
-	}
+	public hasTokenType(tokenType:StandardTokenType) { return TokenTools.containsTokenType(this._tokens, tokenType); }
+	public indexOf(tokenType:StandardTokenType) { return TokenTools.findIndexOfType(this._tokens, tokenType); }
 
 	public offsetOf(tokenType:StandardTokenType) {
 		const Index = TokenTools.findIndexOfType(this._tokens, tokenType);
@@ -726,34 +772,9 @@ export class StandardLineTokens extends AbstractTokenArray {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export class LineTokens extends AbstractTokenArray implements IViewLineTokens {
 	// _lineTokensBrand: void;
-	constructor(tokens: IToken2Array, text: string) {
-		super(tokens, text);
-	}
+	constructor(tokens: IToken2Array, text: string) { super(tokens, text); }
 
 	public equals(other: IViewLineTokens): boolean {
 		return (other instanceof LineTokens) && this.slicedEquals(other, 0, this._tokensCount);
@@ -771,38 +792,11 @@ export class LineTokens extends AbstractTokenArray implements IViewLineTokens {
 		return true;
 	}
 
-	public getTokenType(tokenIndex: number): StandardTokenType { 
-		return TokenMetadata.getTokenType(this.Metadata(tokenIndex));
-	}
 
 	public getLineContent(): string { return this._text; }
-
-	public getStartOffset(tokenIndex: number): number {
-		return (tokenIndex>0)? this._tokens[(tokenIndex - 1) << 1] : 0;
-	}
-	public getEndOffset(tokenIndex: number): number {
-		return this._tokens[tokenIndex << 1];
-	}
-
-
-
-	public getClassName(tokenIndex: number): string {
-		return TokenMetadata.getClassName(this.Metadata(tokenIndex));
-	}
-
-	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {
-		return TokenMetadata.getInlineStyle(this.Metadata(tokenIndex), colorMap);
-	}
-
-
-	/**
-	 * Find the token containing offset `offset` //Talking about column offset.
-	 * @param offset The search offset
-	 * @return The index of the token containing the offset.
-	 */
-	public findTokenIndexAtOffset(offset: number): number {
-		return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset);
-	}
+	public getStartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex - 1) << 1] : 0; }
+	public getEndOffset(tokenIndex: number): number { return this._tokens[tokenIndex << 1]; }
+	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {return TokenMetadata.getInlineStyle(this.Metadata(tokenIndex), colorMap); }
 
 
 	public sliceAndInflate(startOffset: number, endOffset: number, deltaOffset: number): IViewLineTokens {
@@ -859,8 +853,7 @@ export class SlicedLineTokens implements IViewLineTokens {
 				&& this._deltaOffset === other._deltaOffset
 				&& this._source.slicedEquals(other._source, this._firstTokenIndex, this._tokensCount)
 			);
-		}
-		return false;
+		} else return false;
 	}
 
 	public get count() { return this._tokensCount; }
@@ -1008,83 +1001,7 @@ export class ScopedLineTokens {
 
 
 
-
-// export class FullLineTokens {
-// 	private readonly _tokensArr1: IToken1Array;
-// 	private readonly _tokensArr2: IToken2Array;
-// 	private readonly _tokensCount: number;
-// 	private readonly _tokensEndOffset: number;
-// 	private readonly _text: string;
-
-// 	private GetMetadata(tokenIndex:number) {
-// 		return this._tokensArr2[(tokenIndex << 1) + 1];
-// 	}
-
-
-// 	constructor(type1Tokens : IToken1Array, type2Tokens: IToken2Array, text: string) {
-// 		this._tokensArr1 = type1Tokens;
-// 		this._tokensArr2 = type2Tokens;
-// 		this._tokensCount = (this._tokensArr2.length >>> 1);
-// 		this._text = text;
-// 		this._tokensEndOffset = text.length;
-// 	}
-
-
-
-
-
-
-
-// }
-
-
-
-
-
-
-
-// export enum ScopeType {Ambiguous, Open, Close}
-
-// export class ScopeSingle {
-// 	public readonly tokenName: string;
-// 	public readonly key: string;
-// 	public readonly type: ScopeType;
-
-// 	constructor(tokenName: string, type: ScopeType, key: string) {
-// 		this.tokenName = tokenName;
-// 		this.type = type;
-// 		this.key = key;
-// 	}
-// }
-
-// export class ScopePair {
-// 	public readonly open?: string;
-// 	public readonly close?: string|Array<string>;
-// }
-
-// export class ModifierPair {
-// 	public readonly openingCharacter: string;
-// 	public readonly closingCharacter: string;
-// 	public counter = 0;
-
-// 	constructor(openingCharacter: string, closingCharacter: string, counter?: number) {
-// 		this.openingCharacter = openingCharacter;
-// 		this.closingCharacter = closingCharacter;
-// 		if (counter !== undefined) this.counter = counter;
-// 	}
-
-// 	public Clone() { return new ModifierPair(this.openingCharacter, this.closingCharacter, this.counter); }
-// }
-
-
-
-
-
-
-
-
-
-export const EMPTY_LINE_TOKENS = (new Uint32Array(0)).buffer;
+export const EMPTY_LINE_TOKENS = new Uint32Array(0).buffer;
 
 
 
@@ -1096,7 +1013,7 @@ export class ContiguousMultilineTokens {
 		const view32 = new Uint32Array(buff.buffer);
 		const startLineNumber = readUInt32BE(buff, offset); offset += 4;
 		const count = readUInt32BE(buff, offset); offset += 4;
-		const tokens: Uint32Array[] = [];
+		const tokens: Uint32Array[] = new Array<Uint32Array>(count);
 		for (let i = 0; i < count; i++) {
 			const byteCount = readUInt32BE(buff, offset); offset += 4;
 			tokens.push(view32.subarray(offset / 4, offset / 4 + byteCount / 4));
@@ -1114,21 +1031,15 @@ export class ContiguousMultilineTokens {
 	 * so `tokens[index]` contains all tokens on line `startLineNumber + index`.
 	 *
 	 * On a specific line, each token occupies two array indices. For token i:
-	 *  - at offset 2*i => endOffset
+	 *  - at offset 2*i + 0 => endOffset
 	 *  - at offset 2*i + 1 => metadata
-	 *
 	 */
-	private _tokens: (Uint32Array | ArrayBuffer | null)[];
+	private _tokens: ITokenArrayRange[];
 
 	/** (Inclusive) start line number for these tokens. **/
-	public get startLineNumber(): number {
-		return this._startLineNumber;
-	}
-
+	public get startLineNumber(): number {return this._startLineNumber;}
 	/** (Inclusive) end line number for these tokens. **/
-	public get endLineNumber(): number {
-		return this._startLineNumber + this._tokens.length - 1;
-	}
+	public get endLineNumber(): number {return this._startLineNumber + this._tokens.length - 1;}
 
 	constructor(startLineNumber: number, tokens: Uint32Array[]) {
 		this._startLineNumber = startLineNumber;
@@ -1136,7 +1047,7 @@ export class ContiguousMultilineTokens {
 	}
 
 	/** @see {@link _tokens} **/
-	public getLineTokens(lineNumber: number): Uint32Array | ArrayBuffer | null {
+	public getLineTokens(lineNumber: number): ITokenArrayRange {
 		return this._tokens[lineNumber - this._startLineNumber];
 	}
 
@@ -1211,18 +1122,14 @@ export class ContiguousMultilineTokens {
 			if (lastLineIndex < this._tokens.length) {
 				// The last line survives
 				const lastLineTokens = ContiguousTokensEditing.deleteBeginning(this._tokens[lastLineIndex], range.end.character);
-
 				// Take remaining text on last line and append it to remaining text on first line
 				this._tokens[firstLineIndex] = ContiguousTokensEditing.append(this._tokens[firstLineIndex], lastLineTokens);
-
 				// Delete middle lines
 				this._tokens.splice(firstLineIndex + 1, lastLineIndex - firstLineIndex);
 			} else {
 				// The last line does not survive
-
 				// Take remaining text on last line and append it to remaining text on first line
 				this._tokens[firstLineIndex] = ContiguousTokensEditing.append(this._tokens[firstLineIndex], null);
-
 				// Delete lines
 				this._tokens = this._tokens.slice(0, firstLineIndex + 1);
 			}
@@ -1234,7 +1141,6 @@ export class ContiguousMultilineTokens {
 
 			// Remove beginning from last line
 			this._tokens[lastLineIndex] = ContiguousTokensEditing.deleteBeginning(this._tokens[lastLineIndex], range.end.character);
-
 			// Delete lines
 			this._tokens = this._tokens.slice(lastLineIndex);
 		}
@@ -1269,7 +1175,7 @@ export class ContiguousMultilineTokens {
 	private _insertLines(insertIndex: number, insertCount: number): void {
 		if (insertCount === 0) return;
 
-		const lineTokens: (Uint32Array | ArrayBuffer | null)[] = new Array(insertCount);
+		const lineTokens: (ITokenArrayRange)[] = new Array(insertCount);
 		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
 		this._tokens = arrayInsert(this._tokens, insertIndex, lineTokens);
 	}
@@ -1283,12 +1189,12 @@ export class ContiguousMultilineTokens {
 export class ContiguousTokensEditing {
 	private static IsNullOrEmpty(lineTokens: Uint32Array|ArrayBuffer|null) : lineTokens is null { return (lineTokens === null || lineTokens === EMPTY_LINE_TOKENS);}
 
-	public static deleteBeginning(lineTokens: Uint32Array | ArrayBuffer | null, toChIndex: number): Uint32Array | ArrayBuffer | null {
+	public static deleteBeginning(lineTokens: ITokenArrayRange, toChIndex: number): ITokenArrayRange {
 		if (ContiguousTokensEditing.IsNullOrEmpty(lineTokens)) return lineTokens;
 		return ContiguousTokensEditing.delete(lineTokens, 0, toChIndex);
 	}
 
-	public static deleteEnding(lineTokens: Uint32Array | ArrayBuffer | null, fromChIndex: number): Uint32Array | ArrayBuffer | null {
+	public static deleteEnding(lineTokens: ITokenArrayRange, fromChIndex: number): ITokenArrayRange {
 		if (ContiguousTokensEditing.IsNullOrEmpty(lineTokens)) return lineTokens;
 
 		const tokens = toUint32Array(lineTokens);
@@ -1296,7 +1202,7 @@ export class ContiguousTokensEditing {
 		return ContiguousTokensEditing.delete(lineTokens, fromChIndex, lineTextLength);
 	}
 
-	public static delete(lineTokens: Uint32Array | ArrayBuffer | null, fromChIndex: number, toChIndex: number): Uint32Array | ArrayBuffer | null {
+	public static delete(lineTokens: ITokenArrayRange, fromChIndex: number, toChIndex: number): ITokenArrayRange {
 		if (ContiguousTokensEditing.IsNullOrEmpty(lineTokens) || fromChIndex === toChIndex) return lineTokens;
 
 		const tokens = toUint32Array(lineTokens);
@@ -1344,7 +1250,7 @@ export class ContiguousTokensEditing {
 		return tmp.buffer;
 	}
 
-	public static append(lineTokens: Uint32Array | ArrayBuffer | null, _otherTokens: Uint32Array | ArrayBuffer | null): Uint32Array | ArrayBuffer | null {
+	public static append(lineTokens: ITokenArrayRange, _otherTokens: ITokenArrayRange): ITokenArrayRange {
 		if (_otherTokens === EMPTY_LINE_TOKENS) return lineTokens;
 		if (lineTokens === EMPTY_LINE_TOKENS) return _otherTokens;
 		if (lineTokens === null) return lineTokens;
@@ -1365,7 +1271,7 @@ export class ContiguousTokensEditing {
 		return result.buffer;
 	}
 
-	public static insert(lineTokens: Uint32Array | ArrayBuffer | null, chIndex: number, textLength: number): Uint32Array | ArrayBuffer | null {
+	public static insert(lineTokens: ITokenArrayRange, chIndex: number, textLength: number): ITokenArrayRange {
 		if (ContiguousTokensEditing.IsNullOrEmpty(lineTokens)) return lineTokens; // nothing to do
 
 		const tokens = toUint32Array(lineTokens);
@@ -1379,6 +1285,14 @@ export class ContiguousTokensEditing {
 }
 
 
+
+
+
+
+
+
+
+
 export class ContiguousMultilineTokensBuilder {
 
 	public static deserialize(buff: Uint8Array): ContiguousMultilineTokens[] {
@@ -1390,10 +1304,8 @@ export class ContiguousMultilineTokensBuilder {
 	}
 
 	private readonly _tokens: ContiguousMultilineTokens[];
+	constructor() {this._tokens = [];}
 
-	constructor() {
-		this._tokens = [];
-	}
 
 	public add(lineNumber: number, lineTokens: Uint32Array): void {
 		if (this._tokens.length > 0) {
@@ -1411,8 +1323,7 @@ export class ContiguousMultilineTokensBuilder {
 	}
 
 	public serialize(): Uint8Array {
-		const size = this._serializeSize();
-		const result = new Uint8Array(size);
+		const result = new Uint8Array(this._serializeSize());
 		this._serialize(result);
 		return result;
 	}
@@ -1439,166 +1350,6 @@ export class ContiguousMultilineTokensBuilder {
 
 
 
-
-
-/**
- * Represents contiguous tokens in a text model.
- */
- export class ContiguousTokensStore {
-	private _lineTokens: (Uint32Array | ArrayBuffer | null)[];
-	private _len: number;
-	private readonly _languageIdCodec: ILanguageIdCodec;
-
-	constructor(languageIdCodec: ILanguageIdCodec) {
-		this._lineTokens = [];
-		this._len = 0;
-		this._languageIdCodec = languageIdCodec;
-	}
-
-	public flush(): void {
-		this._lineTokens = [];
-		this._len = 0;
-	}
-
-	public getTokens(topLevelLanguageId: string, lineIndex: number, lineText: string): LineTokens {
-		let rawLineTokens: Uint32Array | ArrayBuffer | null = null;
-		if (lineIndex < this._len) rawLineTokens = this._lineTokens[lineIndex];
-		if (rawLineTokens !== null && rawLineTokens !== EMPTY_LINE_TOKENS) {
-			// return new LineTokens(toUint32Array(rawLineTokens), lineText, this._languageIdCodec);
-			return new LineTokens(toUint32Array(rawLineTokens), lineText);
-		}
-
-		const lineTokens = new Uint32Array(2);
-		lineTokens[0] = lineText.length;
-		lineTokens[1] = getDefaultMetadata(this._languageIdCodec.encodeLanguageId(topLevelLanguageId));
-		// return new LineTokens(lineTokens, lineText, this._languageIdCodec);
-		return new LineTokens(lineTokens, lineText);
-	}
-
-	private static _massageTokens(topLevelLanguageId: LanguageId, lineTextLength: number, _tokens: Uint32Array | ArrayBuffer | null): Uint32Array | ArrayBuffer {
-
-		const tokens = _tokens ? toUint32Array(_tokens) : null;
-
-		if (lineTextLength === 0) {
-			let hasDifferentLanguageId = false;
-			if (tokens && tokens.length > 1) hasDifferentLanguageId = (TokenMetadata.getLanguageId(tokens[1]) !== topLevelLanguageId);
-			if (!hasDifferentLanguageId) return EMPTY_LINE_TOKENS;
-		}
-
-		if (!tokens || tokens.length === 0) {
-			const tokens = new Uint32Array(2);
-			tokens[0] = lineTextLength;
-			tokens[1] = getDefaultMetadata(topLevelLanguageId);
-			return tokens.buffer;
-		}
-
-		// Ensure the last token covers the end of the text
-		tokens[tokens.length - 2] = lineTextLength;
-		
-		return ((tokens.byteOffset === 0 && tokens.byteLength === tokens.buffer.byteLength)
-			? tokens.buffer // Store directly the ArrayBuffer pointer to save an object
-			: tokens
-		);
-	}
-
-	private _ensureLine(lineIndex: number): void {
-		while (lineIndex >= this._len) {
-			this._lineTokens[this._len] = null;
-			this._len++;
-		}
-	}
-
-	private _deleteLines(start: number, deleteCount: number): void {
-		if (deleteCount === 0) return;
-
-		if (start + deleteCount > this._len) deleteCount = this._len - start;
-		this._lineTokens.splice(start, deleteCount);
-		this._len -= deleteCount;
-	}
-
-	private _insertLines(insertIndex: number, insertCount: number): void {
-		if (insertCount === 0) return;
-
-		const lineTokens: (Uint32Array | ArrayBuffer | null)[] = [];
-		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
-		this._lineTokens = arrayInsert(this._lineTokens, insertIndex, lineTokens);
-		this._len += insertCount;
-	}
-
-	public setTokens(topLevelLanguageId: string, lineIndex: number, lineTextLength: number, _tokens: Uint32Array | ArrayBuffer | null, checkEquality: boolean): boolean {
-		const tokens = ContiguousTokensStore._massageTokens(this._languageIdCodec.encodeLanguageId(topLevelLanguageId), lineTextLength, _tokens);
-		this._ensureLine(lineIndex);
-		const oldTokens = this._lineTokens[lineIndex];
-		this._lineTokens[lineIndex] = tokens;
-		
-		return (checkEquality)? !ContiguousTokensStore._equals(oldTokens, tokens) : false;
-	}
-
-	private static _equals(_a: Uint32Array | ArrayBuffer | null, _b: Uint32Array | ArrayBuffer | null) {
-		if (!_a || !_b) return !_a && !_b;
-
-		const a = toUint32Array(_a);
-		const b = toUint32Array(_b);
-
-		if (a.length !== b.length) return false;
-		for (let i = 0, len = a.length; i < len; i++) {
-			if (a[i] !== b[i]) return false;
-		}
-		return true;
-	}
-
-	//#region Editing
-
-	public acceptEdit(range: Range, eolCount: number, firstLineLength: number): void {
-		this._acceptDeleteRange(range);
-		this._acceptInsertText(new Position(range.start.line+1, range.start.character+1), eolCount, firstLineLength);
-	}
-
-	private _acceptDeleteRange(range: Range): void {
-
-		const firstLineIndex = range.start.line;
-		if (firstLineIndex >= this._len) return;
-
-		if (range.start.line === range.end.line) {
-			if (range.start.character === range.end.character) return; // Nothing to delete
-
-			this._lineTokens[firstLineIndex] = ContiguousTokensEditing.delete(this._lineTokens[firstLineIndex], range.start.character, range.end.character);
-			return;
-		}
-
-		this._lineTokens[firstLineIndex] = ContiguousTokensEditing.deleteEnding(this._lineTokens[firstLineIndex], range.start.character);
-
-		const lastLineIndex = range.end.line;
-		let lastLineTokens: Uint32Array | ArrayBuffer | null = null;
-		if (lastLineIndex < this._len) lastLineTokens = ContiguousTokensEditing.deleteBeginning(this._lineTokens[lastLineIndex], range.end.character);
-
-		// Take remaining text on last line and append it to remaining text on first line
-		this._lineTokens[firstLineIndex] = ContiguousTokensEditing.append(this._lineTokens[firstLineIndex], lastLineTokens);
-
-		// Delete middle lines
-		this._deleteLines(range.start.line+1, range.end.line - range.start.line);
-	}
-
-	private _acceptInsertText(position: Position, eolCount: number, firstLineLength: number): void {
-
-		if (eolCount === 0 && firstLineLength === 0) return; // Nothing to insert
-
-		const lineIndex = position.line;
-		if (lineIndex >= this._len) return;
-
-		if (eolCount === 0) { // Inserting text on one line
-			this._lineTokens[lineIndex] = ContiguousTokensEditing.insert(this._lineTokens[lineIndex], position.character, firstLineLength);
-			return;
-		}
-
-		this._lineTokens[lineIndex] = ContiguousTokensEditing.deleteEnding(this._lineTokens[lineIndex], position.character);
-		this._lineTokens[lineIndex] = ContiguousTokensEditing.insert(this._lineTokens[lineIndex], position.character, firstLineLength);
-
-		this._insertLines(position.line+1, eolCount);
-	}
-
-	//#endregion
-}
 
 
 
@@ -1648,16 +1399,12 @@ export class ContiguousMultilineTokensBuilder {
 	/**
 	 * (Inclusive) start line number for these tokens.
 	 */
-	public get startLineNumber(): number {
-		return this._startLineNumber;
-	}
+	public get startLineNumber(): number { return this._startLineNumber; }
 
 	/**
 	 * (Inclusive) end line number for these tokens.
 	 */
-	public get endLineNumber(): number {
-		return this._endLineNumber;
-	}
+	public get endLineNumber(): number { return this._endLineNumber; }
 
 	private constructor(startLineNumber: number, tokens: SparseMultilineTokensStorage) {
 		this._startLineNumber = startLineNumber;
@@ -1686,9 +1433,7 @@ export class ContiguousMultilineTokensBuilder {
 
 	public getRange(): Range | null {
 		const deltaRange = this._tokens.getRange();
-		if (!deltaRange) {
-			return deltaRange;
-		}
+		if (!deltaRange) return deltaRange;
 		return new Range(this._startLineNumber + deltaRange.start.line+1, deltaRange.start.character+1, this._startLineNumber + deltaRange.end.line+1, deltaRange.end.character+1);
 	}
 
@@ -1723,10 +1468,7 @@ export class ContiguousMultilineTokensBuilder {
 	}
 
 	private _acceptDeleteRange(range: Range): void {
-		if (range.start.line === range.end.line && range.start.character === range.end.character) {
-			// Nothing to delete
-			return;
-		}
+		if (range.start.line === range.end.line && range.start.character === range.end.character) return; // Nothing to delete
 
 		const firstLineIndex = range.start.line+1 - this._startLineNumber;
 		const lastLineIndex = range.end.line+1 - this._startLineNumber;
@@ -1740,10 +1482,8 @@ export class ContiguousMultilineTokensBuilder {
 
 		const tokenMaxDeltaLine = this._tokens.getMaxDeltaLine();
 
-		if (firstLineIndex >= tokenMaxDeltaLine + 1) {
-			// this deletion occurs entirely after this block, so there is nothing to do
-			return;
-		}
+		// this deletion occurs entirely after this block, so there is nothing to do
+		if (firstLineIndex >= tokenMaxDeltaLine + 1) return;
 
 		if (firstLineIndex < 0 && lastLineIndex >= tokenMaxDeltaLine + 1) {
 			// this deletion completely encompasses this block
@@ -1763,14 +1503,9 @@ export class ContiguousMultilineTokensBuilder {
 	}
 
 	private _acceptInsertText(position: Position, eolCount: number, firstLineLength: number, lastLineLength: number, firstCharCode: number): void {
-
-		if (eolCount === 0 && firstLineLength === 0) {
-			// Nothing to insert
-			return;
-		}
+		if (eolCount === 0 && firstLineLength === 0) return; // Nothing to insert
 
 		const lineIndex = position.line+1 - this._startLineNumber;
-
 		if (lineIndex < 0) {
 			// this insertion occurs before this block, so we only need to adjust line numbers
 			this._startLineNumber += eolCount;
@@ -1779,10 +1514,8 @@ export class ContiguousMultilineTokensBuilder {
 
 		const tokenMaxDeltaLine = this._tokens.getMaxDeltaLine();
 
-		if (lineIndex >= tokenMaxDeltaLine + 1) {
-			// this insertion occurs after this block, so there is nothing to do
-			return;
-		}
+		// this insertion occurs after this block, so there is nothing to do
+		if (lineIndex >= tokenMaxDeltaLine + 1) return;
 
 		this._tokens.acceptInsertText(lineIndex, position.character, eolCount, firstLineLength, lastLineLength, firstCharCode);
 	}
@@ -1826,29 +1559,17 @@ class SparseMultilineTokensStorage {
 		return new Range(0, startChar + 1, maxDeltaLine, endChar + 1);
 	}
 
-	private _getTokenCount(): number {
-		return this._tokenCount;
-	}
+	private _getTokenCount(): number { return this._tokenCount; }
+	private _getDeltaLine(tokenIndex: number): number { return this._tokens[4 * tokenIndex]; }
+	private _getStartCharacter(tokenIndex: number): number { return this._tokens[4 * tokenIndex + 1]; }
+	private _getEndCharacter(tokenIndex: number): number { return this._tokens[4 * tokenIndex + 2]; }
 
-	private _getDeltaLine(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex];
-	}
-
-	private _getStartCharacter(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex + 1];
-	}
-
-	private _getEndCharacter(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex + 2];
-	}
-
-	public isEmpty(): boolean {
-		return (this._getTokenCount() === 0);
-	}
+	public get IsEmpty():bool { return this._tokenCount === 0; }
+	public isEmpty(): boolean { return (this._getTokenCount() === 0); }
 
 	public getLineTokens(deltaLine: number): SparseLineTokens | null {
 		let low = 0;
-		let high = this._getTokenCount() - 1;
+		let high = this._tokenCount - 1;
 
 		while (low < high) {
 			const mid = low + Math.floor((high - low) / 2);
@@ -1860,13 +1581,9 @@ class SparseMultilineTokensStorage {
 				high = mid - 1;
 			} else {
 				let min = mid;
-				while (min > low && this._getDeltaLine(min - 1) === deltaLine) {
-					min--;
-				}
 				let max = mid;
-				while (max < high && this._getDeltaLine(max + 1) === deltaLine) {
-					max++;
-				}
+				while (min > low && this._getDeltaLine(min - 1) === deltaLine) min--;
+				while (max < high && this._getDeltaLine(max + 1) === deltaLine) max++;
 				return new SparseLineTokens(this._tokens.subarray(4 * min, 4 * max + 4));
 			}
 		}
@@ -1878,9 +1595,7 @@ class SparseMultilineTokensStorage {
 		return null;
 	}
 
-	public clear(): void {
-		this._tokenCount = 0;
-	}
+	public clear(): void { this._tokenCount = 0; }
 
 	public removeTokens(startDeltaLine: number, startChar: number, endDeltaLine: number, endChar: number): number {
 		const tokens = this._tokens;
@@ -1901,9 +1616,7 @@ class SparseMultilineTokensStorage {
 			) {
 				hasDeletedTokens = true;
 			} else {
-				if (newTokenCount === 0) {
-					firstDeltaLine = tokenDeltaLine;
-				}
+				if (newTokenCount === 0) firstDeltaLine = tokenDeltaLine;
 				if (hasDeletedTokens) {
 					// must move the token to the left
 					const destOffset = 4 * newTokenCount;
@@ -1961,59 +1674,198 @@ class SparseMultilineTokensStorage {
 	}
 
 	public acceptDeleteRange(horizontalShiftForFirstLineTokens: number, startDeltaLine: number, startCharacter: number, endDeltaLine: number, endCharacter: number): void {
-		// This is a bit complex, here are the cases I used to think about this:
-		//
-		// 1. The token starts before the deletion range
-		// 1a. The token is completely before the deletion range
-		//               -----------
-		//                          xxxxxxxxxxx
-		// 1b. The token starts before, the deletion range ends after the token
-		//               -----------
-		//                      xxxxxxxxxxx
-		// 1c. The token starts before, the deletion range ends precisely with the token
-		//               ---------------
-		//                      xxxxxxxx
-		// 1d. The token starts before, the deletion range is inside the token
-		//               ---------------
-		//                    xxxxx
-		//
-		// 2. The token starts at the same position with the deletion range
-		// 2a. The token starts at the same position, and ends inside the deletion range
-		//               -------
-		//               xxxxxxxxxxx
-		// 2b. The token starts at the same position, and ends at the same position as the deletion range
-		//               ----------
-		//               xxxxxxxxxx
-		// 2c. The token starts at the same position, and ends after the deletion range
-		//               -------------
-		//               xxxxxxx
-		//
-		// 3. The token starts inside the deletion range
-		// 3a. The token is inside the deletion range
-		//                -------
-		//             xxxxxxxxxxxxx
-		// 3b. The token starts inside the deletion range, and ends at the same position as the deletion range
-		//                ----------
-		//             xxxxxxxxxxxxx
-		// 3c. The token starts inside the deletion range, and ends after the deletion range
-		//                ------------
-		//             xxxxxxxxxxx
-		//
-		// 4. The token starts after the deletion range
-		//                  -----------
-		//          xxxxxxxx
-		//
+		//. This is a bit complex, here are the cases I used to think about this:
+		//.
+		//. 1. The token starts before the deletion range
+		//. 1a. The token is completely before the deletion range
+		//.               [-------------]○○○○○
+		//. 1b. The token starts before, the deletion range ends after the token
+		//.               [-----------θθθ○○
+		//. 1c. The token starts before, the deletion range ends precisely with the token
+		//.               [---------θθθθθ
+		//. 1d. The token starts before, the deletion range is inside the token
+		//.               [----θθθθθ----]
+		//. 2c. The token starts at the same position, and ends after the deletion range
+		//.               θθθθθ---------]
+		//. 3c. The token starts inside the deletion range, and ends after the deletion range
+		//.             ○○θθθ-----------]
+		//. 4. The token starts after the deletion range
+		//.          ○○○○○[-------------]
+		//.
+		//. 3. The token starts inside the deletion range
+		//. 3b. The token starts inside the deletion range, and ends at the same position as the deletion range
+		//.               ○○○○○○○○θθθθθθθ
+		//. 3a. The token is inside the deletion range
+		//.               ○○○○θθθθθθθ○○○○
+		//. 2a. The token starts at the same position, and ends inside the deletion range
+		//.               θθθθθθθ○○○○○○○○
+		//.
+		//. 2. The token starts at the same position with the deletion range
+		//. 2b. The token starts at the same position, and ends at the same position as the deletion range
+		//.               θθθθθθθθθθθθθθθ
+		//.          
+		//.
 		const tokens = this._tokens;
 		const tokenCount = this._tokenCount;
 		const deletedLineCount = (endDeltaLine - startDeltaLine);
 		let newTokenCount = 0;
 		let hasDeletedTokens = false;
 		for (let i = 0; i < tokenCount; i++) {
-			const srcOffset = 4 * i;
-			let tokenDeltaLine = tokens[srcOffset];
+			const srcOffset = i << 2;
+			let tokenDeltaLine      = tokens[srcOffset + 0];
 			let tokenStartCharacter = tokens[srcOffset + 1];
-			let tokenEndCharacter = tokens[srcOffset + 2];
-			const tokenMetadata = tokens[srcOffset + 3];
+			let tokenEndCharacter   = tokens[srcOffset + 2];
+			const tokenMetadata     = tokens[srcOffset + 3];
+
+
+			if (
+				(startDeltaLine === tokenDeltaLine && startCharacter === tokenStartCharacter)
+				&&
+				(endDeltaLine === tokenDeltaLine && endCharacter === tokenEndCharacter)
+			) {} // 2B: θθθθθθθθθθθθθθθ
+
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND token end char comes after delete start char
+			// token line same as delete start line AND token start char is same as delete start char
+			//2A,2B: token line different to delete end line OR token end char comes at or before delete end char
+			/* 
+			TEC > DSC
+			TL == DSL && TSC == DSC
+			TL != DEL || TEC <= DEC
+			*/
+
+			
+			if (
+				(startDeltaLine === tokenDeltaLine && startCharacter === tokenStartCharacter)
+				&&
+				(tokenDeltaLine < endDeltaLine || (tokenDeltaLine === endDeltaLine && tokenEndCharacter < endCharacter))
+			) {} // 2A: θθθθθθθ○○○○○○○○
+
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND token end char comes after delete start char
+			// token line same as delete start line AND token start char is same as delete start char
+			//2A,2B: token line different to delete end line OR token end char comes at or before delete end char
+			/* 
+			TEC > DSC
+			TL == DSL && TSC == DSC
+			TL != DEL || TEC <= DEC
+			*/
+
+
+			if (
+				(startDeltaLine < tokenDeltaLine || (startDeltaLine === tokenDeltaLine && startCharacter < tokenStartCharacter))
+				&&
+				(tokenDeltaLine < endDeltaLine || (tokenDeltaLine === endDeltaLine && tokenEndCharacter < endCharacter))
+			) {} // 3A: ○○○○θθθθθθθ○○○○
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND not same line OR token end char comes after delete start char
+			// token line before delete end line OR same line AND token start char comes before delete end char
+			//3A,3B: token line different to delete end line OR token end char comes at or before delete end char
+			/* 
+			TL >= DSL
+			TL != DSL || TEC > DSC && TSC >= DSC
+			TL < DEL || TL == DEL && TSC < DEC
+			TL != DEL || TEC <= DEC
+			*/
+
+			
+			if (
+				(startDeltaLine < tokenDeltaLine || (startDeltaLine === tokenDeltaLine && startCharacter < tokenStartCharacter))
+				&&
+				(endDeltaLine === tokenDeltaLine && endCharacter === tokenEndCharacter)
+			) {} // 3B: ○○○○○○○○θθθθθθθ
+
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND not same line OR token end char comes after delete start char
+			// token line before delete end line OR same line AND token start char comes before delete end char
+			//3A,3B: token line different to delete end line OR token end char comes at or before delete end char
+			/* 
+			TL >= DSL
+			TL != DSL || TEC > DSC && TSC >= DSC
+			TL < DEL || TL == DEL && TSC < DEC
+			TL != DEL || TEC <= DEC
+			*/
+			
+
+
+
+				
+
+
+
+			//1A: token line before delete start line OR same line AND token end char comes at or before delete start char.
+			if (
+				(tokenDeltaLine < startDeltaLine || (startDeltaLine === tokenDeltaLine && tokenEndCharacter <= startCharacter))
+			) {} // 1A:         [-------------]○○○○○
+
+			if (
+				(startDeltaLine === tokenDeltaLine && tokenStartCharacter < startCharacter && startCharacter < tokenEndCharacter)
+				&&
+				(tokenDeltaLine < endDeltaLine || (endDeltaLine === tokenDeltaLine && tokenEndCharacter < endCharacter))
+			) {} // 1B:         [-----------θθθ○○
+
+			if (
+				(startDeltaLine === tokenDeltaLine && tokenStartCharacter < startCharacter)
+				&&
+				(tokenDeltaLine === endDeltaLine && endCharacter === tokenEndCharacter)
+			) {} // 1C:         [---------θθθθθ
+			
+			if (
+				(startDeltaLine === tokenDeltaLine && tokenStartCharacter < startCharacter)
+				&&
+				(tokenDeltaLine === endDeltaLine && endCharacter < tokenEndCharacter)
+			) {} // 1D:         [----θθθθθ----]
+
+			if (
+				(tokenDeltaLine === startDeltaLine && startCharacter === tokenStartCharacter)
+				&&
+				(tokenDeltaLine === endDeltaLine && endCharacter < tokenEndCharacter)
+			) {} // 2C:         θθθθθ---------]
+
+			if (
+				(startDeltaLine < tokenDeltaLine || (startDeltaLine === tokenDeltaLine && startCharacter < tokenStartCharacter))
+				&&
+				(endDeltaLine === tokenDeltaLine && tokenStartCharacter < endCharacter && endCharacter < tokenEndCharacter)
+			) {} // 3C:       ○○θθθ-----------]
+
+
+			if (
+				(endDeltaLine < tokenDeltaLine || (endDeltaLine === tokenDeltaLine && endCharacter <= tokenStartCharacter))
+			) {} // 4 :    ○○○○○[-------------]
+
+
+
+			// token line at or after delete end line AND not same line OR token start char comes at or after delete end char
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND not same line OR token end char comes after delete start char
+			//4: token line after delete end line
+			/* 
+			TL > DEL && TL != DEL || TSC >= DEC
+			TL != DSL || TSC >= DSC
+			TL >= DSL && TL != DSL || TEC > DSC
+			
+			*/
+
+			// token line at or after delete end line AND not same line OR token start char comes at or after delete end char
+			// token line different to delete start line OR token start char comes at or after delete start char
+			// token line at or after delete start line AND token end char comes after delete start char
+			//4: token line same as delete end line AND token start char comes on or after delete end char
+			/* 
+			
+			TL != DSL || TSC >= DSC
+			TL >= DSL && TEC > DSC
+			TL == DEL && TSC >= DEC
+			
+			*/
+
+
+
+
+
+
+
+
+
 
 			if (tokenDeltaLine < startDeltaLine || (tokenDeltaLine === startDeltaLine && tokenEndCharacter <= startCharacter)) {
 				// 1a. The token is completely before the deletion range
@@ -2075,21 +1927,22 @@ class SparseMultilineTokensStorage {
 					// early stop, there is no need to walk all the tokens and do nothing...
 					newTokenCount = tokenCount;
 					break;
-				}
-				tokenDeltaLine -= deletedLineCount;
+				} else tokenDeltaLine -= deletedLineCount;
 			} else if (tokenDeltaLine === endDeltaLine && tokenStartCharacter >= endCharacter) {
 				// 4. (continued) The token starts after the deletion range, on the last line where a deletion occurs
 				if (horizontalShiftForFirstLineTokens && tokenDeltaLine === 0) {
 					tokenStartCharacter += horizontalShiftForFirstLineTokens;
 					tokenEndCharacter += horizontalShiftForFirstLineTokens;
 				}
+
 				tokenDeltaLine -= deletedLineCount;
 				tokenStartCharacter -= (endCharacter - startCharacter);
 				tokenEndCharacter -= (endCharacter - startCharacter);
 			} else throw new Error(`Not possible!`);
 
-			const destOffset = 4 * newTokenCount;
-			tokens[destOffset] = tokenDeltaLine;
+
+			const destOffset = newTokenCount << 2;
+			tokens[destOffset + 0] = tokenDeltaLine;
 			tokens[destOffset + 1] = tokenStartCharacter;
 			tokens[destOffset + 2] = tokenEndCharacter;
 			tokens[destOffset + 3] = tokenMetadata;
@@ -2100,77 +1953,63 @@ class SparseMultilineTokensStorage {
 	}
 
 	public acceptInsertText(deltaLine: number, character: number, eolCount: number, firstLineLength: number, lastLineLength: number, firstCharCode: number): void {
-		// Here are the cases I used to think about this:
-		//
-		// 1. The token is completely before the insertion point
-		//            -----------   |
-		// 2. The token ends precisely at the insertion point
-		//            -----------|
-		// 3. The token contains the insertion point
-		//            -----|------
-		// 4. The token starts precisely at the insertion point
-		//            |-----------
-		// 5. The token is completely after the insertion point
-		//            |   -----------
-		//
-		const isInsertingPreciselyOneWordCharacter = (
-			eolCount === 0 && firstLineLength === 1
-			&& (
-				(firstCharCode >= CharCode.Digit0 && firstCharCode <= CharCode.Digit9)
-				|| (firstCharCode >= CharCode.A && firstCharCode <= CharCode.Z)
-				|| (firstCharCode >= CharCode.a && firstCharCode <= CharCode.z)
-			)
+		//. Here are the cases I used to think about this:
+		//.
+		//. 1: The token is completely before the insertion point
+		//.                -----------    |
+		//. 2: The token ends precisely at the insertion point
+		//.                -----------|
+		//. 3: The token contains the insertion point
+		//.                -----|-----
+		//. 4: The token starts precisely at the insertion point
+		//.               |-----------
+		//. 5: The token is completely after the insertion point
+		//.           |    -----------
+		//.
+		const isInsertingPreciselyOneWordCharacter = (eolCount === 0 && firstLineLength === 1
+			&& (CharCodes.IsDigit(firstCharCode) || CharCodes.IsLetter(firstCharCode))
 		);
 		const tokens = this._tokens;
 		const tokenCount = this._tokenCount;
 		for (let i = 0; i < tokenCount; i++) {
-			const offset = 4 * i;
-			let tokenDeltaLine = tokens[offset];
+			const offset = i<<2;
+			let tokenDeltaLine      = tokens[offset + 0];
 			let tokenStartCharacter = tokens[offset + 1];
-			let tokenEndCharacter = tokens[offset + 2];
+			let tokenEndCharacter   = tokens[offset + 2];
 
-			if (tokenDeltaLine < deltaLine || (tokenDeltaLine === deltaLine && tokenEndCharacter < character)) {
-				// 1. The token is completely before the insertion point
-				// => nothing to do
-				continue;
-			} else if (tokenDeltaLine === deltaLine && tokenEndCharacter === character) {
-				// 2. The token ends precisely at the insertion point
-				// => expand the end character only if inserting precisely one character that is a word character
-				if (isInsertingPreciselyOneWordCharacter) tokenEndCharacter += 1;
-				else continue;
-			} else if (tokenDeltaLine === deltaLine && tokenStartCharacter < character && character < tokenEndCharacter) {
-				// 3. The token contains the insertion point
-				if (eolCount === 0) {
-					// => just expand the end character
-					tokenEndCharacter += firstLineLength;
-				} else {
-					// => cut off the token
-					tokenEndCharacter = character;
-				}
-			} else {
-				// 4. or 5.
-				if (tokenDeltaLine === deltaLine && tokenStartCharacter === character) {
+			if (tokenDeltaLine < deltaLine) continue; //Not on same line, nothing to do.
+			else if (tokenDeltaLine === deltaLine) {
+				if (tokenEndCharacter < character) {
+					// 1. The token is completely before the insertion point
+					// => nothing to do
+					continue;
+				} else if (tokenEndCharacter === character) {
+					// 2. The token ends precisely at the insertion point
+					// => expand the end character only if inserting precisely one character that is a word character
+					if (isInsertingPreciselyOneWordCharacter) tokenEndCharacter += 1;
+					else continue;
+				} else if (tokenStartCharacter < character && character < tokenEndCharacter) {
+					// 3. The token contains the insertion point
+					// => either expand the end character, or cut off the token.
+					tokenEndCharacter = (eolCount === 0)? tokenEndCharacter+firstLineLength : character;
+				} else if (tokenStartCharacter === character && isInsertingPreciselyOneWordCharacter) {
 					// 4. The token starts precisely at the insertion point
 					// => grow the token (by keeping its start constant) only if inserting precisely one character that is a word character
-					// => otherwise behave as in case 5.
-					if (isInsertingPreciselyOneWordCharacter) continue;
-				}
-				// => the token must move and keep its size constant
-				if (tokenDeltaLine === deltaLine) {
-					tokenDeltaLine += eolCount;
+					continue;
+				} else {
+					// 5. The token is completely after the insertion point
 					// this token is on the line where the insertion is taking place
+					tokenDeltaLine += eolCount;
 					if (eolCount === 0) {
 						tokenStartCharacter += firstLineLength;
 						tokenEndCharacter += firstLineLength;
 					} else {
-						const tokenLength = tokenEndCharacter - tokenStartCharacter;
-						tokenStartCharacter = lastLineLength + (tokenStartCharacter - character);
-						tokenEndCharacter = tokenStartCharacter + tokenLength;
+						tokenStartCharacter += lastLineLength - character;
+						tokenEndCharacter += lastLineLength - character;
 					}
-				} else {
-					tokenDeltaLine += eolCount;
 				}
-			}
+			} else tokenDeltaLine += eolCount;
+
 
 			tokens[offset + 0] = tokenDeltaLine;
 			tokens[offset + 1] = tokenStartCharacter;
@@ -2179,40 +2018,280 @@ class SparseMultilineTokensStorage {
 	}
 }
 
-export class SparseLineTokens {
 
-	private readonly _tokens: Uint32Array;
 
-	constructor(tokens: Uint32Array) {
-		this._tokens = tokens;
+
+
+
+
+			// if (startDeltaLine <= tokenDeltaLine && tokenDeltaLine <= endDeltaLine) {
+			// 	if (tokenDeltaLine === startDeltaLine && tokenEndCharacter <= startCharacter) { }
+			// 	if (tokenDeltaLine === endDeltaLine && tokenStartCharacter >= endCharacter) { }
+
+			// 	//There must be some overlap
+			// 	else {
+			// 		if (tokenStartCharacter === startCharacter) {
+
+			// 		}
+					
+
+
+
+			// 	}
+			// }
+
+
+
+
+
+
+
+
+
+
+			// if (startDeltaLine == tokenDeltaLine && tokenDeltaLine == endDeltaLine) {
+			// 	// Token and deletion range are entierly on the same line.
+			// 	if (tokenEndCharacter <= startCharacter) {
+			// 		// 1a. The token is completely before the deletion range
+			// 		// => nothing to do
+			// 		newTokenCount++;
+			// 		continue;
+			// 	} else if (endCharacter <= tokenStartCharacter) {
+			// 		// 4. (continued) The token starts after the deletion range, on the last line where a deletion occurs
+			// 		if (horizontalShiftForFirstLineTokens && tokenDeltaLine === 0) {
+			// 			tokenStartCharacter += horizontalShiftForFirstLineTokens;
+			// 			tokenEndCharacter += horizontalShiftForFirstLineTokens;
+			// 		}
+	
+			// 		tokenDeltaLine -= deletedLineCount;
+			// 		tokenStartCharacter -= (endCharacter - startCharacter);
+			// 		tokenEndCharacter -= (endCharacter - startCharacter);
+
+			// 	} else if (endCharacter < tokenEndCharacter) {
+			// 		// 1d. The token starts before, the deletion range is inside the token
+			// 		// => the token shrinks by the deletion character count
+			// 		tokenEndCharacter -= (endCharacter - startCharacter);
+			// 	}
+
+			// 	if (tokenStartCharacter < startCharacter) {
+			// 		// 1b, 1c, 1d
+			// 		// => the token survives, but it needs to shrink
+			// 		if (tokenEndCharacter > endCharacter) {
+			// 			// 1d. The token starts before, the deletion range is inside the token
+			// 			// => the token shrinks by the deletion character count
+			// 			tokenEndCharacter -= (endCharacter - startCharacter);
+			// 		} else {
+			// 			// 1b. The token starts before, the deletion range ends after the token
+			// 			// 1c. The token starts before, the deletion range ends precisely with the token
+			// 			// => the token shrinks its ending to the deletion start
+			// 			tokenEndCharacter = startCharacter;
+			// 		}
+
+			// 	} else if (tokenStartCharacter === startCharacter) {
+			// 		// 2a, 2b, 2c
+			// 		if (tokenEndCharacter > endCharacter) {
+			// 			// 2c. The token starts at the same position, and ends after the deletion range
+			// 			// => the token shrinks by the deletion character count
+			// 			tokenEndCharacter -= (endCharacter - startCharacter);
+			// 		} else {
+			// 			// 2a. The token starts at the same position, and ends inside the deletion range
+			// 			// 2b. The token starts at the same position, and ends at the same position as the deletion range
+			// 			// => the token is deleted
+			// 			hasDeletedTokens = true;
+			// 			continue;
+			// 		}
+
+			// 	} 
+			// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** Represents contiguous tokens in a text model. **/
+export class ContiguousTokensStore {
+	private _lineTokens: ITokenArrayRange[];
+	private _len: number;
+	private readonly _languageIdCodec: ILanguageIdCodec;
+
+	constructor(languageIdCodec: ILanguageIdCodec) {
+		this._languageIdCodec = languageIdCodec;
+		this._lineTokens = [];
+		this._len = 0;
 	}
 
-	public getCount(): number {
-		return this._tokens.length / 4;
+	public flush(): void {
+		this._lineTokens = [];
+		this._len = 0;
 	}
 
-	public getStartCharacter(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex + 1];
+	public getTokens(topLevelLanguageId: string, lineIndex: number, lineText: string): LineTokens {
+		let rawLineTokens: ITokenArrayRange = null;
+		if (lineIndex < this._len) rawLineTokens = this._lineTokens[lineIndex];
+		if (rawLineTokens !== null && rawLineTokens !== EMPTY_LINE_TOKENS) {
+			// return new LineTokens(toUint32Array(rawLineTokens), lineText, this._languageIdCodec);
+			return new LineTokens(toUint32Array(rawLineTokens), lineText);
+		}
+
+		const lineTokens = new Uint32Array(2);
+		lineTokens[0] = lineText.length;
+		lineTokens[1] = getDefaultMetadata(this._languageIdCodec.encodeLanguageId(topLevelLanguageId));
+		// return new LineTokens(lineTokens, lineText, this._languageIdCodec);
+		return new LineTokens(lineTokens, lineText);
 	}
 
-	public getEndCharacter(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex + 2];
+	private static _massageTokens(topLevelLanguageId: LanguageId, lineTextLength: number, _tokens: ITokenArrayRange): Uint32Array | ArrayBuffer {
+
+		const tokens = _tokens ? toUint32Array(_tokens) : null;
+
+		if (lineTextLength === 0) {
+			let hasDifferentLanguageId = false;
+			if (tokens && tokens.length > 1) hasDifferentLanguageId = (TokenMetadata.getLanguageId(tokens[1]) !== topLevelLanguageId);
+			if (!hasDifferentLanguageId) return EMPTY_LINE_TOKENS;
+		}
+
+		if (!tokens || tokens.length === 0) {
+			const tokens = new Uint32Array(2);
+			tokens[0] = lineTextLength;
+			tokens[1] = getDefaultMetadata(topLevelLanguageId);
+			return tokens.buffer;
+		}
+
+		// Ensure the last token covers the end of the text
+		tokens[tokens.length - 2] = lineTextLength;
+		
+		return ((tokens.byteOffset === 0 && tokens.byteLength === tokens.buffer.byteLength)
+			? tokens.buffer // Store directly the ArrayBuffer pointer to save an object
+			: tokens
+		);
 	}
 
-	public getMetadata(tokenIndex: number): number {
-		return this._tokens[4 * tokenIndex + 3];
+	private _ensureLine(lineIndex: number): void {
+		for (; lineIndex >= this._len; this._len++) {
+			this._lineTokens[this._len] = null;
+		}
 	}
+
+	private _deleteLines(start: number, deleteCount: number): void {
+		if (deleteCount === 0) return;
+
+		if (start + deleteCount > this._len) deleteCount = this._len - start;
+		this._lineTokens.splice(start, deleteCount);
+		this._len -= deleteCount;
+	}
+
+	private _insertLines(insertIndex: number, insertCount: number): void {
+		if (insertCount === 0) return;
+
+		const lineTokens: (ITokenArrayRange)[] = [];
+		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
+		this._lineTokens = arrayInsert(this._lineTokens, insertIndex, lineTokens);
+		this._len += insertCount;
+	}
+
+	public setTokens(topLevelLanguageId: string, lineIndex: number, lineTextLength: number, _tokens: ITokenArrayRange, checkEquality: boolean): boolean {
+		const tokens = ContiguousTokensStore._massageTokens(this._languageIdCodec.encodeLanguageId(topLevelLanguageId), lineTextLength, _tokens);
+		this._ensureLine(lineIndex);
+		const oldTokens = this._lineTokens[lineIndex];
+		this._lineTokens[lineIndex] = tokens;
+		
+		return (checkEquality)? !ContiguousTokensStore._equals(oldTokens, tokens) : false;
+	}
+
+	private static _equals(_a: ITokenArrayRange, _b: ITokenArrayRange) {
+		if (!_a || !_b) return !_a && !_b;
+
+		const a = toUint32Array(_a);
+		const b = toUint32Array(_b);
+
+		if (a.length !== b.length) return false;
+		for (let i = 0, len = a.length; i < len; i++) {
+			if (a[i] !== b[i]) return false;
+		}
+		return true;
+	}
+
+	//#region Editing
+
+	public acceptEdit(range: Range, eolCount: number, firstLineLength: number): void {
+		this._acceptDeleteRange(range);
+		this._acceptInsertText(new Position(range.start.line+1, range.start.character+1), eolCount, firstLineLength);
+	}
+
+	private _acceptDeleteRange(range: Range): void {
+
+		const firstLineIndex = range.start.line;
+		if (firstLineIndex >= this._len) return;
+
+		if (range.start.line === range.end.line) {
+			if (range.start.character === range.end.character) return; // Nothing to delete
+
+			this._lineTokens[firstLineIndex] = ContiguousTokensEditing.delete(this._lineTokens[firstLineIndex], range.start.character, range.end.character);
+			return;
+		}
+
+		this._lineTokens[firstLineIndex] = ContiguousTokensEditing.deleteEnding(this._lineTokens[firstLineIndex], range.start.character);
+
+		const lastLineIndex = range.end.line;
+		const lastLineTokens = (lastLineIndex < this._len)? ContiguousTokensEditing.deleteBeginning(this._lineTokens[lastLineIndex], range.end.character) : null;
+		// Take remaining text on last line and append it to remaining text on first line
+		this._lineTokens[firstLineIndex] = ContiguousTokensEditing.append(this._lineTokens[firstLineIndex], lastLineTokens);
+
+		// Delete middle lines
+		this._deleteLines(range.start.line+1, range.end.line - range.start.line);
+	}
+
+	private _acceptInsertText(position: Position, eolCount: number, firstLineLength: number): void {
+		if (eolCount === 0 && firstLineLength === 0) return; // Nothing to insert
+
+		const lineIndex = position.line;
+		if (lineIndex >= this._len) return;
+
+		if (eolCount === 0) { // Inserting text on one line
+			this._lineTokens[lineIndex] = ContiguousTokensEditing.insert(this._lineTokens[lineIndex], position.character, firstLineLength);
+			return;
+		}
+
+		this._lineTokens[lineIndex] = ContiguousTokensEditing.deleteEnding(this._lineTokens[lineIndex], position.character);
+		this._lineTokens[lineIndex] = ContiguousTokensEditing.insert(this._lineTokens[lineIndex], position.character, firstLineLength);
+
+		this._insertLines(position.line+1, eolCount);
+	}
+
+	//#endregion
 }
 
 
 
 
 
-/**
- * Represents sparse tokens in a text model.
- */
- export class SparseTokensStore {
 
+/** Represents sparse tokens in a text model. **/
+ export class SparseTokensStore {
 	private _pieces: SparseMultilineTokens[];
 	private _isComplete: boolean;
 	protected readonly _languageIdCodec: ILanguageIdCodec;
@@ -2228,9 +2307,8 @@ export class SparseLineTokens {
 		this._isComplete = false;
 	}
 
-	public isEmpty(): boolean {
-		return (this._pieces.length === 0);
-	}
+	public get IsEmpty():bool { return this._pieces.length === 0; }
+	public isEmpty(): boolean { return (this._pieces.length === 0); }
 
 	public set(pieces: SparseMultilineTokens[] | null, isComplete: boolean): void {
 		this._pieces = pieces || [];
@@ -2251,15 +2329,11 @@ export class SparseLineTokens {
 		let insertPosition: { index: number } | null = null;
 		for (let i = 0, len = this._pieces.length; i < len; i++) {
 			const piece = this._pieces[i];
-			if (piece.endLineNumber < range.start.line+1) {
-				// this piece is before the range
-				continue;
-			}
+			if (piece.endLineNumber < range.start.line+1) continue; // this piece is before the range
 
 			if (piece.startLineNumber > range.end.line+1) {
-				// this piece is after the range, so mark the spot before this piece
-				// as a good insertion position and stop looping
-				insertPosition = insertPosition || { index: i };
+				// this piece is after the range, so mark the spot before this piece as a good insertion position and stop looping
+				insertPosition = insertPosition ?? { index: i };
 				break;
 			}
 
@@ -2281,7 +2355,7 @@ export class SparseLineTokens {
 
 			if (piece.startLineNumber > range.end.line+1) {
 				// after removal, this piece is after the range
-				insertPosition = insertPosition || { index: i };
+				insertPosition = insertPosition ?? { index: i };
 				continue;
 			}
 
@@ -2289,7 +2363,7 @@ export class SparseLineTokens {
 			const [a, b] = piece.split(range);
 			if (a.isEmpty()) {
 				// this piece is actually after the range
-				insertPosition = insertPosition || { index: i };
+				insertPosition = insertPosition ?? { index: i };
 				continue;
 			}
 			if (b.isEmpty()) {
@@ -2300,14 +2374,12 @@ export class SparseLineTokens {
 			i++;
 			len++;
 
-			insertPosition = insertPosition || { index: i };
+			insertPosition = insertPosition ?? { index: i };
 		}
 
-		insertPosition = insertPosition || { index: this._pieces.length };
+		insertPosition = insertPosition ?? { index: this._pieces.length };
 
-		if (pieces.length > 0) {
-			this._pieces = arrayInsert(this._pieces, insertPosition.index, pieces);
-		}
+		if (pieces.length > 0) this._pieces = arrayInsert(this._pieces, insertPosition.index, pieces);
 
 		// console.log(`I HAVE ${this._pieces.length} pieces`);
 		// console.log(`${this._pieces.map(p => p.toString()).join('\n')}`);
@@ -2315,42 +2387,31 @@ export class SparseLineTokens {
 		return range;
 	}
 
-	public isComplete(): boolean {
-		return this._isComplete;
-	}
+	public get IsComplete(): bool { return this._isComplete; }
+	public isComplete(): boolean { return this._isComplete; }
 
 	public addSparseTokens(lineNumber: number, aTokens: LineTokens): LineTokens {
-		if (aTokens.getLineContent().length === 0) {
-			// Don't do anything for empty lines
-			return aTokens;
-		}
+		if (aTokens.getLineContent().length === 0) return aTokens; // Don't do anything for empty lines
 
 		const pieces = this._pieces;
 
-		if (pieces.length === 0) {
-			return aTokens;
-		}
+		if (pieces.length === 0) return aTokens;
 
 		const pieceIndex = SparseTokensStore._findFirstPieceWithLine(pieces, lineNumber);
 		const bTokens = pieces[pieceIndex].getLineTokens(lineNumber);
 
-		if (!bTokens) {
-			return aTokens;
-		}
+		if (!bTokens) return aTokens;
 
-		// const aLen = aTokens.getCount();
 		const aLen = aTokens.count;
-		const bLen = bTokens.getCount();
+		const bLen = bTokens.count;
 
 		let aIndex = 0;
-		const result: number[] = [];
 		let resultLen = 0;
 		let lastEndOffset = 0;
+		const result: number[] = [];
 
 		const emitToken = (endOffset: number, metadata: number) => {
-			if (endOffset === lastEndOffset) {
-				return;
-			}
+			if (endOffset === lastEndOffset) return;
 			lastEndOffset = endOffset;
 			result[resultLen++] = endOffset;
 			result[resultLen++] = metadata;
@@ -2361,20 +2422,12 @@ export class SparseLineTokens {
 			const bEndCharacter = bTokens.getEndCharacter(bIndex);
 			const bMetadata = bTokens.getMetadata(bIndex);
 
-			const bMask = (
-				((bMetadata & MetadataConsts.SEMANTIC_USE_ITALIC) ? MetadataConsts.ITALIC_MASK : 0)
-				| ((bMetadata & MetadataConsts.SEMANTIC_USE_BOLD) ? MetadataConsts.BOLD_MASK : 0)
-				| ((bMetadata & MetadataConsts.SEMANTIC_USE_UNDERLINE) ? MetadataConsts.UNDERLINE_MASK : 0)
-				| ((bMetadata & MetadataConsts.SEMANTIC_USE_STRIKETHROUGH) ? MetadataConsts.STRIKETHROUGH_MASK : 0)
-				| ((bMetadata & MetadataConsts.SEMANTIC_USE_FOREGROUND) ? MetadataConsts.FOREGROUND_MASK : 0)
-				| ((bMetadata & MetadataConsts.SEMANTIC_USE_BACKGROUND) ? MetadataConsts.BACKGROUND_MASK : 0)
-			) >>> 0;
+			const bMask = getSemanticMask(bMetadata);
 			const aMask = (~bMask) >>> 0;
 
 			// push any token from `a` that is before `b`
-			while (aIndex < aLen && aTokens.getEndOffset(aIndex) <= bStartCharacter) {
+			for (;aIndex < aLen && aTokens.getEndOffset(aIndex) <= bStartCharacter; aIndex++) {
 				emitToken(aTokens.getEndOffset(aIndex), aTokens.Metadata(aIndex));
-				aIndex++;
 			}
 
 			// push the token from `a` if it intersects the token from `b`
@@ -2383,30 +2436,22 @@ export class SparseLineTokens {
 			}
 
 			// skip any tokens from `a` that are contained inside `b`
-			while (aIndex < aLen && aTokens.getEndOffset(aIndex) < bEndCharacter) {
+			for (;aIndex < aLen && aTokens.getEndOffset(aIndex) < bEndCharacter; aIndex++) {
 				emitToken(aTokens.getEndOffset(aIndex), (aTokens.Metadata(aIndex) & aMask) | (bMetadata & bMask));
-				aIndex++;
 			}
 
 			if (aIndex < aLen) {
 				emitToken(bEndCharacter, (aTokens.Metadata(aIndex) & aMask) | (bMetadata & bMask));
-				if (aTokens.getEndOffset(aIndex) === bEndCharacter) {
-					// `a` ends exactly at the same spot as `b`!
-					aIndex++;
-				}
+				if (aTokens.getEndOffset(aIndex) === bEndCharacter) aIndex++; // `a` ends exactly at the same spot as `b`!
 			} else {
 				const aMergeIndex = Math.min(Math.max(0, aIndex - 1), aLen - 1);
-
 				// push the token from `b`
 				emitToken(bEndCharacter, (aTokens.Metadata(aMergeIndex) & aMask) | (bMetadata & bMask));
 			}
 		}
 
 		// push the remaining tokens from `a`
-		while (aIndex < aLen) {
-			emitToken(aTokens.getEndOffset(aIndex), aTokens.Metadata(aIndex));
-			aIndex++;
-		}
+		for (;aIndex < aLen; aIndex ++) emitToken(aTokens.getEndOffset(aIndex), aTokens.Metadata(aIndex));
 
 		// return new LineTokens(new Uint32Array(result), aTokens.getLineContent(), this._languageIdCodec);
 		return new LineTokens(new Uint32Array(result), aTokens.getLineContent());
@@ -2435,9 +2480,7 @@ export class SparseLineTokens {
 	}
 
 	public acceptEdit(range: Range, eolCount: number, firstLineLength: number, lastLineLength: number, firstCharCode: number): void {
-		for (const piece of this._pieces) {
-			piece.acceptEdit(range, eolCount, firstLineLength, lastLineLength, firstCharCode);
-		}
+		for (const piece of this._pieces) piece.acceptEdit(range, eolCount, firstLineLength, lastLineLength, firstCharCode);
 	}
 }
 

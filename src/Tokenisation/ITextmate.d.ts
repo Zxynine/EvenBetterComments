@@ -242,6 +242,7 @@ interface ITokenizeLineResult2 {
 
 type IToken1Array = Array<IToken>;
 type IToken2Array = Uint32Array;
+type ITokenArrayRange = Uint32Array | ArrayBuffer | null;
 
 
 interface IStackElement {
