@@ -32,6 +32,10 @@ interface TagDefinition {
 }
 
 
+
+interface IHash<T> { [details: string]: T; }
+
+
 /** A union of given const enum values. **/
 type Flags<T extends number> = number;
 /** A union of given const enum values. **/
@@ -39,9 +43,10 @@ type OrMask<T extends number> = number;
 
 
 
-type Func<TArgs extends any[], TResult> = (...args: TArgs) => TResult; 
 // Syntax sugar
+type Func<TArgs extends any[], TResult> = (...args: TArgs) => TResult; 
 type Action<TArgs extends any[]> = Func<TArgs, undefined>; 
+
 type Callable<T> = () => T;
 
 
@@ -49,37 +54,6 @@ type nulldefined = null|undefined;
 
 type Nullable<T> = T | null;
 
-
-//  /** The 'package.json' file of an app. */
-// interface AppPackageJSON {
-// 	/** Information about the author. */
-// 	author?: {
-// 		 /** The email address. */
-// 		email?: string;
-// 		 /** The name. */
-// 		name?: string;
-// 		 /** The (homepage) URL. */
-// 		url?: string;
-// 	};
-// 	 /** A list of one or more dependencies. */
-// 	dependencies?: { [module: string]: string };
-// 	 /** A list of one or more dev dependencies. */
-// 	devDependencies?: { [module: string]: string };
-// 	 /** The description. */
-// 	description?: string;
-// 	 /** The display name. */
-// 	displayName?: string;
-// 	 /** The software license (ID). */
-// 	license?: string;
-// 	 /** The (internal) name. */
-// 	name?: string;
-// 	 /** Options for the script. */
-// 	options?: { [key: string]: any };
-// 	 /** The version number. */
-// 	version?: string;
-// 	 /** Use Vuetify instead of Bootstrap or not. */
-// 	vue?: boolean;
-// }
 
 
 // (/\*\*)\n.+\*(.*)\n.*( \*/)
@@ -91,6 +65,34 @@ type Nullable<T> = T | null;
 type bool = boolean;
 type int = number;
 type float = number;
+type char = string;
+
+
+
+
+
+type Bit = 0|1;
+
+
+
+
+
+
+
+
+
+
+/**
+ * An interface for a JavaScript object that
+ * acts a dictionary. The keys are strings.
+ */
+ type IStringDictionary<V> = Record<string, V>;
+
+ /**
+  * An interface for a JavaScript object that
+  * acts a dictionary. The keys are numbers.
+  */
+ type INumberDictionary<V> = Record<number, V>;
 
 
 
@@ -116,22 +118,6 @@ type float = number;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type Bit = 0|1|true|false;
 
 
 

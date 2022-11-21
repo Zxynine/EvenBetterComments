@@ -4,7 +4,6 @@ import { arrayInsert } from "../Utilities/Utils";
 
 
 
-
 export interface KeyValPair<K,V> {Key:K, Val:V}
 
 
@@ -25,6 +24,7 @@ export class HashSet<T> {
 	private dict : Map<T,bool>;
 	public constructor(...Initial: Array<T>) {
 		this.dict = new Map<T,bool>();
+		this.dict.set
 		for(const item of Initial) this.dict.set(item, true);
 	}
 	
@@ -43,6 +43,8 @@ export class HashSet<T> {
 	}
 
 	public getValues() { return this.dict.keys(); }
+
+	public clear() { return this.dict.clear(); }
 }
 
 
@@ -77,17 +79,21 @@ export function *Counter(start:int, stop:int, step:int =1) : Generator<number> {
  * filling up unused indices with a default value.
  */
 export class ContiguousGrowingArray<T> {
-
-	private _store: T[] = [];
+	private _store: T[] = new Array<T>();
 
 	constructor(private readonly _default: T) { }
 
-	public get(index: number): T {
-		return (index < this._store.length)? this._store[index] : this._default;
+	public get length():int { return this._store.length; }
+	public validIndex(index: int): bool { return (0 <= index && index < this._store.length); }
+
+	public get(index: number): T { 
+		return ((index < this._store.length)? this._store[index] : this._default);
 	}
 
 	public set(index: number, value: T): void {
-		while (index >= this._store.length) this._store[this._store.length] = this._default;
+		if (index >= this._store.length) 
+			for (let i=this._store.length; i<index; ++i) 
+				this._store[i] = this._default;
 		this._store[index] = value;
 	}
 
@@ -102,4 +108,14 @@ export class ContiguousGrowingArray<T> {
 		for (let i = 0; i < insertCount; i++) arr[i] = this._default;
 		this._store = arrayInsert(this._store, insertIndex, arr);
 	}
+
+	public clear(): void {
+		this._store.length = 0;
+	}
 }
+
+
+
+
+
+

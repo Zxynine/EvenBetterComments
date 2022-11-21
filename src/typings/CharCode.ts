@@ -11,12 +11,15 @@
  */
  declare const enum CharCode {
 	Null = 0,
+	None = 0,
 	/** The `\b` character. **/
 	Backspace = 8,
 	/** The `\t` character. **/
 	Tab = 9,
 	/** The `\n` character. **/
 	LineFeed = 10,
+	/** The `\n` character. **/
+	NewLine = 10,
 	/** The `\r` character. **/
 	CarriageReturn = 13,
 	/** The ` ` character. **/
@@ -27,6 +30,8 @@
 	DoubleQuote = 34,
 	/** The `#` character. **/
 	Hash = 35,
+	/** The `#` character. **/
+	Pound = 35,
 	/** The `$` character. **/
 	DollarSign = 36,
 	/** The `%` character. **/
@@ -37,8 +42,12 @@
 	SingleQuote = 39,
 	/** The `(` character. **/
 	OpenParen = 40,
+	/** The `(` character. **/
+	OpenParenthesis = 40,
 	/** The `)` character. **/
 	CloseParen = 41,
+	/** The `)` character. **/
+	CloseParenthesis = 41,
 	/** The `*` character. **/
 	Asterisk = 42,
 	/** The `+` character. **/
@@ -47,10 +56,14 @@
 	Comma = 44,
 	/** The `-` character. **/
 	Dash = 45,
+	/** The `-` character. **/
+	Minus = 45,
 	/** The `.` character. **/
 	Period = 46,
 	/** The `/` character. **/
 	Slash = 47,
+	/** The `/` character. **/
+	ForwardSlash = 47,
 
 	Digit0 = 48,
 	Digit1 = 49,
@@ -107,16 +120,24 @@
 
 	/** The `[` character. **/
 	OpenSquareBracket = 91,
+	/** The `[` character. **/
+	OpenBracket = 91,
 	/** The `\` character. **/
 	Backslash = 92,
 	/** The `]` character. **/
 	CloseSquareBracket = 93,
+	/** The `]` character. **/
+	CloseBracket = 93,
 	/** The `^` character. **/
 	Caret = 94,
 	/** The `_` character. **/
 	Underline = 95,
+	/** The `_` character. **/
+	Underscore = 95,
 	/** The ``(`)`` character. **/
 	BackTick = 96,
+	/** The ``(`)`` character. **/
+	Grave = 96,
 
 	a = 97,
 	b = 98,
@@ -147,10 +168,14 @@
 
 	/** The `{` character. **/
 	OpenCurlyBrace = 123,
+	/** The `{` character. **/
+	OpenBrace = 123,
 	/** The `|` character. **/
 	Pipe = 124,
 	/** The `}` character. **/
 	CloseCurlyBrace = 125,
+	/** The `}` character. **/
+	CloseBrace = 125,
 	/** The `~` character. **/
 	Tilde = 126,
 
@@ -370,6 +395,113 @@
 
 	U_FULLWIDTH_SEMICOLON = 0xFF1B,							// U+FF1B	FULLWIDTH SEMICOLON
 	U_FULLWIDTH_COMMA = 0xFF0C,								// U+FF0C	FULLWIDTH COMMA
+
+
+
+
+
+
+	/** The greek `Α` character. **/
+	Alpha = 0x0391,            // U+0391 GREEK LETTER Alpha
+	/** The greek `Β` character. **/
+	Beta = 0x0392,             // U+0392 GREEK LETTER Beta
+	/** The greek `Γ` character. **/
+	Gamma = 0x0393,            // U+0393 GREEK LETTER Gamma
+	/** The greek `Δ` character. **/
+	Delta = 0x0394,            // U+0394 GREEK LETTER Delta
+	/** The greek `Ε` character. **/
+	Epsilon = 0x0395,          // U+0395 GREEK LETTER Epsilon
+	/** The greek `Ζ` character. **/
+	Zeta = 0x0396,             // U+0396 GREEK LETTER Zeta
+	/** The greek `Η` character. **/
+	Eta = 0x0397,              // U+0397 GREEK LETTER Eta
+	/** The greek `Θ` character. **/
+	Theta = 0x0398,            // U+0398 GREEK LETTER Theta
+	/** The greek `Ι` character. **/
+	Iota = 0x0399,             // U+0399 GREEK LETTER Iota
+	/** The greek `Κ` character. **/
+	Kappa = 0x039A,            // U+039A GREEK LETTER Kappa
+	/** The greek `Λ` character. **/
+	Lambda = 0x039B,           // U+039B GREEK LETTER Lambda
+	/** The greek `Μ` character. **/
+	Mu = 0x039C,               // U+039C GREEK LETTER Mu
+	/** The greek `Ν` character. **/
+	Nu = 0x039D,               // U+039D GREEK LETTER Nu
+	/** The greek `Ξ` character. **/
+	Xi = 0x039E,               // U+039E GREEK LETTER Xi
+	/** The greek `Ο` character. **/
+	Omicron = 0x039F,          // U+039F GREEK LETTER Omicron
+
+	/** The greek `Π` character. **/
+	Pi = 0x03A0,               // U+03A0 GREEK LETTER Pi
+	/** The greek `Ρ` character. **/
+	Rho = 0x03A1,              // U+03A1 GREEK LETTER Rho
+	/** The greek `Σ` character. **/
+	Sigma = 0x03A3,            // U+03A3 GREEK LETTER Sigma
+	/** The greek `Τ` character. **/
+	Tau = 0x03A4,              // U+03A4 GREEK LETTER Tau
+	/** The greek `Υ` character. **/
+	Upsilon = 0x03A5,          // U+03A5 GREEK LETTER Upsilon
+	/** The greek `Φ` character. **/
+	Phi = 0x03A6,              // U+03A6 GREEK LETTER Phi
+	/** The greek `Χ` character. **/
+	Chi = 0x03A7,              // U+03A7 GREEK LETTER Chi
+	/** The greek `Ψ` character. **/
+	Psi = 0x03A8,              // U+03A8 GREEK LETTER Psi
+	/** The greek `Ω` character. **/
+	Omega = 0x03A9,            // U+03A9 GREEK LETTER Omega
+	
+
+
+	/** The greek `α` character. **/
+	alpha = 0x03B1,            // U+0391 GREEK LETTER alpha
+	/** The greek `β` character. **/
+	beta = 0x03B2,             // U+0392 GREEK LETTER beta
+	/** The greek `γ` character. **/
+	gamma = 0x03B3,            // U+0393 GREEK LETTER gamma
+	/** The greek `δ` character. **/
+	delta = 0x03B4,            // U+0394 GREEK LETTER delta
+	/** The greek `ε` character. **/
+	epsilon = 0x03B5,          // U+0395 GREEK LETTER epsilon
+	/** The greek `ζ` character. **/
+	zeta = 0x03B6,             // U+0396 GREEK LETTER zeta
+	/** The greek `η` character. **/
+	eta = 0x03B7,              // U+0397 GREEK LETTER eta
+	/** The greek `θ` character. **/
+	theta = 0x03B8,            // U+0398 GREEK LETTER theta
+	/** The greek `ι` character. **/
+	iota = 0x03B9,             // U+0399 GREEK LETTER iota
+	/** The greek `κ` character. **/
+	kappa = 0x03BA,            // U+039A GREEK LETTER kappa
+	/** The greek `λ` character. **/
+	lambda = 0x03BB,           // U+039B GREEK LETTER lambda
+	/** The greek `μ` character. **/
+	mu = 0x03BC,               // U+039C GREEK LETTER mu
+	/** The greek `ν` character. **/
+	nu = 0x03BD,               // U+039D GREEK LETTER nu
+	/** The greek `ξ` character. **/
+	xi = 0x03BE,               // U+039E GREEK LETTER xi
+	/** The greek `ο` character. **/
+	omicron = 0x03BF,          // U+039F GREEK LETTER omicron
+
+	/** The greek `π` character. **/
+	pi = 0x03C0,               // U+03A0 GREEK LETTER pi
+	/** The greek `ρ` character. **/
+	rho = 0x03C1,              // U+03A1 GREEK LETTER rho
+	/** The greek `σ` character. **/
+	sigma = 0x03C3,            // U+03A3 GREEK LETTER sigma
+	/** The greek `τ` character. **/
+	tau = 0x03C4,              // U+03A4 GREEK LETTER tau
+	/** The greek `υ` character. **/
+	upsilon = 0x03C5,          // U+03A5 GREEK LETTER upsilon
+	/** The greek `φ` character. **/
+	phi = 0x03C6,              // U+03A6 GREEK LETTER phi
+	/** The greek `χ` character. **/
+	chi = 0x03C7,              // U+03A7 GREEK LETTER chi
+	/** The greek `ψ` character. **/
+	psi = 0x03C8,              // U+03A8 GREEK LETTER psi
+	/** The greek `ω` character. **/
+	omega = 0x03C9,            // U+03A9 GREEK LETTER omega
 }
 
 
@@ -395,16 +527,44 @@ namespace CharCodes {
 		return (CharCode.a <= code && code <= CharCode.z);
 	}
 
+	export function IsDigitOrLetter(code : number) {
+		return CharCodes.IsDigit(code) || CharCodes.IsLetter(code);
+	}
 
 
 
+	export function ParseHexDigit(code : number) {
+		if (CharCodes.IsDigit(code)) return code-48; //0-9
+		if (CharCodes.IsLetterUppercase(code)) return code-65 + 10; //A-F
+		if (CharCodes.IsLetterLowercase(code)) return code-97 + 10; //a-f
+		return 0;
+	}
+
+	/** Used to parse Single length Hex digits. (e.g. the R,G,or B in #RGB) **/
+	export function parseHexDigitSingle(code : number) {
+		const x = CharCodes.ParseHexDigit(code);
+		return (x << 4) + x;
+	}
+
+	
+	/** Used to parse Double length Hex digits. (e.g. the R,G,or B in #RRGGBB) **/
+	export function parseHexDigitDouble(codeA : number, codeB : number) {
+		return (CharCodes.ParseHexDigit(codeA) << 4) + CharCodes.ParseHexDigit(codeB);
+	}
 
 
 
+	export function IsGreekLetter(code: number) {
+		return (CharCode.Alpha <= code && code <= CharCode.Omega) || (CharCode.alpha <= code && code <= CharCode.omega);
+	}
 
+	export function IsGreekLetterUppercase(code: number) {
+		return (CharCode.Alpha <= code && code <= CharCode.Omega);
+	}
 
-
-
+	export function IsGreekLetterLowercase(code: number) {
+		return (CharCode.alpha <= code && code <= CharCode.omega);
+	}
 
 
 }

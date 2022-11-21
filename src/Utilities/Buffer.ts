@@ -25,9 +25,7 @@ export class DisposableStore extends Disposable {
 
 	private readonly _toDispose = new Set<IDisposable>();
 
-	public constructor() { super(()=>{
-		if (this._toDispose.size !== 0) Disposable.from(...this._toDispose).dispose();
-	}); }
+	public constructor() { super(()=> (this._toDispose.size !== 0)&& Disposable.from(...this._toDispose).dispose()); }
 
 
 	/**
@@ -98,11 +96,7 @@ export class VSBuffer {
 	 * might use a nodejs Buffer allocated from node's Buffer pool, which is not transferrable.
 	 */
 	static alloc(byteLength: number): VSBuffer {
-		if (hasBuffer) {
-			return new VSBuffer(Buffer.allocUnsafe(byteLength));
-		} else {
-			return new VSBuffer(new Uint8Array(byteLength));
-		}
+		return new VSBuffer(hasBuffer?  Buffer.allocUnsafe(byteLength) : new Uint8Array(byteLength));
 	}
 
 	/**
@@ -111,12 +105,12 @@ export class VSBuffer {
 	 * which is not transferrable.
 	 */
 	static wrap(actual: Uint8Array): VSBuffer {
-		if (hasBuffer && !(Buffer.isBuffer(actual))) {
+		return new VSBuffer((hasBuffer && !(Buffer.isBuffer(actual)))
 			// https://nodejs.org/dist/latest-v10.x/docs/api/buffer.html#buffer_class_method_buffer_from_arraybuffer_byteoffset_length
 			// Create a zero-copy Buffer wrapper around the ArrayBuffer pointed to by the Uint8Array
-			actual = Buffer.from(actual.buffer, actual.byteOffset, actual.byteLength);
-		}
-		return new VSBuffer(actual);
+			? Buffer.from(actual.buffer, actual.byteOffset, actual.byteLength) 
+			: actual
+		);
 	}
 
 	/**
@@ -125,14 +119,10 @@ export class VSBuffer {
 	 */
 	static fromString(source: string, options?: { dontUseNodeBuffer?: boolean }): VSBuffer {
 		const dontUseNodeBuffer = options?.dontUseNodeBuffer || false;
-		if (!dontUseNodeBuffer && hasBuffer) {
-			return new VSBuffer(Buffer.from(source));
-		} else {
-			if (!textEncoder) {
-				textEncoder = new TextEncoder();
-			}
-			return new VSBuffer(textEncoder.encode(source));
-		}
+		return new VSBuffer((!dontUseNodeBuffer && hasBuffer)
+			? Buffer.from(source)
+			: (textEncoder ??= new TextEncoder()).encode(source)
+		);
 	}
 
 	/**
@@ -141,9 +131,7 @@ export class VSBuffer {
 	 */
 	static fromByteArray(source: number[]): VSBuffer {
 		const result = VSBuffer.alloc(source.length);
-		for (let i = 0, len = source.length; i < len; i++) {
-			result.buffer[i] = source[i];
-		}
+		for (let i = 0, len = source.length; i < len; i++) result.buffer[i] = source[i];
 		return result;
 	}
 
@@ -152,7 +140,7 @@ export class VSBuffer {
 	 * might use a nodejs Buffer allocated from node's Buffer pool, which is not transferrable.
 	 */
 	static concat(buffers: VSBuffer[], totalLength?: number): VSBuffer {
-		if (typeof totalLength === 'undefined') {
+		if (totalLength === undefined) {
 			totalLength = 0;
 			for (let i = 0, len = buffers.length; i < len; i++) {
 				totalLength += buffers[i].byteLength;
@@ -160,8 +148,7 @@ export class VSBuffer {
 		}
 
 		const ret = VSBuffer.alloc(totalLength);
-		let offset = 0;
-		for (let i = 0, len = buffers.length; i < len; i++) {
+		for (let i = 0, offset = 0, len = buffers.length; i < len; i++) {
 			const element = buffers[i];
 			ret.set(element, offset);
 			offset += element.byteLength;
@@ -188,15 +175,10 @@ export class VSBuffer {
 		return result;
 	}
 
-	toString(): string {
-		if (hasBuffer) {
-			return this.buffer.toString();
-		} else {
-			if (!textDecoder) {
-				textDecoder = new TextDecoder();
-			}
-			return textDecoder.decode(this.buffer);
-		}
+	toString(): string { return ((hasBuffer)
+			? this.buffer.toString()
+			: (textDecoder ??= new TextDecoder()).decode(this.buffer)
+		);
 	}
 
 	slice(start?: number, end?: number): VSBuffer {
@@ -212,42 +194,22 @@ export class VSBuffer {
 	set(array: ArrayBufferView, offset?: number): void;
 	set(array: VSBuffer | Uint8Array | ArrayBuffer | ArrayBufferView, offset?: number): void;
 	set(array: VSBuffer | Uint8Array | ArrayBuffer | ArrayBufferView, offset?: number): void {
-		if (array instanceof VSBuffer) {
-			this.buffer.set(array.buffer, offset);
-		} else if (array instanceof Uint8Array) {
-			this.buffer.set(array, offset);
-		} else if (array instanceof ArrayBuffer) {
-			this.buffer.set(new Uint8Array(array), offset);
-		} else if (ArrayBuffer.isView(array)) {
-			this.buffer.set(new Uint8Array(array.buffer, array.byteOffset, array.byteLength), offset);
-		} else {
-			throw new Error(`Unknown argument 'array'`);
-		}
+		this.buffer.set(
+			(array instanceof VSBuffer)? array.buffer :
+			(array instanceof Uint8Array)? array :
+			(array instanceof ArrayBuffer)? new Uint8Array(array) :
+			(ArrayBuffer.isView(array))? new Uint8Array(array.buffer, array.byteOffset, array.byteLength)
+		: array, offset);
 	}
 
-	readUInt32BE(offset: number): number {
-		return readUInt32BE(this.buffer, offset);
-	}
+	readUInt32BE(offset: number): number { return readUInt32BE(this.buffer, offset); }
+	writeUInt32BE(value: number, offset: number): void { writeUInt32BE(this.buffer, value, offset); }
 
-	writeUInt32BE(value: number, offset: number): void {
-		writeUInt32BE(this.buffer, value, offset);
-	}
+	readUInt32LE(offset: number): number { return readUInt32LE(this.buffer, offset); }
+	writeUInt32LE(value: number, offset: number): void { writeUInt32LE(this.buffer, value, offset); }
 
-	readUInt32LE(offset: number): number {
-		return readUInt32LE(this.buffer, offset);
-	}
-
-	writeUInt32LE(value: number, offset: number): void {
-		writeUInt32LE(this.buffer, value, offset);
-	}
-
-	readUInt8(offset: number): number {
-		return readUInt8(this.buffer, offset);
-	}
-
-	writeUInt8(value: number, offset: number): void {
-		writeUInt8(this.buffer, value, offset);
-	}
+	readUInt8(offset: number): number { return readUInt8(this.buffer, offset); }
+	writeUInt8(value: number, offset: number): void { writeUInt8(this.buffer, value, offset); }
 }
 
 export function readUInt16LE(source: Uint8Array, offset: number): number {
@@ -258,9 +220,8 @@ export function readUInt16LE(source: Uint8Array, offset: number): number {
 }
 
 export function writeUInt16LE(destination: Uint8Array, value: number, offset: number): void {
-	destination[offset + 0] = (value & 0b11111111);
-	value = value >>> 8;
-	destination[offset + 1] = (value & 0b11111111);
+	destination[offset + 0] = ((value>>>0) & 0b11111111);
+	destination[offset + 1] = ((value>>>8) & 0b11111111);
 }
 
 export function readUInt32BE(source: Uint8Array, offset: number): number {
@@ -273,96 +234,68 @@ export function readUInt32BE(source: Uint8Array, offset: number): number {
 }
 
 export function writeUInt32BE(destination: Uint8Array, value: number, offset: number): void {
-	destination[offset + 3] = value;
-	value = value >>> 8;
-	destination[offset + 2] = value;
-	value = value >>> 8;
-	destination[offset + 1] = value;
-	value = value >>> 8;
-	destination[offset] = value;
+	destination[offset + 3] = (value >>>= 0);
+	destination[offset + 2] = (value >>>= 8);
+	destination[offset + 1] = (value >>>= 8);
+	destination[offset + 0] = (value >>>= 8);
 }
 
 export function readUInt32LE(source: Uint8Array, offset: number): number {
 	return (
-		((source[offset + 0] << 0) >>> 0) |
-		((source[offset + 1] << 8) >>> 0) |
+		((source[offset + 0] <<  0) >>> 0) |
+		((source[offset + 1] <<  8) >>> 0) |
 		((source[offset + 2] << 16) >>> 0) |
 		((source[offset + 3] << 24) >>> 0)
 	);
 }
 
 export function writeUInt32LE(destination: Uint8Array, value: number, offset: number): void {
-	destination[offset + 0] = (value & 0b11111111);
-	value = value >>> 8;
-	destination[offset + 1] = (value & 0b11111111);
-	value = value >>> 8;
-	destination[offset + 2] = (value & 0b11111111);
-	value = value >>> 8;
-	destination[offset + 3] = (value & 0b11111111);
+	destination[offset + 0] = ((value >>>= 0) & 0b11111111);
+	destination[offset + 1] = ((value >>>= 8) & 0b11111111);
+	destination[offset + 2] = ((value >>>= 8) & 0b11111111);
+	destination[offset + 3] = ((value >>>= 8) & 0b11111111);
 }
 
-export function readUInt8(source: Uint8Array, offset: number): number {
-	return source[offset];
-}
-
-export function writeUInt8(destination: Uint8Array, value: number, offset: number): void {
-	destination[offset] = value;
-}
+export function readUInt8(source: Uint8Array, offset: number): number { return source[offset]; }
+export function writeUInt8(destination: Uint8Array, value: number, offset: number): void { destination[offset] = value; }
 
 export interface VSBufferReadable extends Stream.Readable<VSBuffer> { }
-
 export interface VSBufferReadableStream extends Stream.ReadableStream<VSBuffer> { }
-
 export interface VSBufferWriteableStream extends Stream.WriteableStream<VSBuffer> { }
-
 export interface VSBufferReadableBufferedStream extends Stream.ReadableBufferedStream<VSBuffer> { }
 
-export function readableToBuffer(readable: VSBufferReadable): VSBuffer {
-	return Stream.consumeReadable<VSBuffer>(readable, chunks => VSBuffer.concat(chunks));
-}
-
-export function bufferToReadable(buffer: VSBuffer): VSBufferReadable {
-	return Stream.toReadable<VSBuffer>(buffer);
-}
+export function readableToBuffer(readable: VSBufferReadable): VSBuffer { return Stream.consumeReadable<VSBuffer>(readable, VSBuffer.concat); }
+export function bufferToReadable(buffer: VSBuffer): VSBufferReadable { return Stream.toReadable<VSBuffer>(buffer); }
 
 export function streamToBuffer(stream: Stream.ReadableStream<VSBuffer>): Promise<VSBuffer> {
-	return Stream.consumeStream<VSBuffer>(stream, chunks => VSBuffer.concat(chunks));
+	return Stream.consumeStream<VSBuffer>(stream, VSBuffer.concat);
 }
 
 export async function bufferedStreamToBuffer(bufferedStream: Stream.ReadableBufferedStream<VSBuffer>): Promise<VSBuffer> {
-	if (bufferedStream.ended) {
-		return VSBuffer.concat(bufferedStream.buffer);
-	}
-
-	return VSBuffer.concat([
-
-		// Include already read chunks...
-		...bufferedStream.buffer,
-
-		// ...and all additional chunks
-		await streamToBuffer(bufferedStream.stream)
-	]);
+	return VSBuffer.concat((bufferedStream.ended)
+		? bufferedStream.buffer
+		: [ // Include already read chunks...
+			...bufferedStream.buffer,
+			// ...and all additional chunks
+			await streamToBuffer(bufferedStream.stream)
+		]
+	);
 }
 
 export function bufferToStream(buffer: VSBuffer): Stream.ReadableStream<VSBuffer> {
-	return Stream.toStream<VSBuffer>(buffer, chunks => VSBuffer.concat(chunks));
+	return Stream.toStream<VSBuffer>(buffer, VSBuffer.concat);
 }
 
 export function streamToBufferReadableStream(stream: Stream.ReadableStreamEvents<Uint8Array | string>): Stream.ReadableStream<VSBuffer> {
-	return Stream.transform<Uint8Array | string, VSBuffer>(stream, { data: data => typeof data === 'string' ? VSBuffer.fromString(data) : VSBuffer.wrap(data) }, chunks => VSBuffer.concat(chunks));
+	return Stream.transform<Uint8Array | string, VSBuffer>(stream, { data: data => typeof data === 'string' ? VSBuffer.fromString(data) : VSBuffer.wrap(data) }, VSBuffer.concat);
 }
 
 export function newWriteableBufferStream(options?: Stream.WriteableStreamOptions): Stream.WriteableStream<VSBuffer> {
-	return Stream.newWriteableStream<VSBuffer>(chunks => VSBuffer.concat(chunks), options);
+	return Stream.newWriteableStream<VSBuffer>(VSBuffer.concat, options);
 }
 
-export function prefixedBufferReadable(prefix: VSBuffer, readable: VSBufferReadable): VSBufferReadable {
-	return Stream.prefixedReadable(prefix, readable, chunks => VSBuffer.concat(chunks));
-}
-
-export function prefixedBufferStream(prefix: VSBuffer, stream: VSBufferReadableStream): VSBufferReadableStream {
-	return Stream.prefixedStream(prefix, stream, chunks => VSBuffer.concat(chunks));
-}
+export function prefixedBufferReadable(prefix: VSBuffer, readable: VSBufferReadable): VSBufferReadable { return Stream.prefixedReadable(prefix, readable, VSBuffer.concat); }
+export function prefixedBufferStream(prefix: VSBuffer, stream: VSBufferReadableStream): VSBufferReadableStream { return Stream.prefixedStream(prefix, stream, VSBuffer.concat); }
 
 /** Decodes base64 to a uint8 array. URL-encoded and unpadded base64 is allowed. */
 export function decodeBase64(encoded: string) {
@@ -377,7 +310,7 @@ export function decodeBase64(encoded: string) {
 	const append = (value: number) => {
 		switch (remainder) {
 			case 3:
-				buffer[bufi++] = building | value;
+				buffer[bufi++] = building | (value >>> 0);
 				remainder = 0;
 				break;
 			case 2:
@@ -393,6 +326,7 @@ export function decodeBase64(encoded: string) {
 			default:
 				building = value << 2;
 				remainder = 1;
+				break;
 		}
 	};
 
@@ -400,27 +334,17 @@ export function decodeBase64(encoded: string) {
 		const code = encoded.charCodeAt(i);
 		// See https://datatracker.ietf.org/doc/html/rfc4648#section-4
 		// This branchy code is about 3x faster than an indexOf on a base64 char string.
-		if (code >= 65 && code <= 90) {
-			append(code - 65); // A-Z starts ranges from char code 65 to 90
-		} else if (code >= 97 && code <= 122) {
-			append(code - 97 + 26); // a-z starts ranges from char code 97 to 122, starting at byte 26
-		} else if (code >= 48 && code <= 57) {
-			append(code - 48 + 52); // 0-9 starts ranges from char code 48 to 58, starting at byte 52
-		} else if (code === 43 || code === 45) {
-			append(62); // "+" or "-" for URLS
-		} else if (code === 47 || code === 95) {
-			append(63); // "/" or "_" for URLS
-		} else if (code === 61) {
-			break; // "="
-		} else {
-			throw new SyntaxError(`Unexpected base64 character ${encoded[i]}`);
-		}
+		if (code === CharCode.Equals) break; // "="
+		else if (CharCode.A      <= code && code <=      CharCode.Z)      append(code - 65); // A-Z starts ranges from char code 65 to 90
+		else if (CharCode.a      <= code && code <=      CharCode.z)      append(code - 97 + 26); // a-z starts ranges from char code 97 to 122, starting at byte 26
+		else if (CharCode.Digit0 <= code && code <= CharCode.Digit9)      append(code - 48 + 52); // 0-9 starts ranges from char code 48 to 58, starting at byte 52
+		else if (code === CharCode.Plus  || code ===     CharCode.Minus)  append(62); // "+" or "-" for URLS
+		else if (code === CharCode.Slash || code === CharCode.Underline)  append(63); // "/" or "_" for URLS
+		else throw new SyntaxError(`Unexpected base64 character ${encoded[i]}`);
 	}
 
 	const unpadded = bufi;
-	while (remainder > 0) {
-		append(0);
-	}
+	while (remainder > 0) append(0);
 
 	// slice is needed to account for overestimation due to padding
 	return VSBuffer.wrap(buffer).slice(0, unpadded);
@@ -452,14 +376,14 @@ export function encodeBase64({ buffer }: VSBuffer, padded = true, urlSafe = fals
 		const a = buffer[i + 0];
 		output += dictionary[a >>> 2];
 		output += dictionary[(a << 4) & 0b111111];
-		if (padded) { output += '=='; }
+		if (padded) output += '==';
 	} else if (remainder === 2) {
 		const a = buffer[i + 0];
 		const b = buffer[i + 1];
 		output += dictionary[a >>> 2];
 		output += dictionary[(a << 4 | b >>> 4) & 0b111111];
 		output += dictionary[(b << 2) & 0b111111];
-		if (padded) { output += '='; }
+		if (padded) output += '=';
 	}
 
 	return output;
@@ -511,6 +435,18 @@ export namespace Stream {
 	/** The payload that flows in readable stream events. **/
 	export type ReadableStreamEventPayload<T> = T | Error | 'end';
 
+		
+	/**
+	 * A interface that emulates the API shape of a node.js readable
+	 * for use in native and web environments.
+	 */
+	export interface Readable<T> {
+		/**
+		 * Read data from the underlying source. Will return null to indicate that no more data can be read.
+		 */
+		read(): T | null;
+	}
+
 	export interface ReadableStreamEvents<T> {
 
 		/**
@@ -523,48 +459,31 @@ export namespace Stream {
 		 * Use `listenStream` as a helper method to listen to stream events in the right order.
 		 */
 		on(event: 'data', callback: (data: T) => void): void;
-	
 		/** Emitted when any error occurs. **/
 		on(event: 'error', callback: (err: Error) => void): void;
-	
+
 		/**
 		 * The 'end' event is emitted when there is no more data to be consumed from the stream. 
 		 * It will not be emitted unless the data is completely consumed.
 		 */
 		on(event: 'end', callback: () => void): void;
 	}
-		
+
 	/**
 	 * A interface that emulates the API shape of a node.js readable
 	 * stream for use in native and web environments.
 	 */
 	export interface ReadableStream<T> extends ReadableStreamEvents<T> {
-
 		/** Stops emitting any events until resume() is called. **/
 		pause(): void;
-
 		/** Starts emitting events again after pause() was called. **/
 		resume(): void;
-
 		/** Destroys the stream and stops emitting any event. **/
 		destroy(): void;
-
 		/** Allows to remove a listener that was previously added. **/
 		removeListener(event: string, callback: Function): void;
 	}
 
-	/**
-	 * A interface that emulates the API shape of a node.js readable
-	 * for use in native and web environments.
-	 */
-	export interface Readable<T> {
-
-		/**
-		 * Read data from the underlying source. Will return
-		 * null to indicate that no more data can be read.
-		 */
-		read(): T | null;
-	}
 
 		
 	/**
@@ -574,10 +493,8 @@ export namespace Stream {
 	 * The `ended` flag indicates if the stream has been fully consumed.
 	 */
 	export interface ReadableBufferedStream<T> {
-
 		/** The original stream that is being read. **/
 		stream: ReadableStream<T>;
-
 		/** An array of chunks already read from this stream. **/
 		buffer: T[];
 
@@ -642,7 +559,6 @@ export namespace Stream {
 
 
 	export interface WriteableStreamOptions {
-
 		/**
 		 * The number of objects to buffer before WriteableStream#write()
 		 * signals back that the buffer is full. Can be used to reduce
@@ -678,14 +594,14 @@ export namespace Stream {
 	
 		private readonly pendingWritePromises: Function[] = [];
 	
-		constructor(private reducer: IReducer<T>, private options?: WriteableStreamOptions) { }
+		public constructor(private reducer: IReducer<T>, private options?: WriteableStreamOptions) { }
 	
-		pause(): void {
+		public pause(): void {
 			if (this.state.destroyed) return;
 			this.state.flowing = false;
 		}
 	
-		resume(): void {
+		public resume(): void {
 			if (this.state.destroyed) return;
 			if (!this.state.flowing) {
 				this.state.flowing = true;
@@ -697,7 +613,7 @@ export namespace Stream {
 			}
 		}
 	
-		write(data: T): void | Promise<void> {
+		public write(data: T): void | Promise<void> {
 			if (this.state.destroyed) return;
 	
 			// flowing: directly send the data to listeners
@@ -713,7 +629,7 @@ export namespace Stream {
 			}
 		}
 	
-		error(error: Error): void {
+		public error(error: Error): void {
 			if (this.state.destroyed) return;
 	
 			// flowing: directly send the error to listeners
@@ -722,7 +638,7 @@ export namespace Stream {
 			else this.buffer.error.push(error);
 		}
 	
-		end(result?: T): void {
+		public end(result?: T): void {
 			if (this.state.destroyed) return;
 	
 			// end with data if provided
@@ -741,11 +657,8 @@ export namespace Stream {
 		}
 	
 		private emitError(error: Error): void {
-			if (this.listeners.error.length === 0) {
-				throw error; // nobody listened to this error
-			} else {
-				this.listeners.error.slice(0).forEach(listener => listener(error)); // slice to avoid listener mutation from delivering event
-			}
+			if (this.listeners.error.length === 0) throw error; // nobody listened to this error
+			else this.listeners.error.slice(0).forEach(listener => listener(error)); // slice to avoid listener mutation from delivering event
 		}
 	
 		private emitEnd(): void {
@@ -767,7 +680,6 @@ export namespace Stream {
 					this.resume();
 	
 					break;
-	
 				case 'end':
 					this.listeners.end.push(callback);
 	
@@ -778,7 +690,6 @@ export namespace Stream {
 					if (this.state.flowing && this.flowEnd()) this.destroy();
 	
 					break;
-	
 				case 'error':
 					this.listeners.error.push(callback);
 	
@@ -832,7 +743,6 @@ export namespace Stream {
 		private flowEnd(): boolean {
 			if (this.state.ended) {
 				this.emitEnd();
-	
 				return this.listeners.end.length > 0;
 			} else return false;
 		}
@@ -891,21 +801,16 @@ export namespace Stream {
 		const chunks: T[] = [];
 
 		let chunk: T | null | undefined = undefined;
-		while ((chunk = readable.read()) !== null && chunks.length < maxChunks) {
-			chunks.push(chunk);
-		}
+		while ((chunk = readable.read()) !== null && chunks.length < maxChunks) chunks.push(chunk);
 
 		// If the last chunk is null, it means we reached the end of
 		// the readable and return all the data at once
 		if (chunk === null && chunks.length > 0) return reducer(chunks);
-
 		// Otherwise, we still have a chunk, it means we reached the maxChunks
 		// value and as such we return a new Readable that first returns
 		// the existing read chunks and then continues with reading from
 		// the underlying readable.
-		else return {
-			read: () => {
-
+		else return { read: () => {
 				// First consume chunks from our array
 				if (chunks.length > 0) return chunks.shift()!;
 				// Then ensure to return our last read chunk
@@ -921,8 +826,7 @@ export namespace Stream {
 
 				// Finally delegate back to the Readable
 				return readable.read();
-			}
-		};
+		}};
 	}
 
 	/**
@@ -937,17 +841,9 @@ export namespace Stream {
 			const chunks: T[] = [];
 
 			listenStream(stream, {
-				onData: chunk => {
-					if (reducer) chunks.push(chunk);
-				},
-				onError: error => {
-					if (reducer) reject(error);
-					else resolve(undefined);
-				},
-				onEnd: () => {
-					if (reducer) resolve(reducer(chunks));
-					else resolve(undefined);
-				}
+				onData:  (chunk) => (reducer)&& chunks.push(chunk),
+				onError: (error) => (reducer)?  reject(error) : resolve(undefined),
+				onEnd:   (     ) => (reducer)?  resolve(reducer(chunks)) : resolve(undefined)
 			});
 		});
 	}
@@ -975,20 +871,13 @@ export namespace Stream {
 	export function listenStream<T>(stream: ReadableStreamEvents<T>, listener: IStreamListener<T>): IDisposable {
 		let destroyed = false;
 
-		stream.on('error', error => {
-			if (!destroyed) listener.onError(error);
-		});
+		stream.on('error', (error => (!destroyed)&& listener.onError(error)));
 
-		stream.on('end', () => {
-			if (!destroyed) listener.onEnd();
-		});
+		stream.on('end', (() => (!destroyed)&& listener.onEnd()));
 
-		// Adding the `data` listener will turn the stream
-		// into flowing mode. As such it is important to
-		// add this listener last (DO NOT CHANGE!)
-		stream.on('data', data => {
-			if (!destroyed) listener.onData(data);
-		});
+		// Adding the `data` listener will turn the stream into flowing mode. 
+		// As such it is important to add this listener last (DO NOT CHANGE!)
+		stream.on('data', (data => (!destroyed)&& listener.onData(data)));
 
 		return new Disposable(() => destroyed = true);
 	}
@@ -1005,7 +894,6 @@ export namespace Stream {
 
 			// Data Listener
 			const dataListener = (chunk: T) => {
-
 				// Add to buffer
 				buffer.push(chunk);
 
@@ -1022,14 +910,10 @@ export namespace Stream {
 			};
 
 			// Error Listener
-			const errorListener = (error: Error) => {
-				return reject(error);
-			};
+			const errorListener = (error: Error) => reject(error);
 
 			// End Listener
-			const endListener = () => {
-				return resolve({ stream, buffer, ended: true });
-			};
+			const endListener = () => resolve({ stream, buffer, ended: true });
 
 			streamListeners.add(new Disposable(() => stream.removeListener('error', errorListener)));
 			stream.on('error', errorListener);
@@ -1048,9 +932,7 @@ export namespace Stream {
 	/** Helper to create a readable stream from an existing T. **/
 	export function toStream<T>(t: T, reducer: IReducer<T>): ReadableStream<T> {
 		const stream = newWriteableStream<T>(reducer);
-
 		stream.end(t);
-
 		return stream;
 	}
 
@@ -1058,7 +940,6 @@ export namespace Stream {
 	export function emptyStream(): ReadableStream<never> {
 		const stream = newWriteableStream<never>(() => { throw new Error('not supported'); });
 		stream.end();
-
 		return stream;
 	}
 
@@ -1066,17 +947,11 @@ export namespace Stream {
 	export function toReadable<T>(t: T): Readable<T> {
 		let consumed = false;
 
-		return {
-			read: () => {
-				if (consumed) {
-					return null;
-				}
-
-				consumed = true;
-
-				return t;
-			}
-		};
+		return { read: () => {
+			if (consumed) return null;
+			consumed = true;
+			return t;
+		}};
 	}
 
 	/** Helper to transform a readable stream into another stream. **/
@@ -1099,27 +974,18 @@ export namespace Stream {
 	export function prefixedReadable<T>(prefix: T, readable: Readable<T>, reducer: IReducer<T>): Readable<T> {
 		let prefixHandled = false;
 
-		return {
-			read: () => {
-				const chunk = readable.read();
+		return { read: () => {
+			const chunk = readable.read();
 
-				// Handle prefix only once
-				if (!prefixHandled) {
-					prefixHandled = true;
+			// Handle prefix only once
+			if (!prefixHandled) {
+				prefixHandled = true;
 
-					// If we have also a read-result, make
-					// sure to reduce it to a single result
-					if (chunk !== null) {
-						return reducer([prefix, chunk]);
-					}
-
-					// Otherwise, just return prefix directly
-					return prefix;
-				}
-
-				return chunk;
-			}
-		};
+				// If we have also a read-result, make sure to reduce it to a single result
+				// Otherwise, just return prefix directly
+				return (chunk !== null)? reducer([prefix, chunk]) : prefix;
+			} else return chunk;
+		}};
 	}
 
 	/**
@@ -1132,28 +998,20 @@ export namespace Stream {
 		const target = newWriteableStream<T>(reducer);
 
 		listenStream(stream, {
-			onData: data => {
-
+			onData: (data) => {
 				// Handle prefix only once
 				if (!prefixHandled) {
 					prefixHandled = true;
-
 					return target.write(reducer([prefix, data]));
-				}
-
-				return target.write(data);
+				} else return target.write(data);
 			},
 			onError: error => target.error(error),
 			onEnd: () => {
-
 				// Handle prefix only once
 				if (!prefixHandled) {
 					prefixHandled = true;
-
 					target.write(prefix);
-				}
-
-				target.end();
+				} else target.end();
 			}
 		});
 

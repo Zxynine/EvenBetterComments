@@ -8,7 +8,7 @@ import { Parser } from './parser';
 import { CommentLinkLensProvider, DocumentCommentLinkProvider } from "./providers/CommentLinkProvider";
 import { LoadDocumentsAndGrammer, DocumentLoader, GetGetScopeAtAPI } from "./document";
 import { TMRegistry } from './Tokenisation/TextmateLoader';
-import { highlighterDecoratiuon as highlighterDecoration } from './providers/DecorationProvider';
+import { PulseRange } from './providers/DecorationProvider';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,9 +41,15 @@ export function activate(context: vscode.ExtensionContext) {
 	// Called to handle events below
 	const updateDecorations = () => parser.UpdateDecorations(activeEditor);
 
-	function CheckSetActiveEditor(editor : vscode.TextEditor|undefined) {
-		if (editor) SetActiveEditor(editor);
+	// IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
+	var timeout: NodeJS.Timer;
+	// Called to handle events above
+	function triggerUpdateDecorations() {
+		if (timeout) clearTimeout(timeout);
+		timeout = setTimeout(updateDecorations, 100);
 	}
+
+	function CheckSetActiveEditor(editor : vscode.TextEditor|undefined) { (editor)&& SetActiveEditor(editor); }
 	function SetActiveEditor(editor : vscode.TextEditor) {
 		// Set new editor
 		activeEditor = editor;
@@ -59,14 +65,6 @@ export function activate(context: vscode.ExtensionContext) {
 		if (activeEditor && event.document === activeEditor.document) triggerUpdateDecorations();
 	}
 	
-
-	// IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
-	var timeout: NodeJS.Timer;
-	// Called to handle events above
-	function triggerUpdateDecorations() {
-		if (timeout) clearTimeout(timeout);
-		timeout = setTimeout(updateDecorations, 100);
-	}
 
 	// Get the active editor for the first time and initialise the regex
 	if (vscode.window.activeTextEditor) SetActiveEditor(vscode.window.activeTextEditor);
@@ -107,16 +105,8 @@ export function activate(context: vscode.ExtensionContext) {
 	//............................................................................
 	
 	// * This section deals with displaying scopes in editor
-	async function PulseRange(editor: vscode.TextEditor, range : readonly vscode.Range[]) {
-		let counter = 0;
-		editor.setDecorations(highlighterDecoration, []);
-		const intervalId = setInterval(() => {
-			if (counter++ > 5) clearInterval(intervalId);
-			editor.setDecorations(highlighterDecoration, ((counter%2)===0)? range : []);
-		}, 100);
-	}
-
 	const extensionOutputChannel = vscode.window.createOutputChannel('HyperScopes', 'yaml');
+
 	async function HyperscopesDisplayScopes() {
 		console.log("HyperScopes: show scope command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
@@ -145,7 +135,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	const StartScopeInspector = async () => { if (vscode.window.activeTextEditor) vscode.commands.executeCommand('editor.action.inspectTMScopes'); }
+	const StartScopeInspector = async () => (vscode.window.activeTextEditor)&& vscode.commands.executeCommand('editor.action.inspectTMScopes');
 	
 
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScope, HyperscopesDisplayScopes));

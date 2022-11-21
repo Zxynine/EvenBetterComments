@@ -1,0 +1,184 @@
+
+
+
+
+
+
+
+
+
+
+00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001
+11111111 11┼11111 11111111 11111111
+00000001 11000100 01000010 00010000
+01001001 10001100 00000010 00010110
+
+
+
+
+
+//			Left								0 Shift, Index = 96 + 11					Right
+00000000 00000000 00000000 00010001 <| 00000000 00000000 00000000 00010001 |> 00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000 <| 01000000 00000000 00000000 00000000 |> 01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001 <| 10100000 00000000 11000000 00010001 |> 10100000 00000000 11000000 00010001
+11111111 11111111 11111111 11111111 <| 11111111 11┼11111 11111111 11111111 |> 11111111 11111111 11111111 11111111
+00000001 11000100 01000010 00010000 <| 00000001 11000100 01000010 00010000 |> 00000001 11000100 01000010 00010000
+01001001 10001100 00000010 00010110 <| 01001001 10001100 00000010 00010110 |> 01001001 10001100 00000010 00010110
+
+
+
+
+//			Left								7 Shift, Index = 96 + 11					Right
+00000000 00000000 00000000 00010001 <| 00000000 00000000 00000000 00010001 |> 00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000 <| 01000000 00000000 00000000 00000000 |> 01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001 <| 10100000 00000000 11000000 00010001 |> 10100000 00000000 11000000 00010001
+11111111 11111111 11111111 10000000 <| 11111111 11┼11111 11111111 11111111 |> 11111111 11000000 01111111 11111111
+11100010 00100001 00001000 00100100 <| 00000001 11000100 01000010 00010000 |> 11111110 00000011 10001000 10000100
+11000110 00000001 00001011 00000000 <| 01001001 10001100 00000010 00010110 |> 00100000 10010011 00011000 00000100
+.                                   <|                                     |> 00101100 00000000 00000000 00000000
+
+
+
+//			Left								25 Shift, Index = 96 + 11					Right
+00000000 00000000 00000000 00010001 <| 00000000 00000000 00000000 00010001 |> 00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000 <| 01000000 00000000 00000000 00000000 |> 01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001 <| 10100000 00000000 11000000 00010001 |> 10100000 00000000 11000000 00010001
+11111111 11000011 10001000 10000100 <| 11111111 11┼11111 11111111 11111111 |> 11111111 11000000 00000000 00000000
+00100000 10010011 00011000 00000100 <| 00000001 11000100 01000010 00010000 |> 00011111 11111111 11111111 10000000
+00101100 00000000 00000000 00000000 <| 01001001 10001100 00000010 00010110 |> 11100010 00100001 00001000 00100100
+.                                   <|                                     |> 11000110 00000001 00001011 00000000
+
+
+//			Left								32 Shift, Index = 96 + 11					Right
+00000000 00000000 00000000 00010001 <| 00000000 00000000 00000000 00010001 |> 00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000 <| 01000000 00000000 00000000 00000000 |> 01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001 <| 10100000 00000000 11000000 00010001 |> 10100000 00000000 11000000 00010001
+11111111 11000100 01000010 00010000 <| 11111111 11┼11111 11111111 11111111 |> 11111111 11000000 00000000 00000000
+01001001 10001100 00000010 00010110 <| 00000001 11000100 01000010 00010000 |> 00000000 00111111 11111111 11111111
+.                                   <| 01001001 10001100 00000010 00010110 |> 00000001 11000100 01000010 00010000
+.                                   <|                                     |> 01001001 10001100 00000010 00010110
+
+
+
+
+//			Left								48 Shift, Index = 96 + 11					Right
+00000000 00000000 00000000 00010001 <| 00000000 00000000 00000000 00010001 |> 00000000 00000000 00000000 00010001
+01000000 00000000 00000000 00000000 <| 01000000 00000000 00000000 00000000 |> 01000000 00000000 00000000 00000000
+10100000 00000000 11000000 00010001 <| 10100000 00000000 11000000 00010001 |> 10100000 00000000 11000000 00010001
+11111111 11010000 01001001 10001100 <| 11111111 11┼11111 11111111 11111111 |> 11111111 11000000 00000000 00000000
+00000010 00010110 00000000 00000000 <| 00000001 11000100 01000010 00010000 |> 00000000 00000000 00000000 00111111 
+.                                   <| 01001001 10001100 00000010 00010110 |> 11111111 11111111 00000001 11000100 
+.                                   <|                                     |> 01000010 00010000 01001001 10001100 
+.                                   <|                                     |> 00000010 00010110 00000000 00000000
+
+
+
+
+
+
+
+
+Shift left:
+
+
+IsolatePrime
+
+
+
+
+
+
+
+
+
+
+
+	protected ChunkShiftLeft(shift: int, startIndex: int, endIndex: int, carryBits: int = 0) {
+        const CarryBitsStore = (shift >= 32)? this.Flags[endIndex] : undefined;
+        if (shift >= 32) {
+            const ChunkShift = shift >>> 5;
+            shift -= (ChunkShift << 5);
+            
+            for (let i = endIndex; i <= startIndex; ++i) {
+                this.Flags[i] = (i+ChunkShift <= startIndex)? this.Flags[i+ChunkShift] : 0;
+            }
+
+            this.Flags[endIndex-ChunkShift] |= CarryBitsStore ?? 0;
+        }
+
+        const ShiftComplement = (shift < 32)? (32-shift) : 32;
+        for (let i = startIndex, bitsToCarry=0; i >= endIndex; --i, carryBits = bitsToCarry) {
+            bitsToCarry = this.Flags[i] >>> ShiftComplement;
+            this.Flags[i] = (this.Flags[i] << shift) | carryBits;
+        }
+        
+        this.Prune();
+        return carryBits;
+	}
+
+	protected ChunkShiftRight(shift: int, startIndex : int, endIndex: int, carryBits: int = 0) {
+        const CarryBitsStore = (shift >= 32)? this.Flags[endIndex] : undefined;
+        if (shift >= 32) {
+            const ChunkShift = shift >>> 5;
+            if (endIndex+ChunkShift >= this.Flags.length-1) {
+                this.Expand(endIndex+ChunkShift);
+                endIndex+=ChunkShift;
+            }
+
+            shift -= (ChunkShift << 5);
+            
+            for (let i = endIndex; i >= startIndex; --i) {
+                this.Flags[i] = (i-ChunkShift >= startIndex)? this.Flags[i-ChunkShift] : 0;
+            }
+
+            this.Flags[startIndex+ChunkShift-1] = carryBits;
+            carryBits = 0;
+        }
+
+		const ShiftComplement = (shift < 32)? (32-shift) : 32;
+		for (let i = startIndex, bitsToCarry=0; i <= endIndex; ++i, carryBits = bitsToCarry) {
+			bitsToCarry = this.Flags[i] << ShiftComplement;
+			this.Flags[i] = (this.Flags[i] >>> shift) | carryBits;
+		}
+        return CarryBitsStore ?? carryBits;
+	}
+
+	protected SubChunkShiftLeft(shift: int, index:int, carryBits: int = 0) {
+		const [PrimeIndex, SubIndex] = FlagsArray.GetIndices(index);
+		const IsolatorMask = ~(-1 << (32-SubIndex+1));
+		const IsolatedBits = (this.Flags[PrimeIndex] & IsolatorMask);
+
+        if (shift >= 32) {
+            this.Flags[PrimeIndex] = (~IsolatorMask & this.Flags[PrimeIndex]) | (IsolatedBits << shift) | (carryBits & IsolatorMask);
+            return IsolatedBits;
+        } else this.Flags[PrimeIndex] = (~IsolatorMask & this.Flags[PrimeIndex]) | (IsolatedBits << shift) | (carryBits & IsolatorMask);
+		return (IsolatedBits >>> (32-shift));
+	}
+
+	protected SubChunkShiftRight(shift: int, index:int, carryBits: int = 0) {
+		const [PrimeIndex, SubIndex] = FlagsArray.GetIndices(index);
+		const IsolatorMask = ~(-1 << (32-SubIndex+1));
+		const IsolatedBits = (this.Flags[PrimeIndex] & IsolatorMask);
+
+        if (shift >= 32) {
+            this.Flags[PrimeIndex] = (~IsolatorMask & this.Flags[PrimeIndex]) | (carryBits & IsolatorMask);
+            return IsolatedBits;
+        } else this.Flags[PrimeIndex] = (~IsolatorMask & this.Flags[PrimeIndex]) | (IsolatedBits >>> shift) | (carryBits & IsolatorMask);
+		return (IsolatedBits << (32-shift));
+	}
+	
+
+
+	public ShiftLeft(shift: int) { this.ChunkShiftLeft(shift, this.Flags.length-1, 0); }
+	public SubShiftLeft(shift: int, index: int) {
+		let carryBit = this.ChunkShiftLeft(shift, this.Flags.length-1, FlagsArray.GetPrimeIndex(index)+1);
+		this.SubChunkShiftLeft(shift, index, carryBit);
+	}
+
+	public ShiftRight(shift: int) { this.ChunkShiftRight(shift, 0, this.Flags.length-1); }
+	public SubShiftRight(shift: int, index: int) {
+		let carryBit = this.SubChunkShiftRight(shift, index);
+		this.ChunkShiftRight(shift, FlagsArray.GetPrimeIndex(index)+1, this.Flags.length-1, carryBit);
+	}

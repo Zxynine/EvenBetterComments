@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { homedir } from 'os';
 import { KeyValPair } from '../typings/Collections';
+import { Endianness } from '../typings/BitFlags';
 import { statSync } from 'fs';
 // import { Color } from 'vscode';
 
@@ -55,14 +56,14 @@ export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], wo
  *
  * @param value
  * @param rootPath
- */
- function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
+**/
+function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
 	return value.replace('${workspaceRoot}', rootPath).replace('${workspaceFolder}', rootPath);
-  }
-  
-  function valueContainsWorkspaceFolder(value: string): boolean {
+}
+
+function valueContainsWorkspaceFolder(value: string): boolean {
 	return value.includes('${workspaceFolder}') || value.includes('${workspaceRoot}');
-  }
+}
 
 
 
@@ -254,24 +255,25 @@ export function IsString(item:unknown): item is String {return typeof item === '
 /**
  * @returns whether the provided parameter is a JavaScript Array and each element in the array is a string.
  */
- export function IsStringArray(value: unknown): value is string[] {return Array.isArray(value) && (<unknown[]>value).every(elem => IsString(elem));}
+export function IsStringArray(value: unknown): value is string[] {return Array.isArray(value) && (<unknown[]>value).every(elem => IsString(elem));}
+
 
 /**
  * Checks whether the input value is a integer. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false. The number '1.0' yields true. The number '1.1' yields false.
  */
- export function IsInteger(value : unknown) : value is int { return IsNumber(value) && Math.floor(value) === value; }
+export function IsInteger(value : unknown) : value is int { return IsNumber(value) && Math.floor(value) === value; }
 
 /**
  * Checks whether the input value is a number. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false.
  */
- export function IsNumber(value : unknown) : value is number { return typeof value === 'number'; }
+export function IsNumber(value : unknown) : value is number { return typeof value === 'number'; }
 
 /**
  * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
  */
- export function IsTypedArray(obj: unknown): obj is Object {
+export function IsTypedArray(obj: unknown): obj is Object {
 	const TypedArray = Object.getPrototypeOf(Uint8Array);
 	return typeof obj === 'object' && obj instanceof TypedArray;
 }
@@ -279,50 +281,48 @@ export function IsString(item:unknown): item is String {return typeof item === '
 /**
  * @returns whether the provided parameter is an Iterable, casting to the given generic
  */
- export function IsIterable<T>(obj: unknown): obj is Iterable<T> {
+export function IsIterable<T>(obj: unknown): obj is Iterable<T> {
 	return !!obj && typeof (obj as any)[Symbol.iterator] === 'function';
 }
 
 /**
  * @returns whether the provided parameter is a JavaScript Boolean or not.
  */
- export function IsBoolean(obj: unknown): obj is boolean { return (obj === true || obj === false); }
+export function IsBoolean(obj: unknown): obj is boolean { return (obj === true || obj === false); }
 
 /**
  * @returns whether the provided parameter is undefined.
  */
- export function IsUndefined(obj: unknown): obj is undefined { return (typeof obj === 'undefined'); }
+export function IsUndefined(obj: unknown): obj is undefined { return (typeof obj === 'undefined'); }
 
 /**
  * @returns whether the provided parameter is null.
  */
- export function IsNull(obj: unknown): obj is null { return (obj === null); }
+export function IsNull(obj: unknown): obj is null { return (obj === null); }
 
 
 /**
  * @returns whether the provided parameter is undefined or null.
  */
- export function IsUndefinedOrNull(obj: unknown): obj is undefined|null { return (IsUndefined(obj) || obj === null); }
+export function IsUndefinedOrNull(obj: unknown): obj is undefined|null { return (IsUndefined(obj) || obj === null); }
 
 /**
  * @returns whether the provided parameter is defined.
  */
- export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUndefinedOrNull(arg); }
+export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUndefinedOrNull(arg); }
 
 
 
 /**
  * @returns whether the provided parameter is a JavaScript Function or not.
  */
- export function IsFunction(obj: unknown): obj is Function {return (typeof obj === 'function');}
+export function IsFunction(obj: unknown): obj is Function {return (typeof obj === 'function');}
 
 
 /**
  * @returns whether the provided parameters is are JavaScript Function or not.
  */
- export function AreFunctions(...objects: unknown[]): boolean {
-	return objects.length > 0 && objects.every(IsFunction);
-}
+export function AreFunctions(...objects: unknown[]): boolean { return objects.length > 0 && objects.every(IsFunction); }
 
 
 // type TrailingCommaOption = "none" | "es5" | "all";
@@ -581,4 +581,57 @@ export function hash(value: string | undefined): number {
         hash = ((hash << 5) - hash) + value.charCodeAt(i);
     }
     return hash;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export interface TokenArgs {
+    text?: string
+}
+
+export function getInput(args: TokenArgs | undefined, message: string, validate: (str: string) => string | undefined){
+    if (!args || !args.text){
+        return vscode.window.showInputBox({
+            prompt: message,
+            validateInput: validate
+        });
+    } else return Promise.resolve(args.text);
+}
+
+
+
+
+
+
+
+
+export function ToBinaryString(nMask:number) {
+    // nMask must be between -2147483648 and 2147483647
+    if (nMask > 2**32-1)  throw "number too large. number shouldn't be > 2**31-1"; //added
+    if (nMask < -1*(2**31)) throw "number too far negative, number shouldn't be < 2**31" //added
+    for (var nFlag = 0, sMask=''; (nFlag < 32); nFlag++, nMask <<= 1) sMask += String(nMask >>> 31);
+    sMask=sMask.replace(/\B(?=(.{8})+(?!.))/g, " ") // added
+    return sMask;
+}
+
+
+
+
+export function *ToBits(number:number, bitOrder:Endianness = Endianness.LittleEndian) {
+	if (bitOrder === Endianness.LittleEndian)
+		for (let b=31; b>=0; --b) yield (((number & (1<<b)) !== 0))? 1 : 0;
+	else 
+		for (let b=0; b<=31; ++b) yield (((number & (1<<b)) !== 0))? 1 : 0;
 }

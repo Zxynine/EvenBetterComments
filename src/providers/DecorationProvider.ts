@@ -18,7 +18,7 @@ export const linkedCommentDecoration = vscode.window.createTextEditorDecorationT
 
 
 
-export const highlighterDecoratiuon = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
+export const highlighterDecoration = vscode.window.createTextEditorDecorationType(<vscode.DecorationRenderOptions>{
 	borderWidth: '4px', borderRadius: '4px',
 	// this color will be used in light color themes
 	light: { backgroundColor: 'yellow', color: 'black' },
@@ -42,4 +42,16 @@ export function CreateDecoration(colour:string, backgroundColour:string, overlin
 	if (italic) options.fontStyle = "italic";
 
 	return vscode.window.createTextEditorDecorationType(options);
+}
+
+
+
+// * This section deals with displaying scopes in editor
+export async function PulseRange(editor: vscode.TextEditor, range : readonly vscode.Range[]) {
+	let counter = 0;
+	editor.setDecorations(highlighterDecoration, []);
+	const intervalId = setInterval(() => {
+		if (counter++ > 5) clearInterval(intervalId);
+		editor.setDecorations(highlighterDecoration, ((counter%2)===0)? range : []);
+	}, 100);
 }

@@ -399,9 +399,7 @@ export class DocumentController extends DisposableContext {
 	}
 
 	private validateLines(startLine:number, endLine:number) {
-		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++) {
-			this.validateLine(lineIndex);
-		}
+		for (; (startLine <= endLine); startLine++) this.validateLine(startLine);
 	}
 	
 	private validateRange(range: vscode.Range) {
@@ -410,9 +408,8 @@ export class DocumentController extends DisposableContext {
 
 	private validateDocument() {
 		//If line counts are the same, validate each line. If different, reparse entire document.
-		if (this.documentText.length === this.document.lineCount) {
-			this.validateLines(0, this.document.lineCount-1);
-		} else this.refresh();
+		if (this.documentText.length === this.document.lineCount) this.validateLines(0, this.document.lineCount-1);
+		else this.refresh();
 	}
 
 
@@ -429,9 +426,7 @@ export class DocumentController extends DisposableContext {
 	}
 
 	private parseLines(startLine:number, endLine:number) : void {
-		for (let lineIndex = startLine; (lineIndex <= endLine); lineIndex++){
-			this.parseLine(this.document.lineAt(lineIndex));
-		}
+		for (; (startLine <= endLine); startLine++) this.parseLine(this.document.lineAt(startLine));
 	}
 
 	private parseRange(range : vscode.Range) : void {

@@ -43,6 +43,8 @@ declare global {
 		chunkArray<T>(this: Array<T>, chunkSize: number): Array<T[]>;
 
 		insertArray<T>(this: Array<T>, insertIndex: number, insertArray: Array<T>): Array<T>;
+
+		forEachIf<T>(this: Array<T>, conditional:Func<[T], bool>, foreach:Action<[T]>): void;
     }
 
     interface ReadonlyArray<T> {
@@ -73,6 +75,7 @@ declare global {
 
 		collect<C,T>(this:ReadonlyArray<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C;
 		
+		forEachIf<T>(this: ReadonlyArray<T>, conditional:Func<[T], bool>, foreach:Action<[T]>): void;
     }
 }
 
@@ -249,6 +252,9 @@ Array.prototype.insertArray = function arrayInsert<T>(this: T[], insertIndex: nu
 
 
 
+ Array.prototype.forEachIf = function forEachIf<T>(this: Array<T>, conditional:Func<[T], bool>, foreach:Action<[T]>): void {
+	for (const Item of this) conditional(Item) && foreach(Item);
+}
 
 
 

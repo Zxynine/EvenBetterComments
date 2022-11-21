@@ -4,15 +4,21 @@ import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
-
+import { FlagsArray } from './typings/BitFlags';
 
 // const window = vscode.window;
+
+//Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
 
 // TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
 export class Parser {
 	private readonly tags: CommentTag[] = [];
 	private readonly tagsMap: Map<string,CommentTag> = new Map<string,CommentTag>();
+	private PushTag(Tag : CommentTag) {
+		this.tags.push(Tag);
+		this.tagsMap.set(Tag.lowerTag, Tag);
+	}
 
 	//Stores all searching patterns for the tags.
 	private readonly Expressions = {
@@ -30,6 +36,8 @@ export class Parser {
 
 		MultiLineJSSimple: / /,
 		MultiLineJSMixed: / /,
+		
+		MonoLineBlock: / /,
 	}
 
 
@@ -49,7 +57,7 @@ export class Parser {
 	// * this is used to trigger the events when a supported language code is found
 	public supportedLanguage = true;
 
-
+	// private readonly CommentTracker: FlagsArray = new FlagsArray();
 
 	//TODO: Add command to refresh contributions.
 
@@ -105,10 +113,8 @@ export class Parser {
 	}
 
 	private static TagDefinitionToDecorationOptions(tag : TagDefinition) {
-		const options = <vscode.DecorationRenderOptions>{ color: tag.color, backgroundColor: tag.backgroundColor };
-
 		// ? the textDecoration is initialised to empty so we can concat a preceeding space on it
-		options.textDecoration = "";
+		const options = <vscode.DecorationRenderOptions>{ color: tag.color, backgroundColor: tag.backgroundColor, textDecoration: "" };
 
 		//TODO: add line styles like dotted wavy etc... - https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
 		if (tag.overline) options.textDecoration += " overline";
@@ -150,6 +156,9 @@ export class Parser {
 		if (!this.supportedLanguage) return;
 		// if no active window is open, return
 		if (!activeEditor) return;
+		
+		// this.CommentTracker.ClearAll();
+		// this.CommentTracker.Expand(activeEditor.document.lineCount);
 
 		// Finds the single line comments using the language comment delimiter
 		this.FindSingleLineComments(activeEditor);
@@ -205,7 +214,7 @@ export class Parser {
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
-		this.Expressions.MultiLineJS = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*?\*\/)/gm; // Find rows of comments matching pattern /** */
+		this.Expressions.MultiLineJS = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*?\*\/)/igm; // Find rows of comments matching pattern /** */
 	}
 
 /* /* 
@@ -252,6 +261,8 @@ export class Parser {
 						// Find which custom delimiter was used in order to add it to the collection
 						const matchString = (matchResult[3] as string).toLowerCase();
 						if (this.tagsMap.has(matchString)) {
+							// if (this.CommentTracker.CheckFlag(startPos.line)) continue;
+							// this.CommentTracker.SetFlag(startPos.line, true);
 							// const DelimiterOffset = offset + matchResult[1].length;
 							const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
 							// console.log(searchRegex, "\n",  activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range);
@@ -262,7 +273,11 @@ export class Parser {
 			}  else {
 				// Find which custom delimiter was used in order to add it to the collection
 				const matchString = (match[3] as string).toLowerCase();
-				if (this.tagsMap.has(matchString)) this.tagsMap.get(matchString)!.ranges.push(new vscode.Range(startPos, endPos));
+				if (this.tagsMap.has(matchString)) {
+					// if (this.CommentTracker.CheckFlag(startPos.line)) continue;
+					// this.CommentTracker.SetFlag(startPos.line, true);
+					this.tagsMap.get(matchString)!.ranges.push(new vscode.Range(startPos, endPos));
+				}
 			}
 		}
 	}
@@ -304,13 +319,13 @@ export class Parser {
 
 			const LineArray = DocumentLoader.getDocument(activeEditor.document.uri)?.getLineTokenData(startPos);
 			if (LineArray?.hasTokenType(StandardTokenType.Comment)) {
-				const searchRegex = "^.*?("+this.delimiter+")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*$)"
+				const searchRegex = "(^.*?)("+this.delimiter+")+[ \\t]*(" + Parser.JoinDelimiterArray(this.tags) + ")+(.*$)"
 				
 				const offset = LineArray.offsetOf(StandardTokenType.Comment);
 				const matchResult = activeEditor.document.lineAt(startPos).text.substring(offset).match(new RegExp(searchRegex, "i"));
 				if (matchResult) {
 					// Find which custom delimiter was used in order to add it to the collection
-					const matchString = (matchResult[2] as string).toLowerCase();
+					const matchString = (matchResult[3] as string).toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const range = new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length);
 						// console.log(searchRegex, "\n", activeEditor.document.lineAt(startPos).text.substring(offset), "\n", offset, "\n", matchResult, "\n", range, "\n", LineArray.toTokenTypeArray());
@@ -370,6 +385,9 @@ export class Parser {
 					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					// length of leading delimeter and spaces        //length of line
 					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
+					// if (this.CommentTracker.CheckFlag(range.start.line)) continue;
+					// this.CommentTracker.SetFlag(range.start.line, true);
+
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
 			}
@@ -407,6 +425,8 @@ export class Parser {
 					const lineMatchIndex = line.index + match.index;
 																		// length of leading delimeter and spaces        //length of line
 					const range = Parser.CreateRange(activeEditor.document, lineMatchIndex + line[2].length, lineMatchIndex + line[0].length);
+					// if (this.CommentTracker.CheckFlag(range.start.line)) continue;
+					// this.CommentTracker.SetFlag(range.start.line, true);
 					this.tagsMap.get(matchString)!.ranges.push(range);
 				}
 			}
@@ -461,7 +481,6 @@ export class Parser {
 		// activeEditor.setDecorations(this.hideCommentsTag.decoration, []);
 		// this.hideCommentsTag.ranges.length = 0; // clear the ranges for the next pass
 	}
-
 
 
 
@@ -546,18 +565,11 @@ export class Parser {
 			//Create the format used for the tag
 			const options = Parser.TagDefinitionToDecorationOptions(item);
 			
-			//TODO: allow item.tag to be an array? Avoid the need for alias to begin with.
+			//TODO: allow item.tag to be an array? Avoid the need for alias field to begin with.
 			//Create CommentTag for primary tag
-			let currentTag = Parser.CreateTag(item.tag, options);
-			this.tags.push(currentTag);
-			this.tagsMap.set(currentTag.lowerTag, currentTag);
-			
+			this.PushTag(Parser.CreateTag(item.tag, options));
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
-			item.aliases?.forEach(aliasTag => {
-				currentTag = Parser.CreateTag(aliasTag, options);
-				this.tags.push(currentTag)
-				this.tagsMap.set(currentTag.lowerTag, currentTag);
-			});
+			item.aliases?.forEach(aliasTag => this.PushTag(Parser.CreateTag(aliasTag, options)));
 		}
 	}
 
@@ -580,11 +592,12 @@ export class Parser {
 		// If no single line comment delimiter is passed, monoline comments are not supported
 		if (monoLine) {
 			this.highlightMonolineComments = this.contributions.monolineComments;
+			// if a single delimiter is passed, the language has one single line comment format
 			if (IsString(monoLine)) {
 				this.delimiter = Parser.escapeSlashes(Parser.escapeRegExp(monoLine));
+			// if multiple delimiters are passed, the language has more than one single line comment format
 			} else if (monoLine.length > 0) {
-				// * if multiple delimiters are passed, the language has more than one single line comment format
-				this.delimiter = monoLine.map(Parser.escapeRegExp).map(Parser.escapeSlashes).join("|");
+				this.delimiter = monoLine.map(Parser.escapeRegExp).map(Parser.escapeSlashes).join('|');
 			}
 		}
 
@@ -602,9 +615,10 @@ export class Parser {
 
 
 
-export function IsString(item:any): item is String {return typeof item === 'string';}
+const IsString = (item:any): item is String => typeof item === 'string';
 
-
+// const IsStringArray = (item: any): item is Array<String> => Array.isArray(item) && item.every(elem => IsString(elem));
+// const IsPopulatedStringArray = (item: any): item is Array<String> => Array.isArray(item) && item.length !==0 && item.every(elem => IsString(elem));
 
 
 // function OffsetFromRegex(array:RegExpExecArray|RegExpMatchArray, index:number) {
