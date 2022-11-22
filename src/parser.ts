@@ -4,7 +4,7 @@ import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
-import { FlagsArray } from './typings/BitFlags';
+// import { FlagsArray } from './typings/BitFlags';
 
 // const window = vscode.window;
 

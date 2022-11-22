@@ -1,5 +1,4 @@
-import { arrayInsert } from "../Utilities/Utils";
-
+import { Memento } from "vscode";
 
 
 
@@ -14,7 +13,22 @@ export interface KeyValPair<K,V> {Key:K, Val:V}
 // }
 
 
+export class Cache {
+		private cache: { [key: string]: unknown };
 
+		constructor(private storage: Memento, private namespace: string) {
+			this.cache = storage.get(this.namespace, {});
+		}
+
+		public put(key: string, value: unknown): void {
+			this.cache[key] = value;
+			this.storage.update(this.namespace, this.cache);
+		}
+
+		public get<T>(key: string, defaultValue?: unknown): T {
+			return (key in this.cache ? this.cache[key] : defaultValue) as T;
+		}
+}
 
 
 
@@ -46,6 +60,101 @@ export class HashSet<T> {
 
 	public clear() { return this.dict.clear(); }
 }
+
+
+
+type QueueItem = (cb: () => void) => unknown
+export class Queue {
+
+	private _running = false;
+
+	private _queue: Array<QueueItem> = [];
+	/**
+	 * Add a action inside the queue.
+	 * The action should take a callback as first parameter and call it
+	 * when his work is done in order to start the next action
+	 *
+	 * @param {Function} f
+	 * @returns
+	 * @memberOf Queue
+	 */
+	public push(f: QueueItem): Queue {
+		this._queue.push(f);
+		if (!this._running) this._next();
+		return this; // for chaining fun!
+	}
+
+	private _next() {
+		this._running = false;
+		const action = this._queue.shift();
+		if (action) {
+			this._running = true;
+			try { action(this._next.bind(this)); } 
+			catch { this._next.call(this); }
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// export class TasksRunner<T> {
+// 	private _currentTask: IterableIterator<T>|null = null;
+	
+// 	/**
+// 	 * Add a task to run.
+// 	 * Pushing a new task will cancel the execution of the previous
+// 	 *
+// 	 * @param {Generator} IterableIterator<any>
+// 	 * @returns
+// 	 * @memberOf TasksRunner
+// 	 */
+// 	run(f: () => IterableIterator<T>): TasksRunner<T> {
+// 		this._currentTask?.return?.();
+// 		this._currentTask = f();
+// 		this._run();
+// 		return this; // for chaining fun!
+// 	}
+// 	/**
+// 	 * Cancel the currently running task
+// 	 */
+// 	stop(): void {
+// 		this._currentTask?.return?.();
+// 	}
+	
+// 	_run(): void {
+// 		const it: IterableIterator<T> = this._currentTask!;
+// 		function run(args?: any):any {
+// 			try {
+// 				const result: IteratorResult<T> = it.next(args); // deal with errors in generators
+// 				return (result.done)? result.value : Promise.resolve(result.value).then(run);
+// 			} catch (error) {} // do something
+// 		}
+// 		run();
+// 	}
+// }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -106,7 +215,7 @@ export class ContiguousGrowingArray<T> {
 		if (insertCount === 0 || insertIndex >= this._store.length) return;
 		const arr: T[] = new Array<T>(insertCount);
 		for (let i = 0; i < insertCount; i++) arr[i] = this._default;
-		this._store = arrayInsert(this._store, insertIndex, arr);
+		this._store = this._store.insertArray(insertIndex, arr);
 	}
 
 	public clear(): void {

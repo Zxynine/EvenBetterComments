@@ -202,12 +202,22 @@ export class DocumentCommentLinkProvider implements DocumentLinkProvider {
 
 
 
+export class FileUri {
+	private readonly uri: Uri;
+	constructor(uri: Uri) {this.uri = uri;}
+
+	static fromString(path: string): FileUri {return new FileUri(Uri.file(path));}
+	static fromUri(uri: Uri): FileUri {return new FileUri(uri);}
+
+	public get Uri(): Uri {return this.uri;}
+	public get Path(): string {return this.uri.fsPath;}
+}
+
 
 
 				
 
 class DocumentTools {
-	static readonly commentRegex = /^\*|^\/\/|^\/\*|^\#|^<!--/;
 	static readonly newlineRegex = /\r?\n/;
 	static GetWorkspacePath = (document:TextDocument):string => workspace.getWorkspaceFolder(document.uri)?.uri?.fsPath ?? "";
 	static GetRelativeFolder = (filePath:string):string => workspace.asRelativePath(dirname(filePath)); //Get the relative path to the workspace folder  
@@ -327,15 +337,3 @@ class DocumentTools {
 
 
 
-
-
-export class FileUri {
-	private readonly uri: Uri;
-	constructor(uri: Uri) {this.uri = uri;}
-
-	static fromString(path: string): FileUri {return new FileUri(Uri.file(path));}
-	static fromUri(uri: Uri): FileUri {return new FileUri(uri);}
-
-	public get Uri(): Uri {return this.uri;}
-	public get Path(): string {return this.uri.fsPath;}
-}

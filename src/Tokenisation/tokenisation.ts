@@ -1,5 +1,4 @@
 import { Color, Position, Range } from "vscode";
-import { arrayInsert } from "../Utilities/Utils";
 import { readUInt32BE, writeUInt32BE } from "../Utilities/Buffer";
 
 //https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/languages/supports/tokenization.ts
@@ -1181,7 +1180,7 @@ export class ContiguousMultilineTokens {
 
 		const lineTokens: ITokenArrayRange[] = new Array<ITokenArrayRange>(insertCount);
 		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
-		this._tokens = arrayInsert(this._tokens, insertIndex, lineTokens);
+		this._tokens = this._tokens.insertArray(insertIndex, lineTokens);
 	}
 
 
@@ -1964,7 +1963,7 @@ export class ContiguousTokensStore {
 
 		const lineTokens: ITokenArrayRange[] = new Array<ITokenArrayRange>(insertCount);
 		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
-		this._lineTokens = arrayInsert(this._lineTokens, insertIndex, lineTokens);
+		this._lineTokens = this._lineTokens.insertArray(insertIndex, lineTokens);
 		this._len += insertCount;
 	}
 
@@ -2113,7 +2112,7 @@ export class ContiguousTokensStore {
 
 		insertPosition ??= { index: this._pieces.length };
 
-		if (pieces.length > 0) this._pieces = arrayInsert(this._pieces, insertPosition.index, pieces);
+		if (pieces.length > 0) this._pieces = this._pieces.insertArray(insertPosition.index, pieces);
 
 		// console.log(`I HAVE ${this._pieces.length} pieces`);
 		// console.log(`${this._pieces.map(p => p.toString()).join('\n')}`);
@@ -2478,7 +2477,7 @@ export function countEOL(text: string): [number, number, number, StringEOL] {
 
 
 
-
+//https://github.com/KamiKillertO/vscode-colorize/blob/develop/src/lib/util/color-util.ts
 
 
 

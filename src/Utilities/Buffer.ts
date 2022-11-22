@@ -61,6 +61,24 @@ export class DisposableStore extends Disposable {
 
 
 
+export class DisposableArray implements Disposable {
+	private disposables = new Array<Disposable>();
+  
+	public dispose() {
+	  this.disposables.forEach((d) => d.dispose());
+	  this.disposables = [];
+	}
+  
+	public push(disposable: Disposable) {
+	  this.disposables.push(disposable);
+	}
+  }
+
+
+export function using<T extends Disposable>(resource: T, func: (resource: T) => void) {
+	try { func(resource); } 
+	finally { resource.dispose(); }
+}
 
 
 

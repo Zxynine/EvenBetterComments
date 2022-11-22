@@ -5,6 +5,7 @@ export type Action<TArgs extends any[]> = Func<TArgs, undefined>;
 
 export type nulldefined = null|undefined;
 
+export type MappedObject<V> = {[index:string]: V};
 
 
 declare global {
@@ -45,6 +46,11 @@ declare global {
 		insertArray<T>(this: Array<T>, insertIndex: number, insertArray: Array<T>): Array<T>;
 
 		forEachIf<T>(this: Array<T>, conditional:Func<[T], bool>, foreach:Action<[T]>): void;
+
+		safeRemove<T>(this: Array<T>, item: T): void;
+
+		mapObject<TK extends keyof any, TV>(this: Array<T>, map:Func<[T], [TK,TV]>): MappedObject<TV>;
+
     }
 
     interface ReadonlyArray<T> {
@@ -76,6 +82,8 @@ declare global {
 		collect<C,T>(this:ReadonlyArray<T>, initialValue:C, callback : ((collector:C, currentValue:T)=>C)) : C;
 		
 		forEachIf<T>(this: ReadonlyArray<T>, conditional:Func<[T], bool>, foreach:Action<[T]>): void;
+
+		mapObject<TK extends keyof any, TV>(this: ReadonlyArray<T>, map:Func<[T], [TK,TV]>): MappedObject<TV>;
     }
 }
 
@@ -259,12 +267,19 @@ Array.prototype.insertArray = function arrayInsert<T>(this: T[], insertIndex: nu
 
 
 
+Array.prototype.safeRemove = function safeRemove<T>(this: Array<T>, item: T): void {
+	const index = this.indexOf(item);
+	if (index === -1) return;
+	this.splice(index, 1);
+}
 
 
 
 
 
-
+Array.prototype.mapObject = function <T, K extends keyof any, V>(this : Array<T>, map: Func<[T], [K,V]>) : MappedObject<V> {
+	return Object.fromEntries(this.map(map));
+}
 
 
 
