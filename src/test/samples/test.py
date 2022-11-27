@@ -18,7 +18,7 @@ myVar = True
 while myVar:
 
     # TODO: localise the output
-    question = raw_input("Ask the magic 8 ball a question: (press enter to quit) ")
+    question = int(input("Ask the magic 8 ball a question: (press enter to quit) "))
     
     answers = random.randint(1,8)
     
@@ -26,194 +26,26 @@ while myVar:
         sys.exit()
     
     elif answers == 1:
-        print "It is certain"
+        print("It is certain")
     
     elif answers == 2:
-        print "Outlook good"
+        print("Outlook good")
     
     elif answers == 3:
-        print "You may rely on it"
+        print("You may rely on it")
     
     elif answers == 4:
-        print "Ask again later"
+        print("Ask again later")
     
     elif answers == 5:
-        print "Concentrate and ask again"
+        print("Concentrate and ask again")
     
     elif answers == 6:
-        print "Reply hazy, try again"
+        print("Reply hazy, try again")
     
     elif answers == 7:
-        print "My reply is no"
+        print("My reply is no")
     
     elif answers == 8:
-        print "My sources say no"
+        print("My sources say no")
 
-
-        # ! Import the modules
-import sys
-import random
-
-# * var to set up loop
-myVar = True
-
-# ? will this loop ever terminate?
-while myVar:
-
-    # TODO: localise the output
-    question = raw_input("Ask the magic 8 ball a question: (press enter to quit) ")
-    
-    answers = random.randint(1,8)
-    
-    if question == "":
-        sys.exit()
-    
-    elif answers == 1:
-        print "It is certain"
-    
-    elif answers == 2:
-        print "Outlook good"
-    
-    elif answers == 3:
-        print "You may rely on it"
-    
-    elif answers == 4:
-        print "Ask again later"
-    
-    elif answers == 5:
-        print "Concentrate and ask again"
-    
-    elif answers == 6:
-        print "Reply hazy, try again"
-    
-    elif answers == 7:
-        print "My reply is no"
-    
-    elif answers == 8:
-        print "My sources say no"
-
-        # ! Import the modules
-import sys
-import random
-
-# * var to set up loop
-myVar = True
-
-# ? will this loop ever terminate?
-while myVar:
-
-    # TODO: localise the output
-    question = raw_input("Ask the magic 8 ball a question: (press enter to quit) ")
-    
-    answers = random.randint(1,8)
-    
-    if question == "":
-        sys.exit()
-    
-    elif answers == 1:
-        print "It is certain"
-    
-    elif answers == 2:
-        print "Outlook good"
-    
-    elif answers == 3:
-        print "You may rely on it"
-    
-    elif answers == 4:
-        print "Ask again later"
-    
-    elif answers == 5:
-        print "Concentrate and ask again"
-    
-    elif answers == 6:
-        print "Reply hazy, try again"
-    
-    elif answers == 7:
-        print "My reply is no"
-    
-    elif answers == 8:
-        print "My sources say no"
-
-        # ! Import the modules
-import sys
-import random
-
-# * var to set up loop
-myVar = True
-
-# ? will this loop ever terminate?
-while myVar:
-
-    # TODO: localise the output
-    question = raw_input("Ask the magic 8 ball a question: (press enter to quit) ")
-    
-    answers = random.randint(1,8)
-    
-    if question == "":
-        sys.exit()
-    
-    elif answers == 1:
-        print "It is certain"
-    
-    elif answers == 2:
-        print "Outlook good"
-    
-    elif answers == 3:
-        print "You may rely on it"
-    
-    elif answers == 4:
-        print "Ask again later"
-    
-    elif answers == 5:
-        print "Concentrate and ask again"
-    
-    elif answers == 6:
-        print "Reply hazy, try again"
-    
-    elif answers == 7:
-        print "My reply is no"
-    
-    elif answers == 8:
-        print "My sources say no"
-
-        # ! Import the modules
-import sys
-import random
-
-# * var to set up loop
-myVar = True
-
-# ? will this loop ever terminate?
-while myVar:
-
-    # TODO: localise the output
-    question = raw_input("Ask the magic 8 ball a question: (press enter to quit) ")
-    
-    answers = random.randint(1,8)
-    
-    if question == "":
-        sys.exit()
-    
-    elif answers == 1:
-        print "It is certain"
-    
-    elif answers == 2:
-        print "Outlook good"
-    
-    elif answers == 3:
-        print "You may rely on it"
-    
-    elif answers == 4:
-        print "Ask again later"
-    
-    elif answers == 5:
-        print "Concentrate and ask again"
-    
-    elif answers == 6:
-        print "Reply hazy, try again"
-    
-    elif answers == 7:
-        print "My reply is no"
-    
-    elif answers == 8:
-        print "My sources say no"

@@ -6,11 +6,7 @@ import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
 import { FlagsArray } from './typings/BitFlags';
 
-// const window = vscode.window;
-
 //Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
-
-// TODO: make Parser use simple regex when first loading, allow complex parsing after some time so that highlights are visible immediately;
 
 export class Parser {
 	private readonly tags: CommentTag[] = [];
@@ -47,6 +43,8 @@ export class Parser {
 	private highlightMultilineComments = false;
 	private highlightJSDoc = true;
 	private highlightLinkedComments = true;
+	// @ts-ignore
+	private highlightFullBlockComments = false;
 
 	// * this will allow plaintext files to show comment highlighting if switched on
 	private isPlainText = false;
@@ -198,9 +196,9 @@ export class Parser {
 		//..............................................
 		
 		// Use start and end delimiters to find block comments
-		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
+		const MultiLineCommon = "("+this.blockCommentStart+")([^\\*][\\s\\S]*?)("+this.blockCommentEnd+")"
 		
-		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
+		this.Expressions.MultiLineSimple = new RegExp("(^[ \\t]*)"+MultiLineCommon, "igm");
 		this.Expressions.MultiLineMixed = new RegExp("(^|[ \\t])"+MultiLineCommon, "igm");
 		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
 		//^[ \t]*(?!/\*|//)\S+.*?(?:\*/)?(/\*[^\*])([\s\S\n]*?)(\*/)
@@ -360,6 +358,9 @@ export class Parser {
 		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
+		const fullBlockMatchString = "(^)([ \\t]*)("+this.blockCommentStart+"[ \\t]*)("+Parser.JoinDelimiterArray(this.tags)+")([ ]*|[:])+";
+		const fullBlockRegEx = new RegExp(fullBlockMatchString, "i");
+
 
 		// Find the multiline comment block
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineSimple)) {
@@ -367,7 +368,24 @@ export class Parser {
 			const StartLine = activeEditor.document.positionAt(match.index).line;
 			const EndLine = activeEditor.document.positionAt(match.index+commentBlock.length).line;
 			if (this.CommentTracker.CheckRange(StartLine, EndLine)) continue; //Already has highlights in range, skip.
-			//TODO: check for leading delimiter for entire block colour.
+			if (this.highlightFullBlockComments) {
+				// //TODO: check for leading delimiter for entire block colour.
+				const SubMatch = activeEditor.document.lineAt(StartLine).text.match(fullBlockRegEx);
+				if (SubMatch) {
+					const matchString = (SubMatch[4] as string).toLowerCase();
+					if (this.tagsMap.has(matchString)) {
+						// console.log(match);
+						const StartIndex = match.index + match[1].length;
+						const EndIndex = StartIndex + match[2].length + match[3].length + match[4].length;
+						const Range = Parser.CreateRange(activeEditor.document, StartIndex, EndIndex);
+						this.tagsMap.get(matchString)!.ranges.push(Range);
+						//Adds full block to tracker to prevent nested highlighting
+						this.CommentTracker.SetRange(StartLine, EndLine, true);
+						// console.log("Found Block Highlight: " + StartLine + " - " + EndLine);
+						continue;
+					}
+				}
+			}
 
 			// Find the line
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) {
@@ -401,13 +419,32 @@ export class Parser {
 		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
+		// const fullBlockMatchString = "(^)([ \\t]*.*?)("+this.blockCommentStart+"[ \\t]*)("+Parser.JoinDelimiterArray(this.tags)+")([ ]*|[:])+";
+		// const fullBlockRegEx = new RegExp(fullBlockMatchString, "i");
+
+
 		// Find the multiline comment block
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineMixed)) {
 			const commentBlock = match[0];
 			const StartLine = activeEditor.document.positionAt(match.index).line;
 			const EndLine = activeEditor.document.positionAt(match.index+commentBlock.length).line;
 			if (this.CommentTracker.CheckRange(StartLine, EndLine)) continue; //Already has highlights in range, skip.
-			//TODO: check for leading delimiter for entire block colour.
+			// // //TODO: check for leading delimiter for entire block colour.
+			// const SubMatch = activeEditor.document.lineAt(StartLine).text.match(fullBlockRegEx);
+			// if (SubMatch) {
+			// 	const matchString = (SubMatch[4] as string).toLowerCase();
+			// 	if (this.tagsMap.has(matchString)) {
+			// 		// console.log(match);
+			// 		const StartIndex = match.index + match[1].length;
+			// 		const EndIndex = StartIndex + match[2].length + match[3].length + match[4].length;
+			// 		const Range = Parser.CreateRange(activeEditor.document, StartIndex, EndIndex);
+			// 		this.tagsMap.get(matchString)!.ranges.push(Range);
+			// 		//Adds full block to tracker to prevent nested highlighting
+			// 		this.CommentTracker.SetRange(StartLine, EndLine, true);
+			// 		// console.log("Found Block Highlight: " + StartLine + " - " + EndLine);
+			// 		continue;
+			// 	}
+			// }
 
 			// Find the line
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) {
@@ -457,11 +494,15 @@ export class Parser {
 	 */
 	public FindJSDocComments(activeEditor: vscode.TextEditor): void {
 		// If highlight multiline is off in package.json or doesn't apply to his language, return
-		if (!this.highlightMultilineComments && !this.highlightJSDoc) return;
+		if (!this.highlightMultilineComments || !this.highlightJSDoc) return;
 
 		// Highlight after leading /** or *
 		const commentMatchString = "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
+
+		const fullBlockMatchString = "(^)([ \\t]*)(/\\*\\*[ \\t]*)("+Parser.JoinDelimiterArray(this.tags)+")([ ]*|[:])+";
+		const fullBlockRegEx = new RegExp(fullBlockMatchString, "i");
+
 
 		// Find the multiline comment block
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineJSSimple)) {
@@ -469,7 +510,24 @@ export class Parser {
 			const StartLine = activeEditor.document.positionAt(match.index).line;
 			const EndLine = activeEditor.document.positionAt(match.index+commentBlock.length).line;
 			if (this.CommentTracker.CheckRange(StartLine, EndLine)) continue; //Already has highlights in range, skip.
-			//TODO: check for leading delimiter for entire block colour.
+			if (this.highlightFullBlockComments) {
+				//TODO: check for leading delimiter for entire block colour.
+				const SubMatch = activeEditor.document.lineAt(StartLine).text.match(fullBlockRegEx);
+				if (SubMatch) {
+					const matchString = (SubMatch[4] as string).toLowerCase();
+					if (this.tagsMap.has(matchString)) {
+						// console.log(match);
+						const StartIndex = match.index + match[1].length;
+						const EndIndex = StartIndex + match[2].length + match[3].length + match[4].length;
+						const Range = Parser.CreateRange(activeEditor.document, StartIndex, EndIndex);
+						this.tagsMap.get(matchString)!.ranges.push(Range);
+						//Adds full block to tracker to prevent nested highlighting
+						this.CommentTracker.SetRange(StartLine, EndLine, true);
+						// console.log("Found Block Highlight: " + StartLine + " - " + EndLine);
+						continue;
+					}
+				}
+			}
 
 			// Find the line
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) {
@@ -663,6 +721,7 @@ export class Parser {
 			this.highlightMultilineComments = this.contributions.multilineComments;
 			this.blockCommentStart = Parser.escapeRegExp(start);
 			this.blockCommentEnd = Parser.escapeRegExp(end);
+			this.highlightFullBlockComments = this.contributions.allowFullBlockHighlights;
 		}
 	}
 

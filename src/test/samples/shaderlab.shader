@@ -18,6 +18,11 @@ Shader "Simple colored lighting"
             // * this is a highlight
             //// this code has been removed
             // todo clean up removed code
+			/* 
+			! Multiline
+			? Hello
+			
+			 */
             Material
             {
                 Diffuse [_Color]

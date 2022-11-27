@@ -45,27 +45,27 @@
 				"command": "evenbettercomments.reloadDecorations"
 			},
 			{
-				"title": "BetterHyperScopes: Show Scopes",
-				"command": "vscode-show-scopes.show",
+				"title": "EvenBetterComments: Reload Document Tokens",
+				"command": "evenbettercomments.reloadDocuments"
+			},
+			{
+				"title": "EvenBetterComments: Reload Grammar Scopes",
+				"command": "evenbettercomments.reloadGrammar"
+			},
+			{
+				"title": "BetterHyperScopes: Show Selected Scope",
+				"command": "evenbettercomments.hscopes.show-scope",
 				"when": "editorTextFocus"
 			},
 			{
 				"title": "BetterHyperScopes: Show Scopes Full Line",
-				"command": "vscode-show-scopes.show-line",
+				"command": "evenbettercomments.hscopes.show-line-scopes",
 				"when": "editorTextFocus"
 			},
 			{
 				"title": "BetterHyperScopes: Show Inspector",
-				"command": "vscode-show-scopes.show-inspector",
+				"command": "evenbettercomments.hscopes.show-scope-inspector",
 				"when": "editorTextFocus"
-			},
-			{
-				"title": "BetterHyperScopes: Reload Document Tokens",
-				"command": "hscopes-booster.reloadDocuments"
-			},
-			{
-				"title": "BetterHyperScopes: Reload Grammar Scopes",
-				"command": "hscopes-booster.reloadGrammar"
 			}
 		],
 		"configuration": {
@@ -86,10 +86,10 @@
 					"description": "Whether the plaintext comment highlighter should be active",
 					"default": false
 				},
-				"evenbettercomments.allowNestedHighlighting": {
+				"evenbettercomments.allowFullBlockHighlights": {
 					"type": "boolean",
-					"description": "Whether to highlight different types of comments on the same line",
-					"default": true
+					"description": "Whether to enable highlighting an entire block comment if a tag is places at the start of it",
+					"default": false
 				},
 				"evenbettercomments.tags": {
 					"type": "array",

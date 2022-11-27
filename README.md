@@ -29,8 +29,10 @@ When false, multiline comments will be presented without decoration.
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first non-whitespace character on a line.
 
-`"evenbettercomments.allowNestedHighlighting": true`  
-This setting will tell the parser whether it should parse multiple tags on the same line or not.
+`"evenbettercomments.allowFullBlockHighlights": false`  
+This setting will tell the parser whether it should check for a tag at the beginning of a block comment for a style.
+When true, if a tag is found at the start of a block comment, the entire block comment will be decorated with its style.
+
 
 `evenbettercomments.tags`  
 The tags are the characters or sequences used to mark a comment for decoration.

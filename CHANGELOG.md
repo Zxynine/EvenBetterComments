@@ -1,8 +1,37 @@
 # Change Log
 
+## [5.0.0] (2022-11-26)
+### Development
+Update v5.0.0 is a full rework of the parsing system I have been planning for months now. It uses tokenisation based off of vscode's source-code to enable accurately locating/detecting comments in code. There is less guess work than in any other version and so there should be far less false positives (*hopefully*).
+
+### Features
+* Removed `allowNestedHighlighting` as it was never used.
+* Comment parsing fully moved to pattern + token hybrid system.
+
+### HouseKeeping
+* Abstracted code functions and changed some to be static.
+* Upgraded dependencies.
+* Further reduced amount of needless objects being created each time the extension checks the document.
+* Changed internal command ID's to better reflect what they do.
+
+### Bug Fixes
+* New token system should prevent many edge-case highlighting from occurring.
+* Changed comment parsing back to case-insensitive matching (I accidentally swapped it).
+* Finally fixed JSDoc highlighting to only be enabled on JS style languages. (previously pretty much always on)
+
+### Work In Progress
+* Working on creating documentation for comment links and how to use them.
+* Working on creating settings to format document links.
+* Working on button to temporarily hide all comments.
+* Working on ability to format entire code block with a style.
+* Working on adding option for case-insensitive matching for tags.
+* Working on updating documentation from all the changes I have made.
+* Working on adding support for custom regex.
+
+
 ## [4.1.1] (2022-08-03)
 ### Development
-This is a hotfix for the extension, update 4.1.0 had a problem which caused single line comments to fail spectacularly. I honestly have no idea what caused the problems nor how I fixed it, all I know is tried a bunch of stuff, nothing worked, I went to work and when I got back things were working again.
+This is a hotfix for the extension, update v4.1.0 had a problem which caused single line comments to fail spectacularly. I honestly have no idea what caused the problems nor how I fixed it, all I know is tried a bunch of stuff, nothing worked, I went to work and when I got back things were working again.
 
 
 ## [4.1.0] (2022-08-02)

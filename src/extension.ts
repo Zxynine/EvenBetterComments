@@ -20,11 +20,11 @@ export const ExtentionID = "evenbettercomments";
  export const enum CommandIds {
 	ReloadDecorations = 'evenbettercomments.reloadDecorations',
 	ReloadConfiguration = 'evenbettercomments.reloadConfiguration',
-	ReloadDocuments = 'hscopes-booster.reloadDocuments',
-	ReloadGrammar = 'hscopes-booster.reloadGrammar',
-	ShowScope = 'vscode-show-scopes.show',
-	ShowLineScopes = 'vscode-show-scopes.show-line',
-	ShowScopeInspector = 'vscode-show-scopes.show-inspector',
+	ReloadDocuments = 'evenbettercomments.reloadDocuments',
+	ReloadGrammar = 'evenbettercomments.reloadGrammar',
+	ShowScope = 'evenbettercomments.hscopes.show-scope',
+	ShowLineScopes = 'evenbettercomments.hscopes.show-line-scopes',
+	ShowScopeInspector = 'evenbettercomments.hscopes.show-scope-inspector',
 }
 
 const AllLanguages : vscode.DocumentSelector = { language: "*" };

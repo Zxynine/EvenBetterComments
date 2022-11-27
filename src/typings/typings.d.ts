@@ -14,8 +14,7 @@ interface Contributions {
 	multilineComments: boolean;
 	useJSDocStyle: boolean;
 	highlightPlainText: boolean;
-	allowNestedHighlighting: boolean;
-	allowFullBlockHighlights?: boolean;
+	allowFullBlockHighlights: boolean;
 	tags: Array<TagDefinition>;
 }
 
@@ -41,22 +40,22 @@ interface TagDefinition {
 
 
 
-type Configuration = {
-	paths?: string[],
-	rules?: Rule[],
-};
+// type Configuration = {
+// 	paths?: string[],
+// 	rules?: Rule[],
+// };
 
-type Rule = {
-	patterns?: string[];
-	color?: string|import('vscode').ThemeColor;
-	matchCase?: boolean;
-	matchWholeWord?: boolean;
+// type Rule = {
+// 	patterns?: string[];
+// 	color?: string|import('vscode').ThemeColor;
+// 	matchCase?: boolean;
+// 	matchWholeWord?: boolean;
 
-	bold?: boolean;
-	italic?: boolean;
-	underline?: boolean;
-	strikeThrough?: boolean;
-};
+// 	bold?: boolean;
+// 	italic?: boolean;
+// 	underline?: boolean;
+// 	strikeThrough?: boolean;
+// };
 
 
 
@@ -307,7 +306,7 @@ type MultidimensionalArray<Element, Dimensions extends number> = number extends 
 
 
 
-type testlower = Lowercase<"HiIIII">
+// type testlower = Lowercase<"HiIIII">
 // type testToString = ToString<>
 
 
