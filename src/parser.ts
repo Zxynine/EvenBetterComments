@@ -23,10 +23,8 @@ export class Parser {
 	//Stores all searching patterns for the tags.
 	private readonly Expressions = {
 		// MonoLine: / /,
-		MultiLine: / /,
-		MultiLineJS: / /,
-
-
+		// MultiLine: / /,
+		// MultiLineJS: / /,
 
 		MonoLineSimple: / /,
 		MonoLineMixed: / /,
@@ -34,8 +32,8 @@ export class Parser {
 		MultiLineSimple: / /,
 		MultiLineMixed: / /,
 
-		// MultiLineJSSimple: / /,
-		// MultiLineJSMixed: / /,
+		MultiLineJSSimple: / /,
+		MultiLineJSMixed: / /,
 		
 		// MonoLineBlock: / /,
 	}
@@ -159,7 +157,7 @@ export class Parser {
 		if (!activeEditor) return;
 		
 		this.CommentTracker.ClearAll();
-		this.CommentTracker.Expand(Math.ceil(activeEditor.document.lineCount/32));
+		this.CommentTracker.Expand(activeEditor.document.lineCount);
 
 		//? It finds block comments first so that single comments wont appear inside of them.
 
@@ -201,16 +199,16 @@ export class Parser {
 		
 		// Use start and end delimiters to find block comments
 		const MultiLineCommon = "("+this.blockCommentStart+"[^\\*])([\\s\\S]*?)("+this.blockCommentEnd+")"
-		this.Expressions.MultiLine = new RegExp("(^|[ \\t])"+MultiLineCommon, "igm");
 		
 		this.Expressions.MultiLineSimple = new RegExp("(^)([ \\t]*)"+MultiLineCommon, "igm");
+		this.Expressions.MultiLineMixed = new RegExp("(^|[ \\t])"+MultiLineCommon, "igm");
 		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
 		//^[ \t]*(?!/\*|//)\S+.*?(?:\*/)?(/\*[^\*])([\s\S\n]*?)(\*/)
-		this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+"|"+this.blockCommentStart+")\\S+.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
+		// this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+"|"+this.blockCommentStart+")\\S+.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
 		//..............................................
 
 		// Combine custom delimiters and the rest of the comment block matcher
-		this.Expressions.MultiLineJS = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*?\*\/)/igm; // Find rows of comments matching pattern /** */
+		this.Expressions.MultiLineJSSimple = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*?\*\/)/igm; // Find rows of comments matching pattern /** */
 	}
 
 /* /* 
@@ -227,6 +225,15 @@ export class Parser {
 
 
 //  /* not selected */
+
+
+
+	//===============================================================================================================================================
+
+
+
+
+
 
 
 
@@ -349,10 +356,6 @@ export class Parser {
 	 * @param activeEditor The active text editor containing the code document
 	 */
 	 public FindBlockCommentsSimple(activeEditor: vscode.TextEditor): void {
-		// If highlight multiline is off in package.json or doesn't apply to his language, return
-		if (!this.highlightMultilineComments) return;
-		
-
 		// Combine custom delimiters and the rest of the comment block matcher
 		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
@@ -394,17 +397,12 @@ export class Parser {
 	 * @param activeEditor The active text editor containing the code document
 	 */
 	 public FindBlockCommentsMixed(activeEditor: vscode.TextEditor): void {
-		// If highlight multiline is off in package.json or doesn't apply to his language, return
-		if (!this.highlightMultilineComments) return;
-		
-
 		// Combine custom delimiters and the rest of the comment block matcher
 		const commentMatchString = "(^)+([ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+ Parser.JoinDelimiterArray(this.tags) +")([ ]*|[:])+(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
-
 		// Find the multiline comment block
-		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLine)) {
+		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineMixed)) {
 			const commentBlock = match[0];
 			const StartLine = activeEditor.document.positionAt(match.index).line;
 			const EndLine = activeEditor.document.positionAt(match.index+commentBlock.length).line;
@@ -446,15 +444,6 @@ export class Parser {
 
 
 
-
-
-
-
-
-
-
-
-
 	/**  .......................................................................................................................
 
 
@@ -475,7 +464,7 @@ export class Parser {
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
 		// Find the multiline comment block
-		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineJS)) {
+		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MultiLineJSSimple)) {
 			const commentBlock = match[0];
 			const StartLine = activeEditor.document.positionAt(match.index).line;
 			const EndLine = activeEditor.document.positionAt(match.index+commentBlock.length).line;
@@ -500,6 +489,9 @@ export class Parser {
 			this.CommentTracker.SetRange(StartLine, EndLine, true);
 		}
 	}
+
+
+
 
 	//===============================================================================================================================================
 

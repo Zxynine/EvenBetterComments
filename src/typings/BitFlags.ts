@@ -462,7 +462,8 @@ export class FlagsArray {
     }
 
     public Expand(size: int) {
-		if (this.Flags.length >= size) return;
+		if (this.Count >= size) return;
+		size = Math.ceil(size/32);
 		//Creates a new array of specified size and fills in previous values from index 0.
         const result = new Uint32Array(size);
         result.set(this.Flags, 0);
