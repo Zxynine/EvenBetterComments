@@ -4,30 +4,43 @@ import * as json5 from 'json5';
 import { LanguageLoader } from './providers/LanguageProvider';
 
 
+
+export type Target = 'global' | 'workspace';
+
+/**
+ * Type for {@link CommandId.ToggleSetting} command.
+ */
+ export interface ToggleSettingType {
+	setting: string;
+	value?: unknown[] | string;
+	target?: Target;
+}
+
+
+
 export class Configuration {
-	private readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
-	private readonly languageHasShebang = new Map<string, boolean>();
+	private static readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
+	private static readonly languageHasShebang = new Map<string, boolean>();
 
 
 
 
-	/**  Creates a new instance of the Parser class */
-	public constructor() { this.UpdateLanguagesDefinitions(); }
 
 	/**
 	 * Generate a map of configuration files by language as defined by extensions
 	 * External extensions can override default configurations of VSCode
 	 */
-	public UpdateLanguagesDefinitions() {
+	public static async UpdateLanguagesDefinitions() {
 		this.commentConfig.clear();
 		this.languageHasShebang.clear();
-		LanguageLoader.LoadLanguages();
+		await LanguageLoader.LoadLanguages();
 		for (const language of LanguageLoader.AllLanguageDefinitions) {
 			this.languageHasShebang.set(language.id, Boolean(language.firstLine));
 		}
 	}
 
-	public GetLanguageConfiguration(languageCode:string) {
+
+	public static GetLanguageConfiguration(languageCode:string) {
 		// * if no config exists for this language, back out and leave the language unsupported
 		if (!LanguageLoader.HasLanguage(languageCode)) return undefined;
 		try {
@@ -44,14 +57,14 @@ export class Configuration {
 
 
 
-	public GetHasShebang(languageCode: string): boolean {
+	public static GetHasShebang(languageCode: string): boolean {
 		return (this.languageHasShebang.get(languageCode) ?? false)
 	}
 
 
 
 	/** Gets the configuration information for the specified language */
-	public GetCommentConfiguration(languageCode: string): vscode.CommentRule | undefined {
+	public static GetCommentConfiguration(languageCode: string): vscode.CommentRule | undefined {
 		// * if the language config has already been loaded return the loaded value
 		if (this.commentConfig.has(languageCode)) return this.commentConfig.get(languageCode);
 		

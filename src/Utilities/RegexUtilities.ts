@@ -1,5 +1,5 @@
 
-
+import * as vscode from 'vscode';
 
 
 
@@ -95,9 +95,63 @@ export const validRegexFlags = ['i','m','s','u'];
  *
  * @param text the text to parse from.
  */
-function parseRanges(text: string): [number, number][] {
+ export function parseRanges(text: string): [number, number][] {
 	return text.split(",").map((str) => {
 	  const match = str.match(/(\d+)-(\d+)/);
 	  return (match)? [parseInt(match[1]), parseInt(match[2])] : [-1,-1];
 	});
   }
+
+
+
+
+  
+  export function countWordInstances(text: string, word: string): number {
+	return text.split(word).length - 1;
+  }
+
+
+
+
+
+
+
+
+
+  
+export function stringifyRegex() {
+    let options = { prompt: 'Enter a valid regular expression.', placeHolder: '(.*)' };
+    vscode.window.showInputBox(options).then(input => {
+        if (input) {
+            // Strip forward slashes if regex string is enclosed in them
+            input = (input.startsWith('/') && input.endsWith('/')) ? input.slice(1, -1) : input;
+            try {
+                const jString = JSON.stringify(new RegExp(input).toString().slice(1, -1));
+                vscode.window.showInformationMessage('JSON-escaped RegEx: ' + jString, 'Copy to clipboard').then(choice => {
+                    if (choice && choice === 'Copy to clipboard') vscode.env.clipboard.writeText(jString);
+                });
+            } catch (err: any) { vscode.window.showErrorMessage(err.message); }
+        }
+    });
+}
+
+
+
+
+
+
+
+
+export const toRegexGlobal = (expr: any) => {
+    if (expr instanceof RegExp) {
+        let flags = expr.flags;
+        if (!flags.contains("g")) flags += "g";
+        return new RegExp(expr, flags);
+    } else if (typeof expr === "string" || String instanceof expr) {
+        return new RegExp(expr, "g");
+    } else throw new Error(expr.toString() + " isn't a regex or string!");
+};
+
+export const findAll = (text: string, expr: RegExp | string) => {
+    return Array.from(text.matchAll(toRegexGlobal(expr)));
+};

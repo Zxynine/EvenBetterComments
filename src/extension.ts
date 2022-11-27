@@ -34,9 +34,9 @@ const AllLanguages : vscode.DocumentSelector = { language: "*" };
  * this method is called when vs code is activated
 **/
 export function activate(context: vscode.ExtensionContext) {
+	LoadDocumentsAndGrammer();
 	let activeEditor: vscode.TextEditor;
-	const configuration: Configuration = new Configuration();
-	const parser: Parser = new Parser(configuration);
+	const parser: Parser = new Parser();
 
 	// Called to handle events below
 	const updateDecorations = () => parser.UpdateDecorations(activeEditor);
@@ -75,12 +75,12 @@ export function activate(context: vscode.ExtensionContext) {
 	//............................................................................
 	// * This section deals with comment decorations
 
-	context.subscriptions.push(vscode.extensions.onDidChange(configuration.UpdateLanguagesDefinitions)); // Handle extensions being added or removed
+	context.subscriptions.push(vscode.extensions.onDidChange(Configuration.UpdateLanguagesDefinitions)); // Handle extensions being added or removed
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(CheckSetActiveEditor)); // Handle active file changed
 	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(CheckUpdateDecorations)); // Handle file contents changed
 
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadDecorations, updateDecorations));
-	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadConfiguration, configuration.UpdateLanguagesDefinitions));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ReloadConfiguration, Configuration.UpdateLanguagesDefinitions));
 
 
 	//............................................................................
@@ -93,7 +93,6 @@ export function activate(context: vscode.ExtensionContext) {
 	//............................................................................
 
 	// * This section deals with loading scopes of documents
-	LoadDocumentsAndGrammer();
 	/** EXPORT API */
 	const API = GetGetScopeAtAPI;
 

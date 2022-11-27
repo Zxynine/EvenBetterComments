@@ -7,7 +7,6 @@ export interface KeyValPair<K,V> {Key:K, Val:V}
 
 
 
-
 // interface IEnumerable<T> {
 
 // }
@@ -63,12 +62,21 @@ export class HashSet<T> {
 
 
 
-type QueueItem = (cb: () => void) => unknown
-export class Queue {
+
+
+
+
+
+
+
+
+
+type ActionQueueItem = (cb: () => void) => unknown
+export class ActionQueue {
 
 	private _running = false;
 
-	private _queue: Array<QueueItem> = [];
+	private _queue: Array<ActionQueueItem> = [];
 	/**
 	 * Add a action inside the queue.
 	 * The action should take a callback as first parameter and call it
@@ -78,7 +86,7 @@ export class Queue {
 	 * @returns
 	 * @memberOf Queue
 	 */
-	public push(f: QueueItem): Queue {
+	public push(f: ActionQueueItem): ActionQueue {
 		this._queue.push(f);
 		if (!this._running) this._next();
 		return this; // for chaining fun!
@@ -99,81 +107,226 @@ export class Queue {
 
 
 
-
-
-
-
-
-
-
-
-
-// export class TasksRunner<T> {
-// 	private _currentTask: IterableIterator<T>|null = null;
+export class TasksRunner<T> {
+	private _currentTask: IterableIterator<T>|null = null;
 	
-// 	/**
-// 	 * Add a task to run.
-// 	 * Pushing a new task will cancel the execution of the previous
-// 	 *
-// 	 * @param {Generator} IterableIterator<any>
-// 	 * @returns
-// 	 * @memberOf TasksRunner
-// 	 */
-// 	run(f: () => IterableIterator<T>): TasksRunner<T> {
-// 		this._currentTask?.return?.();
-// 		this._currentTask = f();
-// 		this._run();
-// 		return this; // for chaining fun!
-// 	}
-// 	/**
-// 	 * Cancel the currently running task
-// 	 */
-// 	stop(): void {
-// 		this._currentTask?.return?.();
-// 	}
+	/**
+	 * Add a task to run.
+	 * Pushing a new task will cancel the execution of the previous
+	 *
+	 * @param {Generator} IterableIterator<any>
+	 * @returns
+	 * @memberOf TasksRunner
+	 */
+	run(f: () => IterableIterator<T>): TasksRunner<T> {
+		this._currentTask?.return?.();
+		this._currentTask = f();
+		this._run();
+		return this; // for chaining fun!
+	}
+	/**
+	 * Cancel the currently running task
+	 */
+	stop(): void {
+		this._currentTask?.return?.();
+	}
 	
-// 	_run(): void {
-// 		const it: IterableIterator<T> = this._currentTask!;
-// 		function run(args?: any):any {
-// 			try {
-// 				const result: IteratorResult<T> = it.next(args); // deal with errors in generators
-// 				return (result.done)? result.value : Promise.resolve(result.value).then(run);
-// 			} catch (error) {} // do something
-// 		}
-// 		run();
-// 	}
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function *Counter(start:int, stop:int, step:int =1) : Generator<number> {
-	for (let i=start; i<stop; i+=step) yield i;
+	_run(): void {
+		const it: IterableIterator<T> = this._currentTask!;
+		function run(args?: any):any {
+			try {
+				const result: IteratorResult<T> = it.next(args); // deal with errors in generators
+				return (result.done)? result.value : Promise.resolve(result.value).then(run);
+			} catch (error) {} // do something
+		}
+		run();
+	}
 }
 
 
 
-// interface IList<T> extends Array<T> {
-// 	length : int;
-// 	[index:int] : T;
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/AbmSourav/dataStructure/tree/main/linkedList
+//https://github.com/loiane/javascript-datastructures-algorithms/blob/main/src/ts/data-structures/linked-list.ts
+//https://github.com/basarat/typescript-collections/blob/release/src/lib/LinkedList.ts
+
+// export type AnyKey = keyof any;
+// // data type
+// export type DataType<T> = { key: AnyKey, value: T }
+
+
+
+// // singly linked list interface
+// export interface ILinkedList {
+// 	readonly Count: number;
+// 	// prepend(data: DataType<any>): boolean;
+// 	// append(data: DataType<any>): boolean;
+// 	// add(data: DataType<any>, position: number): boolean;
+// 	// getFromHead(): object|false;
+// 	// getFromTail(): object|false;
+// 	// log(): void;
+// 	// remove(key: AnyKey): object|boolean;
+// 	// update(key: AnyKey, newValue: any): object|boolean;
+// 	// search(key: AnyKey): object|boolean
+// 	// iterator(): Generator
+// 	// clear(): void;
 // }
+
+
+
+
+// export type LinkedNode<T> = {
+// 	data: T
+// 	next: undefined|LinkedNode<T>
+// }
+// export type DoublyLinkedNode<T> = {
+// 	data: T
+// 	next: undefined|DoublyLinkedNode<T>
+// 	prev: undefined|DoublyLinkedNode<T>
+// }
+
+
+
+// export class LinkedList<T> implements ILinkedList {
+// 	protected count: int = 0;
+// 	protected head: LinkedNode<T>|undefined;
+// 	protected tail: LinkedNode<T>|undefined;
+
+// 	public EqualityComparer: IEqualityComparer<T> = (LHS,RHS) => LHS === RHS;
+	
+// 	/** Time Complexity: O(1) */
+// 	public get Count() { return this.count; }
+// 	/** Time Complexity: O(1) */
+// 	public get IsEmpty() { return this.count === 0; }
+	
+
+// 	/** Time Complexity: O(1) */
+// 	public PeekHead(): T|undefined;
+// 	public PeekHead(defaultValue?: T): T|undefined { return this.head?.data ?? defaultValue; }
+
+// 	/** Time Complexity: O(1) */
+// 	public PeekTail(): T|undefined;
+// 	public PeekTail(defaultValue?:T): T|undefined { return this.tail?.data ?? defaultValue; }
+
+
+// 	/** Time Complexity: O(1) */
+// 	public AddHead(value: T) {
+// 		const Node = <LinkedNode<T>>{ data: value, next: undefined };
+// 		Node.next = this.head;
+// 		this.head = Node;
+// 		if (this.IsEmpty) this.tail = Node;
+// 		this.count++;
+// 	}
+
+// 	/** Time Complexity: O(1) */
+// 	public AddTail(value: T) {
+// 		const Node = <LinkedNode<T>>{ data: value, next: undefined };
+// 		if (this.tail !== undefined) this.tail.next = Node;
+// 		this.tail = Node;
+// 		if (this.IsEmpty) this.head = Node;
+// 		this.count++;
+// 	}
+
+// 	/** Time Complexity: O(n) */
+// 	public Add(value:T, index:int) {
+// 		const IndexNode = this.GetNodeAtIndex(index);
+// 		if (IndexNode === undefined) return;
+// 		const NewNode = <LinkedNode<T>>{ data: IndexNode.data, next: IndexNode.next };
+// 		IndexNode.data = value;
+// 		IndexNode.next = NewNode;
+// 		this.count++;
+// 	}
+
+
+
+// 	/** Time Complexity: O(n) */
+// 	public GetAtIndex(index:int, defaultValue?:T): T|undefined {
+// 		if (index < 0 || this.count >= index) return defaultValue;
+// 		let current:LinkedNode<T>|undefined = this.head;
+// 		for (let currentIndex = 0; currentIndex<index && current!==undefined; ++currentIndex, current = current.next);
+// 		return current?.data ?? defaultValue;
+// 	}
+
+// 	/** Time Complexity: O(n) */
+// 	public IndexOf(value: T): number|-1 {
+// 		let index = 0;
+// 		for (let current = this.head; current!==undefined; current = current.next, ++index) 
+// 			if (this.EqualityComparer(current.data, value)) return index;
+// 		return -1;
+// 	}
+
+
+// 	/** Time Complexity: O(n) */
+// 	public Contains(value:T) : bool {
+// 		for (let current = this.head; current!==undefined; current = current.next) 
+// 			if (this.EqualityComparer(current.data, value)) return true;
+// 		return false;
+// 	}
+
+// 	/** Time Complexity: O(1) */
+// 	public Clear() {
+// 		this.head = undefined;
+// 		this.tail = undefined;
+// 		this.count = 0;
+// 	}
+
+
+
+// 	/** Time Complexity: O(n) */
+// 	public *Iterator(): Generator<T> {
+// 		for (let current = this.head; current!==undefined; current = current.next) yield current.data;
+// 	}
+
+
+// 	/** Time Complexity: O(n) */
+// 	public AsArray(): T[] {
+// 		return [...this.Iterator()]
+// 	}
+
+
+// 	/** Time Complexity: O(n) */
+// 	public ForEach(action: Action<[T]>):void {
+// 		for (const Node of this.Iterator()) action(Node);
+// 	}
+// 	//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// 	protected *NodeIterator(): Generator<LinkedNode<T>> {
+// 		for (let current = this.head; current!==undefined; current = current.next) yield current;
+// 	}
+	
+// 	protected *IndexedNodeIterator(): Generator<[LinkedNode<T>, int]> {
+// 		for (let current = this.head, index=0; current!==undefined; current = current.next, ++index) yield [current, index];
+// 	}
+
+// 	protected GetNodeAtIndex(index:int): LinkedNode<T>|undefined {
+// 		if (index < 0 || this.count >= index) return undefined;
+// 		let current:LinkedNode<T>|undefined = this.head;
+// 		for (let currentIndex = 0; currentIndex<index && current!==undefined; ++currentIndex, current = current.next);
+// 		return current;
+// 	}
+
+// 	// protected NewNode(value:T): LinkedNode<T> { return <LinkedNode<T>>{data:value, next:undefined} }
+
+// }
+
+
+
+
+
+
+
+
 
 
 

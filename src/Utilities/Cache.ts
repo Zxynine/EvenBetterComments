@@ -7,25 +7,6 @@ type CacheRecord = {
 	expiration?: number
 }
 
-
-// class Cache {
-// 	private cache: { [key: string]: unknown };
-
-// 	constructor(private storage: Memento, private namespace: string) {
-// 		this.cache = storage.get(this.namespace, {});
-// 	}
-
-// 	public put(key: string, value: unknown): void {
-// 		this.cache[key] = value;
-// 		this.storage.update(this.namespace, this.cache);
-// 	}
-
-// 	public get<T>(key: string, defaultValue?: unknown): T {
-// 		return (key in this.cache ? this.cache[key] : defaultValue) as T;
-// 	}
-// }
-
-
 /**
  * @class Cache
  * @desc A module for use in developing a Visual Studio Code extension. It allows an extension to cache values across sessions with optional expiration times using the ExtensionContext.globalState.
@@ -41,20 +22,15 @@ export class Cache {
 	public constructor(context : ExtensionContext, namespace: string) {
 		// ExtensionContext
 		this.context = context
-
 		// Namespace of the context's globalState
 		this.namespace = namespace || 'cache'
-	
 		// Local cache object
 		this.cache = this.context.globalState.get(this.namespace, {})
 	}
 
 
 
-
 	/**
-	 * @name Cache#set
-	 * @method
 	 * @desc Store an item in the cache, with optional expiration
 	 * @param {string} key - The unique key for the cached item
 	 * @param {any} value - The value to cache
@@ -77,9 +53,7 @@ export class Cache {
 	}
 
 	/**
-	 * @name Cache#get
 	 * @desc Get an item from the cache, or the optional default value
-	 * @function
 	 * @param {string} key - The unique key for the cached item
 	 * @param {any} [defaultValue] - The optional default value to return if the cached item does not exist or is expired
 	 * @returns {any} Returns the cached value or optional defaultValue
@@ -94,9 +68,7 @@ export class Cache {
 	}
 	
 	/**
-	 * @name Cache#has
 	 * @desc Checks to see if unexpired item exists in the cache
-	 * @function
 	 * @param {string} key - The unique key for the cached item
 	 * @return {boolean}
 	 */
@@ -105,9 +77,7 @@ export class Cache {
 	}
 	
 	/**
-	 * @name Cache#remove
 	 * @desc Removes an item from the cache
-	 * @function
 	 * @param {string} key - The unique key for the cached item
 	 * @returns {Thenable} Visual Studio Code Thenable (Promise)
 	 */
@@ -116,47 +86,28 @@ export class Cache {
 		if (key in this.cache) {
 			// Delete from local object
 			delete this.cache[key]
-		
 			// Update the extension's globalState
 			return this.context.globalState.update(this.namespace, this.cache)
-
 		} else return Promise.resolve(true);
 	}
 	
 	/**
-	 * @name Cache#keys
 	 * @desc Get an array of all cached item keys
-	 * @function
-	 * @return {string[]}
 	 */
-	public get Keys(): Array<string> {
-		return Object.keys(this.cache)
-	}
+	public get Keys(): Array<string> { return Object.keys(this.cache) }
 	
 	/**
-	 * @name Cache#values
 	 * @desc Get an array of all cached item values
-	 * @function
-	 * @return {any[]}
 	 */
-	 public get Values(): Array<any> {
-		return Object.values(this.cache).map(Record => Record.value);
-	}
+	 public get Values(): Array<any> { return Object.values(this.cache).map(Record => Record.value) }
 	
 	/**
-	 * @name Cache#all
 	 * @desc Returns object of all cached items
-	 * @function
-	 * @return {object}
 	 */
-	public get All(): Record<string, any> {
-		return this.cache.mapObject((Key, Record) => [Key, Record.value])
-	}
+	public get All(): Record<string, any> { return this.cache.mapObject((Key, Record) => [Key, Record.value]) }
 	
 	/**
-	 * @name Cache#flush
 	 * @desc Clears all items from the cache
-	 * @function
 	 * @returns {Thenable} Visual Studio Code Thenable (Promise)
 	 */
 	public Flush(): Thenable<void> {
@@ -165,9 +116,7 @@ export class Cache {
 	}
 	
 	/**
-	 * @name Cache#expiration
 	 * @desc Gets the expiration time for the cached item
-	 * @function
 	 * @param {string} key - The unique key for the cached item
 	 * @return {number} Unix Timestamp in seconds
 	 */
@@ -176,10 +125,8 @@ export class Cache {
 	}
 	
 	/**
-	 * @name Cache#isExpired
 	 * @desc Checks to see if cached item is expired
-	 * @function
-	 * @param {object} item - Cached item object
+	 * @param {string} key - The unique key for the cached item to check
 	 * @return {boolean}
 	 */
 	public IsExpired(key:string): bool {
@@ -212,4 +159,47 @@ export class Cache {
  */
 const now = ():number => Math.floor(Date.now() / 1000);
 
+
+
+
+
+export class CachedFn<TKey, TValue> {
+	private readonly cache = new Map<TKey, TValue>();
+	constructor(private readonly fn: (key: TKey) => TValue) {}
+
+	public get(key: TKey): TValue {
+		if (this.cache.has(key)) return this.cache.get(key)!;
+		else {
+			const value = this.fn(key);
+			this.cache.set(key, value);
+			return value;
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+// class Cache {
+// 	private cache: { [key: string]: unknown };
+
+// 	constructor(private storage: Memento, private namespace: string) {
+// 		this.cache = storage.get(this.namespace, {});
+// 	}
+
+// 	public put(key: string, value: unknown): void {
+// 		this.cache[key] = value;
+// 		this.storage.update(this.namespace, this.cache);
+// 	}
+
+// 	public get<T>(key: string, defaultValue?: unknown): T {
+// 		return (key in this.cache ? this.cache[key] : defaultValue) as T;
+// 	}
+// }
 

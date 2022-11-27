@@ -11,8 +11,9 @@ import { LanguageLoader } from "../providers/LanguageProvider";
 
 
 
-export function getNodeModulePath(moduleName: string) {return path.join(vscode.env.appRoot, 'node_modules.asar', moduleName);}
-export function getNodeModule(moduleName: string) {return require(getNodeModulePath(moduleName));}
+export function getModulePath(folderName:string, moduleName:string) { return path.join(vscode.env.appRoot, folderName, moduleName); }
+export function getNodeModulePath(moduleName: string) { return path.join(vscode.env.appRoot, 'node_modules.asar', moduleName); }
+export function getNodeModule(moduleName: string) { return require(getNodeModulePath(moduleName)); }
 /** Returns a node module installed with VSCode, or null if it fails. **/
  export function getCoreNodeModule(moduleName: string) {
 	try { return require(path.join(vscode.env.appRoot, 'node_modules.asar', moduleName)); } catch (ex) { }
@@ -20,9 +21,7 @@ export function getNodeModule(moduleName: string) {return require(getNodeModuleP
 	return null;
 }
 
-// export function parseJSONGrammar(contents: string, filename: string | null): IRawGrammar {
-// 	return <IRawGrammar>JSON.parse(contents);
-// }
+
 
 
 export class TMRegistry {
@@ -39,22 +38,20 @@ export class TMRegistry {
 
 	public static get Current() { return TMRegistry.registry; }
 	private static registry : IRegistry|undefined;
-	public static ReloadGrammar() {		
+	public static async ReloadGrammar() {		
 		try {
 			TMRegistry.registry = new TMRegistry.vsctm.Registry(<RegistryOptions>{
 				onigLib: TMRegistry.vscodeOnigurumaLib,
 				getInjections: (scopeName: string) => LanguageLoader.scopeNameToInjections.get(scopeName),
+				/** Load the grammar at `path` synchronously. **/
+				loadGrammarFromPathSync: (path: string) => LanguageLoader.ReadFileSync(path),
 				
 				/** Load the grammar for `scopeName` and all referenced included grammars asynchronously. **/
-				loadGrammar: (scopeName: string) => {
+				loadGrammar: async (scopeName: string) => {
 					const path = LanguageLoader.scopeNameToPath.get(scopeName);
 					return ((!path)? null :  LanguageLoader.ReadFileAsync(path).then((data) => TMRegistry.vsctm.parseRawGrammar(data, path)));
 				},
 				
-				/** Load the grammar at `path` synchronously. **/
-				loadGrammarFromPathSync: (path: string) => {
-					return LanguageLoader.ReadFileSync(path);
-				},
 				
 				// /** Get the grammar for `scopeName`. The grammar must first be created via `loadGrammar` or `loadGrammarFromPathSync`. **/
 				// grammarForScopeName(scopeName: string): IGrammar;

@@ -7,10 +7,13 @@ import { Endianness } from '../typings/BitFlags';
 import { statSync } from 'fs';
 import * as fs from 'fs';
 import * as minimatch from 'minimatch';
+import { showQuickPick } from './Input';
+import * as process from 'process';
 // import { Color } from 'vscode';
+import { sleep } from './Async';
 
 
-
+//: Idea- insert key should align multiselect cursors.
 
 
 /**
@@ -26,93 +29,17 @@ import * as minimatch from 'minimatch';
 
 
 
-/**
- * Replace ${workspaceRoot} with workfolder.uri.path
- *
- * @param mappings
- * @param workfolder
- */
-export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], workfolder?: vscode.WorkspaceFolder): KeyValPair<string,string>[] {
-	const rootPath = workfolder?.uri.path;
-	if (rootPath) {
-		// Replace placeholder with workspace folder
-		return mappings.map(({ Key, Val }) => ({
-			Key, Val: replaceWorkspaceFolderWithRootPath(Val, rootPath),
-		}));
-	} else {
-		// Filter items out which contain a workspace root
-		return mappings.filter(({ Val }) => !valueContainsWorkspaceFolder(Val));
-	}
-}
-
-/**
- * Replaces both placeholders with the rootpath
- * - ${workspaceRoot}    // old way and only legacy support
- * - ${workspaceFolder}  // new way
- *
- * @param value
- * @param rootPath
-**/
-function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
-	return value.replace('${workspaceRoot}', rootPath).replace('${workspaceFolder}', rootPath);
-}
-
-function valueContainsWorkspaceFolder(value: string): boolean {
-	return value.includes('${workspaceFolder}') || value.includes('${workspaceRoot}');
-}
 
 
 
- export function getWorkspaceRelativePath( filePath: string, pathToResolve: string) {
-	// In case the user wants to use ~/.prettierrc on Mac
-	if (process.platform === 'darwin' && pathToResolve.startsWith('~') && homedir()) {
-		return pathToResolve.replace(/^~(?=$|\/|\\)/, homedir());
-	} else if (vscode.workspace.workspaceFolders) {
-		const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
-		return ((folder)
-			? (path.isAbsolute(pathToResolve))
-				? pathToResolve
-				: path.join(folder.uri.fsPath, pathToResolve)
-			: undefined
-		);
-	} else return undefined;
+
+
+export function swap(array: any[], a: number, b: number) {
+	/* const temp = array[a];
+	array[a] = array[b];
+	array[b] = temp; */
+	[array[a], array[b]] = [array[b], array[a]];
   }
-
-
-
-
-
-
-
-export class CachedFn<TKey, TValue> {
-	private readonly cache = new Map<TKey, TValue>();
-	constructor(private readonly fn: (key: TKey) => TValue) {}
-
-	public get(key: TKey): TValue {
-		if (this.cache.has(key)) return this.cache.get(key)!;
-		else {
-			const value = this.fn(key);
-			this.cache.set(key, value);
-			return value;
-		}
-	}
-}
-
-
-
-
-export function basename(path: string): string {
-	const idx = ~path.lastIndexOf('/') || ~path.lastIndexOf('\\');
-	if (idx === 0) {
-		return path;
-	} else if (~idx === path.length - 1) {
-		return basename(path.substring(0, path.length - 1));
-	} else {
-		return path.substring(~idx + 1);
-	}
-}
-
-
 
 
 
@@ -146,84 +73,15 @@ export function mergeObjects(target: any, ...sources: any[]): any {
 
 
 
-
-
-
-
-
-
-
-
-
-export function isWindows(): boolean {
-	return process.platform === "win32";
-  }
-
-
-
-
-
-  
-
-		
 /**
- * Convert string to PascalCase.  
- * first_second_third => FirstSecondThird  
- * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
- * 
- * @param {string} value - string to transform to PascalCase  
- * @returns {string} transformed value  
+ * Copy object or array (hopefully without circular references).
  */
-export function toPascalCase(value : string) : string {
-	const match = value.match(/[a-z0-9]+/gi);
-	if (!match) return value;
-	return match.map((word) => 
-		word.charAt(0).toUpperCase()
-		+ word.substring(1).toLowerCase()
-	).join('');
-}
-	
-
-	
-/**
- * Convert string to camelCase.  
- * first_second_third => firstSecondThird  
- * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
- * 
- * @param {string} value - string to transform to camelCase
- * @returns {string} transformed value  
- */
-export function toCamelCase(value : string) : string {
-	const match = value.match(/[a-z0-9]+/gi);
-	if (!match) return value;
-	return match.map(
-		(word, index) => ((index === 0)
-			? word.toLowerCase()
-			: word.charAt(0).toUpperCase()
-				+ word.substring(1).toLowerCase()
-		)
-	).join('');
+ export function deepCopy<T>(object: T): T {
+	return JSON.parse(JSON.stringify(object));
 }
 
 
-/**
- * Convert string to snakeCase.  
- * first_second_third => firstSecondThird  
- * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/linesOperations/browser/linesOperations.ts}  
- * 
- * @param {string} value - string to transform to snakeCase
- * @returns {string} transformed value  
- */
- export function toSnakeCase (value : string): string {
-	const caseBoundary = /(\p{Ll})(\p{Lu})/gmu;
-	const singleLetters = /(\p{Lu}|\p{N})(\p{Lu})(\p{Ll})/gmu;
-	
-	return (value
-		.replace(caseBoundary, '$1_$2')
-		.replace(singleLetters, '$1_$2$3')
-		.toLocaleLowerCase()
-	);
-};
+
 
 
 
@@ -262,19 +120,23 @@ export const MarkdownFormat = {
 /**
  * Checks whether the input value is the type 'string'
  */
-export function IsString(item:unknown): item is String {return typeof item === 'string';}
+export function IsCharacter(item:unknown): item is Character { return typeof item === 'string' && (item.length === 1 || /^.$/.test(item)); }
+
+/**
+ * Checks whether the input value is the type 'string'
+ */
+export function IsString(item:unknown): item is String { return typeof item === 'string'; }
 
 /**
  * @returns whether the provided parameter is a JavaScript Array and each element in the array is a string.
  */
-export function IsStringArray(value: unknown): value is string[] {return Array.isArray(value) && (<unknown[]>value).every(elem => IsString(elem));}
-
+export function IsStringArray(value: unknown): value is string[] { return Array.isArray(value) && (value).every(elem => IsString(elem)); }
 
 /**
  * Checks whether the input value is a integer. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false. The number '1.0' yields true. The number '1.1' yields false.
  */
-export function IsInteger(value : unknown) : value is int { return IsNumber(value) && Math.floor(value) === value; }
+export function IsInteger(number: unknown): number is Integer { return Number.isInteger(number); }
 
 /**
  * Checks whether the input value is a number. Anything that could be parsed as a number will yield false.
@@ -285,17 +147,12 @@ export function IsNumber(value : unknown) : value is number { return typeof valu
 /**
  * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
  */
-export function IsTypedArray(obj: unknown): obj is Object {
-	const TypedArray = Object.getPrototypeOf(Uint8Array);
-	return typeof obj === 'object' && obj instanceof TypedArray;
-}
+export function IsTypedArray(obj: unknown): obj is Object { return typeof obj === 'object' && obj instanceof Object.getPrototypeOf(Uint8Array); }
 
 /**
  * @returns whether the provided parameter is an Iterable, casting to the given generic
  */
-export function IsIterable<T>(obj: unknown): obj is Iterable<T> {
-	return !!obj && typeof (obj as any)[Symbol.iterator] === 'function';
-}
+export function IsIterable<T>(obj: unknown): obj is Iterable<T> { return !!obj && typeof (obj as any)[Symbol.iterator] === 'function'; }
 
 /**
  * @returns whether the provided parameter is a JavaScript Boolean or not.
@@ -324,7 +181,6 @@ export function IsUndefinedOrNull(obj: unknown): obj is undefined|null { return 
 export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUndefinedOrNull(arg); }
 
 
-
 /**
  * @returns whether the provided parameter is a JavaScript Function or not.
  */
@@ -338,42 +194,13 @@ export function AreFunctions(...objects: unknown[]): boolean { return objects.le
 
 
 
+/**
+ * Return `true` when item is an object (NOT Array, NOT null, NOT undefined)
+ */
+ export function isSimpleObject(item: unknown): item is Record<string, unknown> {
+	return (item !== undefined && item !== null && !Array.isArray(item) && typeof item === 'object');
+}
 
-
-
-
-
-
-// function filterFile(filename: string, config: Config) {
-// 	if (config.showHiddenFiles) {
-// 	return true;
-// 	}
-
-// 	return !isFileHidden(filename, config);
-// }
-
-// function isFileHidden(filename: string, config: Config) {
-// 	return filename.startsWith('.') || isFileHiddenByVsCode(filename, config);
-// }
-
-
-// // files.exclude has the following form. key is the glob
-// // {
-// //    "**//*.js": true
-// //    "**//*.js": true "*.git": true
-// // }
-// function isFileHiddenByVsCode(filename: string, config: Config) {
-// 	if (!config.filesExclude) {
-// 	return false;
-// 	}
-
-// 	for (const key of Object.keys(config.filesExclude)) {
-// 	if (minimatch(filename, key)) {
-// 		return true;
-// 	}
-// 	}
-// 	return false;
-// }
 
 
 
@@ -402,342 +229,6 @@ export function reverseEndianness(arr: Uint8Array): void {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function strcmp(a: string, b: string): number {
-	if (a < b) {
-		return -1;
-	}
-	if (a > b) {
-		return 1;
-	}
-	return 0;
-}
-
-
-export function strArrCmp(a: string[] | null, b: string[] | null): number {
-	if (a === null && b === null) {
-		return 0;
-	}
-	if (!a) {
-		return -1;
-	}
-	if (!b) {
-		return 1;
-	}
-	const len1 = a.length;
-	const len2 = b.length;
-	if (len1 === len2) {
-		for (let i = 0; i < len1; i++) {
-			let res = strcmp(a[i], b[i]);
-			if (res !== 0) return res;
-		}
-		return 0;
-	} else return len1 - len2;
-}
-
-
-
-
-export function lineLengthCompare(a: string, b: string): number {
-	// Use Array.from so that multi-char characters count as 1 each
-	const aLength = Array.from(a).length;
-	const bLength = Array.from(b).length;
-	if (aLength === bLength) {
-	  return 0;
-	}
-	return aLength > bLength ? 1 : -1;
-  }
-
-export function caseInsensitiveCompare(a: string, b: string): number {
-	return a.localeCompare(b, undefined, {sensitivity: 'base'});
-}
-
-
-export function reverseCompare(a: string, b: string): number {
-	if (a === b) {
-	return 0;
-	}
-	return a < b ? 1 : -1;
-}
-
-
-
-
-
-
-
-export function isValidHexColor(hex: string): boolean {
-	if (hex.length === 0) return false;
-	else if (/^#[0-9a-fA-F]{6}$/i.test(hex)) return true; // #rrggbb
-	else if (/^#[0-9a-fA-F]{8}$/i.test(hex)) return true; // #rrggbbaa
-	else if (/^#[0-9a-fA-F]{4}$/i.test(hex)) return true; // #rgba
-	else if (/^#[0-9a-fA-F]{3}$/i.test(hex)) return true; // #rgb
-	else return false;
-}
-
-
-
-
-
-
-
-
-
-
-
-export function hash(value: string | undefined): number {
-    let hash: number = 0;
- 
-    if (!value || value.length === 0) return hash;
-    for (let i = 0; i < value.length; i++, hash = hash&hash) {
-        hash = ((hash << 5) - hash) + value.charCodeAt(i);
-    }
-    return hash;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export interface TokenArgs {
-    text?: string
-}
-
-export async function getInput(args: TokenArgs | undefined, message: string, validate: (str: string) => string | undefined){
-    if (!args || !args.text) return vscode.window.showInputBox(<vscode.InputBoxOptions>{ prompt: message, validateInput: validate});
-    else return Promise.resolve(args.text);
-}
-
-export async function showInputBox(placeHolder: string): Promise<string> {
-	const input = await vscode.window.showInputBox(<vscode.InputBoxOptions>{ placeHolder: placeHolder });
-	if (input === undefined) throw new Error("No input given");
-	return input;
-}
-
-
-export async function showQuickPick(items: string[], placeHolder: string): Promise<string> {
-	const item = await vscode.window.showQuickPick(items, <vscode.QuickPickOptions>{placeHolder: placeHolder});
-	if (item === undefined) throw new Error("No item selected");
-	return item;
-}
-
-
-export async function quickPickFromMap<T>(map: Map<string, T>, placeHolder: string, sort = true): Promise<T | undefined> {
-	const keys: Array<string> = Array.from(map.keys());
-
-	return vscode.window.showQuickPick(((sort)? keys.sort() : keys), <vscode.QuickPickOptions>{ placeHolder: placeHolder })
-		.then((choice: string | undefined) => {
-			if (choice === undefined) throw Error("No choice made."); // Ignore undefined
-			return map.get(choice);
-		}
-	);
-}
-
-
-
-
-/**
- * Transforms the the selections of an editor into quick pick items.
- *
- * @param editor the text editor to get the selections from.
- */
-export function selectionsToQuickPickItems(editor: vscode.TextEditor): vscode.QuickPickItem[] {
-	return editor.selections.map((sel, i) => (<vscode.QuickPickItem>{
-		label: i.toString()+': ',
-		alwaysShow: true,
-		description: editor.document.getText(sel).replace(/(\r?\n)+/g, " "),
-	}));
-}
-  
-
-/**
- * Prompts for text and returns it, while also managing history.
- *
- * @param title the title of the quick pick box.
- * @param prompt the placeholder text for the quick pick box.
- * @param context the context which contains the history.
- * @param historyKey the key of the history within the context.
- */
-async function promptText(
-	title: string,
-	prompt: string,
-	context: vscode.ExtensionContext,
-	historyKey: string
-) {
-	const box = vscode.window.createQuickPick();
-	const history = context.globalState.get<string[]>(historyKey) ?? [];
-	box.title = title;
-	box.placeholder = prompt;
-	box.items = history.map((label) => ({ label }));
-
-	try {
-		const text = await new Promise<string>((resolve, reject) => {
-			box.onDidAccept(() =>
-				box.value.length
-					? resolve(box.value)
-					: box.selectedItems.length
-						? resolve(box.selectedItems[0].label)
-						: reject()
-			);
-			box.onDidHide(reject);
-			box.show();
-		});
-		context.globalState.update(historyKey, [text, ...history.filter((str) => str !== text)]);
-		return text;
-	} finally { box.dispose(); }
-}
-
-
-/**
- * Prompts for a regular expression and returns it.
- *
- * @param title the title of the quick pick box.
- * @param context the context which contains the history.
- * @param historyKey the key of the history within the context.
- */
-export async function promptRegexp(title: string, context: vscode.ExtensionContext, historyKey: string) {
-	return new RegExp(await promptText(title, "Enter a regular expression", context, historyKey), "g");
-}
-
-
-
-
-/**
- * Prompts for a JS expression and returns a function which evaluates it.
- *
- * @param title the title of the quick pick box.
- * @param context the context which contains the history.
- * @param historyKey the key of the history within the context.
- */
-export async function promptJS(
-	title: string,
-	context: vscode.ExtensionContext,
-	historyKey: string
-  ): Promise<(v: string, i: number, a: string[]) => any> {
-	const expr = await promptText(
-	  title,
-	  "Enter a JS string (${v}: text, ${i}: index, ${a}: all texts)",
-	  context,
-	  historyKey
-	);
-	return new Function("v", "i", "a", `return \`${expr}\``) as any;
-  }
-
-
-
-
-// /**
-//  * Prompts for ranges of selections within an editor.
-//  *
-//  * @param title the title of the quick pick box.
-//  * @param editor the editor which contains the selections.
-//  */
-//  async function promptRanges(title: string, editor: vscode.TextEditor) {
-// 	const box = vscode.window.createQuickPick();
-// 	box.title = title;
-// 	box.placeholder = "Enter comma-separated ranges (example: 0-2,5-6)";
-// 	box.canSelectMany = true;
-// 	box.items = selectionsToQuickPickItems(editor);
-// 	box.onDidChangeValue((value) => {
-// 	  const ranges = parseRanges(value);
-// 	  box.selectedItems = box.items.filter((_, i) =>
-// 		ranges.some(([min, max]) => i >= min && i <= max)
-// 	  );
-// 	});
-// 	try {
-// 	  return parseRanges(
-// 		await new Promise<string>((resolve, reject) => {
-// 		  box.onDidAccept(() =>
-// 			box.value.length ? resolve(box.value) : reject()
-// 		  );
-// 		  box.onDidHide(reject);
-// 		  box.show();
-// 		})
-// 	  );
-// 	} finally {
-// 	  box.dispose();
-// 	}
-//   }
-
-
-
-
-
-
-
-
-// /**
-//  * Prompts for indices, and ranges of indices, of selections within an editor.
-//  *
-//  * @param title the title of the quick pick box.
-//  * @param editor the editor which contains the selections.
-//  */
-//  async function promptIndices(title: string, editor: TextEditor) {
-// 	const box = window.createQuickPick();
-// 	box.title = title;
-// 	box.placeholder =
-// 	  "Enter comma-separated indices or ranges (example: 0,1,2-3,4)";
-// 	box.canSelectMany = true;
-// 	box.items = selectionsToQuickPickItems(editor);
-// 	box.onDidChangeValue((value) => {
-// 	  const indices = parseIndices(value);
-// 	  box.selectedItems = box.items.filter((_, i) => indices.has(i));
-// 	});
-// 	try {
-// 	  return parseIndices(
-// 		await new Promise<string>((resolve, reject) => {
-// 		  box.onDidAccept(() =>
-// 			box.value.length ? resolve(box.value) : reject()
-// 		  );
-// 		  box.onDidHide(reject);
-// 		  box.show();
-// 		})
-// 	  );
-// 	} finally {
-// 	  box.dispose();
-// 	}
-//   }
-
-
-
-
-
-
-
-
-
-
-
-
 export function ToBinaryString(nMask:number) {
     // nMask must be between -2147483648 and 2147483647
     if (nMask > 2**32-1)  throw "number too large. number shouldn't be > 2**31-1"; //added
@@ -763,42 +254,6 @@ export function *ToBits(number:number, bitOrder:Endianness = Endianness.LittleEn
 
 
 
-// 'JKL' -> '4a4b4c'
-export function hexEncode (theString: string) {
-	// let theString = getSelectionString();
-	if (!theString)
-		{return;}
-
-    let theArrary = Buffer.from(theString, 'ascii');
-
-    let hexArrary: string[] = [];
-    theArrary.forEach(value => {
-        hexArrary.push(value.toString(16))
-    });
-
-    const resultString = hexArrary.join('')
-    return resultString;
-    
-	// setSelectionString(resultString);
-}
-
-// '4a4b4c' -> 'JKL'
-export function hexDecode (theString: string) {
-	// let theString = getSelectionString();
-	if (!theString)
-		{return;}
-
-    let theArrary = Buffer.from(theString, 'hex')
-
-    let charArrary: string[] = [];
-    theArrary.forEach(value => {
-        charArrary.push(String.fromCharCode(value))
-    });
-
-    const resultString = charArrary.join('')
-    return resultString;
-	// setSelectionString(resultString);
-}
 
 
 
@@ -806,54 +261,86 @@ export function hexDecode (theString: string) {
 
 
 
-export const notify = (message: string, log = false) => {
-	vscode.window.showInformationMessage(message);
-	if (log) {
-	  Logger.info(message);
-	}
-  };
 
 
-  export class Logger {
-	private static _outputChannel: vscode.OutputChannel;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// export const notify = (message: string, log = false) => {
+// 	vscode.window.showInformationMessage(message);
+// 	if (log) Logger.info(message);
+//   };
+
+
+//   export class Logger {
+// 	private static _outputChannel: vscode.OutputChannel;
   
-	static initialize() {
-	  if (!this._outputChannel) {
-		// Only init once
-		this._outputChannel = vscode.window.createOutputChannel('Peacock');
-	  }
-	}
+// 	static initialize() {
+// 	  if (!this._outputChannel) {
+// 		// Only init once
+// 		this._outputChannel = vscode.window.createOutputChannel('Peacock');
+// 	  }
+// 	}
   
-	static getChannel() {
-	  this.initialize();
-	  return this._outputChannel;
-	}
+// 	static getChannel() {
+// 	  this.initialize();
+// 	  return this._outputChannel;
+// 	}
   
-	static info(value: string | object | undefined, indent = false, title = '') {
-	  if (title) {
-		this._outputChannel.appendLine(title);
-	  }
-	  const message = prepareMessage(value, indent);
-	  this._outputChannel.appendLine(message);
-	}
-  }
+// 	static info(value: string | object | undefined, indent = false, title = '') {
+// 	  if (title) this._outputChannel.appendLine(title);
+// 	  const message = prepareMessage(value, indent);
+// 	  this._outputChannel.appendLine(message);
+// 	}
+//   }
   
-  function prepareMessage(value: string | object | undefined, indent: boolean) {
-	const prefix = indent ? '  ' : '';
-	let text = '';
-	if (typeof value === 'object') {
-	  if (Array.isArray(value)) {
-		text = `${prefix}${JSON.stringify(value, null, 2)}`;
-	  } else {
-		Object.entries(value).map(item => {
-		  text += `${prefix}${item[0]} = ${item[1]}\n`;
-		});
-	  }
-	  return text;
-	}
-	text = `${prefix}${value}`;
-	return text;
-  }
+//   function prepareMessage(value: string | object | undefined, indent: boolean) {
+// 	const prefix = indent ? '  ' : '';
+// 	let text = '';
+// 	if (typeof value === 'object') {
+// 	  if (Array.isArray(value)) {
+// 		text = `${prefix}${JSON.stringify(value, null, 2)}`;
+// 	  } else {
+// 		Object.entries(value).map(item => {
+// 		  text += `${prefix}${item[0]} = ${item[1]}\n`;
+// 		});
+// 	  }
+// 	  return text;
+// 	}
+// 	text = `${prefix}${value}`;
+// 	return text;
+//   }
 
 
 
@@ -881,127 +368,198 @@ export const notify = (message: string, log = false) => {
 
 
 
+export namespace Debug {
+	export const ExtentionTitle = 'EvenBetterComments: ';
+	export function FormatMessage(message:unknown): string;
+	export function FormatMessage(message:unknown, delimeter: string = "", ...args: unknown[]): string {
+		return (ExtentionTitle + [message, ...args].join(delimeter));
+	}
+
+	export function GetTimeStamp(): string { // Ex: "22/11/2022, 22:16:50"
+		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date());
+	}
+
+		
+	/**
+	 * Converts an error value to a string.
+	 *
+	 * @param err The error.
+	 * @return The error as string.
+	 */
+	export function ErrorToString(err: Exception): string {
+		return `[${Debug.GetTimeStamp()}] ${err.name}: '${err.message}'\n\n${err.stack}`;
+	}
 
 
 
+	export const enum Type {
+		Info, Warning, Error
+	}
 
 
+	/**
+	 * Show an information message to users. Optionally provide an array of items which will be presented as
+	 * clickable buttons.
+	 *
+	 * @param message The message to show.
+	 * @param logType The type of message to display (Default is Information message).
+	 * @param buttons A set of items that will be rendered as actions in the message.
+	 * @return A thenable that resolves to the selected item or `undefined` when being dismissed.
+	 */
 
+	
 
-
-export interface Rename {
-	uri: vscode.Uri;
-	range: vscode.Range;
-	newName: string;
-}
-
-
-
-export async function renameManyDocuments(renames: Rename[]): Promise<void> {
-	const edit = new vscode.WorkspaceEdit();
-	for (const r of renames) {
-		const result: vscode.WorkspaceEdit = await renameDocument(r);
-		// TODO how to combine file renames?
-		for (const [uri, changes] of result.entries()) {
-			for (const c of changes) edit.replace(uri, c.range, c.newText);
+	export function Log(message:string) : Thenable<undefined>;
+	export function Log<T extends vscode.MessageItem>(message:string, ...buttons: T[]) : Thenable<undefined|T>;
+	export function Log<T extends vscode.MessageItem>(message:string, logType:Type, ...buttons: T[]) : Thenable<undefined|T>;
+	export function Log(message:string, logType:Type, ...buttons: string[]) : Thenable<undefined|string>;
+	export function Log(message:string, logType:Type=Type.Info, ...buttons: any[]) : Thenable<undefined|any> {
+		switch (logType) {
+			case Type.Info: return vscode.window.showInformationMessage(message, ...buttons);
+			case Type.Warning: return vscode.window.showWarningMessage(message, ...buttons);
+			case Type.Error: return vscode.window.showErrorMessage(message, ...buttons);
 		}
 	}
-	await vscode.workspace.applyEdit(edit);
+
+	export function LogInfo(message:string) : Thenable<undefined>;
+	export function LogInfo<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
+	export function LogInfo(message:string, ...buttons: string[]): Thenable<undefined|string>;
+	export function LogInfo(message:string, ...buttons: any[]): Thenable<undefined|any> {
+		return vscode.window.showInformationMessage(message, ...buttons);
+	}
+	
+	export function LogWarning(message:string) : Thenable<undefined>;
+	export function LogWarning<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
+	export function LogWarning(message:string, ...buttons: string[]): Thenable<undefined|string>;
+	export function LogWarning(message:string, ...buttons: any[]): Thenable<undefined|any> {
+		return vscode.window.showWarningMessage(message, ...buttons);
+	}
+
+	
+	export function LogError(message:string) : Thenable<undefined>;
+	export function LogError<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
+	export function LogError(message:string, ...buttons: string[]): Thenable<undefined|string>;
+	export function LogError(message:string, ...buttons: any[]): Thenable<undefined|any> {
+		return vscode.window.showErrorMessage(message, ...buttons);
+	}
+
+	//........................................................................
+
+	export function LogException(exception: Exception) : Thenable<undefined>;
+	export function LogException<T extends vscode.MessageItem>(exception: Exception, ...buttons: T[]) : Thenable<undefined|T>;
+	export function LogException(exception: Exception, ...buttons: string[]) : Thenable<undefined|string>;
+	export function LogException(exception: Exception, ...buttons: any[]) : Thenable<undefined|any> {
+		return vscode.window.showErrorMessage(`[${Debug.GetTimeStamp()}] Exception occured! Stack: ${exception.stack}`, ...buttons);
+	}
+
 }
 
 
-export async function renameDocument(rename: Rename): Promise<vscode.WorkspaceEdit> {
-	return (await vscode.commands.executeCommand(
-		"vscode.executeDocumentRenameProvider",
-		rename.uri,
-		rename.range.start,
-		rename.newName
-	)) as any;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Writes text to the system clipboard
+ * @export
+ * @async
+ * @param {string} textToCopy The text to add to the system clipboard
+ */
+ export async function writeClipboard(textToCopy: string): Promise<void> {
+    return vscode.env.clipboard.writeText(textToCopy);
 }
 
 
-export async function rename() {
-	return vscode.commands.executeCommand("editor.action.rename");
+/**
+ * Reads text from the system clipboard
+ * @export
+ * @async
+ * @param {string} textToCopy The text to add to the system clipboard
+ */
+ export async function readClipboard(): Promise<string> {
+    return vscode.env.clipboard.readText();
 }
 
 
-export async function setContext(
-	key: string,
-	value: string | boolean
-): Promise<void> {
-	return (await vscode.commands.executeCommand("setContext", key, value)) as any;
+
+
+export async function copyWholeBuffer(statusBarTimeout : number = 5000) {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const lineNumber = activeEditor.document.lineCount;
+        await vscode.env.clipboard.writeText(activeEditor.document.getText());
+        vscode.window.setStatusBarMessage(`${lineNumber} lines copied`, statusBarTimeout);
+    }
 }
 
-
-export async function executeDocumentHighlights(
-	uri: vscode.Uri,
-	position: vscode.Position
-): Promise<vscode.DocumentHighlight[]> {
-	return (await vscode.commands.executeCommand(
-		"vscode.executeDocumentHighlights",
-		uri,
-		position
-	)) as any;
-}
-
-export async function executeCompletionItemProvider(
-	uri: vscode.Uri,
-	position: vscode.Position,
-	triggerCharacter?: string
-): Promise<vscode.CompletionList> {
-	const result: any = await vscode.commands.executeCommand(
-		"vscode.executeCompletionItemProvider",
-		uri,
-		position,
-		triggerCharacter
-	);
-	return result;
-}
-
-export async function executeDefinitionProvider(
-	uri: vscode.Uri,
-	position: vscode.Position
-): Promise<vscode.LocationLink[]> {
-	const result: any = await vscode.commands.executeCommand(
-		"vscode.executeDefinitionProvider",
-		uri,
-		position
-	);
-	return result;
-}
-
-export async function executeSignatureHelpProvider(
-	uri: vscode.Uri,
-	position: vscode.Position,
-	triggerCharacter?: string
-): Promise<vscode.SignatureHelp | undefined> {
-	const result: any = await vscode.commands.executeCommand(
-		"vscode.executeSignatureHelpProvider",
-		uri,
-		position,
-		triggerCharacter
-	);
-	return result;
-}
-
-export async function executeReloadWindow() {
-	return vscode.commands.executeCommand('workbench.action.reloadWindow');
-}
-
-export async function closeCurrentFileEditor(): Promise<unknown> {
-	return vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-}
-
-export function openSettings(kind?: string) {
-    vscode.commands.executeCommand("workbench.action.openSettings", kind ? `projectManager.${kind}` : "projectManager");
-}
-
-
-// workspace.onDidChangeConfiguration(() => {
-// 	runInAction("Update Configuration", () => {
-// 		VsCodeSettingResource.onConfigChange.emit();
-// 	});
-// });
 
 
 
@@ -1077,45 +635,233 @@ export function getProjects(itemsSorted: any[]): Promise<{}> {
 
 
 
+export function getPath(activeEditor: vscode.TextEditor) {
+    return _getPath(activeEditor, false).fsPath;
+}
+
+export function getPathWithLine(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, false);
+    return `${active.fsPath}:${active.line}`;
+}
+
+export function getPathWithLineColumn(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, false);
+    return `${active.fsPath}:${active.line}:${active.col}`;
+}
+
+export function getDirectoryPath(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, false);
+    return dirname(active.fsPath, active.path);
+}
+
+export function getRelativePath(activeEditor: vscode.TextEditor) {
+    return _getPath(activeEditor, true).fsPath;
+}
+
+export function getRelativePathWithLine(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, true);
+    return `${active.fsPath}:${active.line}`;
+}
+
+export function getRelativePathWithLineColumn(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, true);
+    return `${active.fsPath}:${active.line}:${active.col}`;
+}
+
+export function getRelativeDirectoryPath(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, true);
+    return dirname(active.fsPath, active.path);
+}
+
+export function getFilename(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, true);
+    return basename(active.fsPath, true, active.path);
+}
+
+export function getFilenameBase(activeEditor: vscode.TextEditor) {
+    const active = _getPath(activeEditor, true);
+    return basename(active.fsPath, false, active.path);
+}
 
 
 
+function _getPath(activeEditor: vscode.TextEditor, relative: boolean) {
+    const uri = activeEditor.document.uri;
+    let fsPath = relative ? relativePathToWorkspace(uri) : uriToFsPath(uri);
+
+    const platformPath = getPlatformPath(uri);
+    if (platformPath === path.win32) {
+        // Replace all / to \
+        fsPath = fsPath.replace(/\//g, "\\");
+    }
+
+    const activePos = activeEditor.selection.active;
+    const line = activePos.line;
+    const col = activePos.character;
+    return { fsPath, path: platformPath, line, col };
+}
+
+
+export const getDefaultURI = () => (vscode.workspace.workspaceFolders?.[0].uri);
 
 
 
+export const osFileOpener = async (uri: vscode.Uri | undefined) => {
+    if (!uri) return;
+
+    const files = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectFolders: false,
+        canSelectMany: false,
+        defaultUri: uri,
+    });
+
+    if (!files || files.length === 0)  return;
+    return await vscode.workspace.fs.readFile(files[0]);
+};
+
+
+
+function dirname(fsPath: string, path: path.PlatformPath) {
+    return path.dirname(fsPath) + path.sep;
+}
+
+function basename(fsPath: string, withExt: boolean, path: path.PlatformPath) {
+	return path.basename(fsPath, ((withExt)? path.extname(fsPath) : undefined));
+}
 
 /**
- * Writes text to the system clipboard
- * @export
- * @async
- * @param {string} textToCopy The text to add to the system clipboard
+ * Get the platform path base on the uri.
+ *
+ * This is similar with the assumption in `uriToFsPath`. If the path has drive letter
+ * or is an UNC path, assumed the uri to be a Windows path.
  */
- export async function writeClipboard(textToCopy: string): Promise<void> {
-    return vscode.env.clipboard.writeText(textToCopy);
+ function getPlatformPath(uri: vscode.Uri) {
+    const fsPath = uriToFsPath(uri);
+    return (hasDriveLetter(fsPath) || isUNC(fsPath))? path.win32 : path.posix;
+}
+
+
+
+// export function basename(path: string): string {
+// 	const idx = ~path.lastIndexOf('/') || ~path.lastIndexOf('\\');
+// 	if (idx === 0) {
+// 		return path;
+// 	} else if (~idx === path.length - 1) {
+// 		return basename(path.substring(0, path.length - 1));
+// 	} else {
+// 		return path.substring(~idx + 1);
+// 	}
+// }
+
+
+
+
+function isUNC(fsPath: string) {
+    if (fsPath.length >= 3) {
+        // Checks \\localhost\shares\ddd
+        //        ^^^
+        return (
+            CharCodes.IsSlash(fsPath.charCodeAt(0)) &&
+            CharCodes.IsSlash(fsPath.charCodeAt(1)) &&
+            !CharCodes.IsSlash(fsPath.charCodeAt(2))
+        );
+    }
+    return false;
+}
+
+
+function hasDriveLetter(fsPath: string, offset = 0): boolean {
+    if (fsPath.length >= 2 + offset) {
+        // Checks C:\Users
+        //        ^^
+        return (
+			CharCodes.IsLetter(fsPath.charCodeAt(0+offset)) &&
+            fsPath.charCodeAt(1+offset) === CharCode.Colon 
+        );
+    }
+    return false;
+}
+
+/**
+ * Compute the closest relative path of the input uri to the workspace folder(s).
+ *
+ * When there are no workspace folders or when the path
+ * is not contained in them, the input is returned.
+ *
+ * This similar to the `workspace.asRelativePath` that the relative path is always
+ * going to use `/`. However, one difference is if we need to return input path,
+ * it will always be `/` (won't normalized to `\` if the host is on Windows).
+ * So we can handle the case if we are remoting into a Windows machine from *nix.
+ */
+ function relativePathToWorkspace(uri: vscode.Uri) {
+    const folder = vscode.workspace.getWorkspaceFolder(uri);
+    return folder
+        ? relativePath(folder.uri, uri) ?? uriToFsPath(uri)
+        : uriToFsPath(uri);
+}
+
+/**
+ * Compute `fsPath` with slash normalized to `/` for the given uri.
+ *
+ * This is what vscode uses internally to compute uri.fsPath; however,
+ * backslash conversion for Windows host is removed, and drive letter is always normalized to uppercase.
+ *
+ * The problems with the internal `uri.fsPath`:
+ *  - Windows machine remoting into a linux will return a `\` as separator
+ *  - *nix machine remoting into a windows will return `/` as separator
+ *
+ * Modified from https://github.com/microsoft/vscode/blob/f74e473238aca7b79c08be761d99a0232838ca4c/src/vs/base/common/uri.ts#L579-L604
+ */
+ function uriToFsPath(uri: vscode.Uri): string {
+    let value: string;
+    if (uri.authority && uri.path.length > 1 && uri.scheme === "file") {
+        // unc path: file://shares/c$/far/boo
+        value = `//${uri.authority}${uri.path}`;
+    } else if (
+        // e.g. local file and vscode-remote file
+        uri.path.charCodeAt(0) === CharCode.Slash &&
+        hasDriveLetter(uri.path, 1)
+    ) {
+        // windows drive letter: file:///c:/far/boo
+        // Normalized drive letter -> C:/far/boo
+        value = uri.path[1].toUpperCase() + uri.path.substr(2);
+    } else {
+        // other path
+        value = uri.path;
+    }
+    return value;
 }
 
 
 /**
- * Reads text from the system clipboard
- * @export
- * @async
- * @param {string} textToCopy The text to add to the system clipboard
+ * Modified from https://github.com/microsoft/vscode/blob/f74e473238aca7b79c08be761d99a0232838ca4c/src/vs/base/common/network.ts#L9-L79
  */
- export async function readClipboard(): Promise<string> {
-    return vscode.env.clipboard.readText();
+ export const enum UriScheme {
+    File = "file",
+    VscodeRemote = "vscode-remote",
 }
 
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * Compute the relative path of two uris.
+ *
+ * This differs from the vscode version is that this doesn't normalize slash for Windows; therefore,
+ * we can use posix path to compute relative instead of host machine specific path.
+ *
+ * Modified from https://github.com/microsoft/vscode/blob/f74e473238aca7b79c08be761d99a0232838ca4c/src/vs/base/common/resources.ts#L228-L249
+ */
+function relativePath(from: vscode.Uri, to: vscode.Uri, ignorePathCasing = false): string | undefined {
+	if (from.scheme !== to.scheme || !String.Equals(from.authority, to.authority, true)) return undefined;
+	if (from.scheme === UriScheme.File) return path.posix.relative(uriToFsPath(from), uriToFsPath(to));
+	let fromPath = from.path || "/";
+	const toPath = to.path || "/";
+	if (ignorePathCasing) {
+		// make casing of fromPath match toPath
+		const i = String.IndexOfDifference(fromPath, toPath, true);
+		fromPath = toPath.slice(0, i) + fromPath.slice(i);
+	}
+	return path.posix.relative(fromPath, toPath);
+}
 
 
 
@@ -1126,7 +872,7 @@ export function getProjects(itemsSorted: any[]): Promise<{}> {
 export class FileInfo {
 	isFile: boolean;
 	constructor(public filePath: string, public file: string) {
-	this.isFile = statSync(path.join(filePath, file)).isFile();
+		this.isFile = statSync(path.join(filePath, file)).isFile();
 	}
 }
 
@@ -1140,9 +886,7 @@ export class FileInfo {
  * @return {*}  {(string | undefined)}
  */
  export function getFilePath(uri?: vscode.Uri): string | undefined {
-    let filePath: string | undefined;
-    uri ? (filePath = uri.fsPath) : (filePath = getDocumentUri()?.fsPath);
-    return filePath;
+    return (uri)? uri.fsPath : getDocumentUri()?.fsPath;
 }
 
 /**
@@ -1172,13 +916,9 @@ export class FileInfo {
  * @param predicate
  */
 export async function findParent(cwd: string, predicate: (dir: string) => Promise<boolean>): Promise<string | null> {
-	if (await predicate(cwd)) {
-	return cwd
-	}
+	if (await predicate(cwd)) return cwd
 	const parent = path.dirname(cwd)
-	if (parent === cwd) {
-	return null
-	}
+	if (parent === cwd) return null
 	return findParent(parent, predicate)
 }
 
@@ -1313,13 +1053,8 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
  * @returns The configured root location as a string.
  */
  function getRootLocations(config: vscode.WorkspaceConfiguration): string[] {
-    let r: string[] | undefined = config.get("projectsRootLocation");
-    let root: string[];
-    if (r === undefined || r.length === 0) {
-        root = [os.homedir()];
-    } else {
-        root = r;
-    }
+    const r: string[] | undefined = config.get("projectsRootLocation");
+	const root: string[] = (r !== undefined && r.length !== 0)? r : [os.homedir()];
     console.log(`Root locations: ${root}`);
     return root;
 }
@@ -1337,9 +1072,7 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
 ): Promise<string> {
     let choices: string[] = getRootLocations(config);
     // If there's only one choice don't prompt for the users input
-    if (choices.length === 1) {
-        return choices[0];
-    }
+    if (choices.length === 1) return choices[0];
 
     // Create a promise from the quick pick
     return await showQuickPick(choices, "Select root location");
@@ -1356,29 +1089,10 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
  * @returns The configured location for core workspace files.
  */
  export  function getWSLocation(config: vscode.WorkspaceConfiguration): string {
-    let d: string | undefined = config.get("workspaceFilesLocation");
-    let dir: string;
-    if (d === undefined || d === "") {
-        dir = os.homedir + path.sep + "ws";
-    } else {
-        dir = d;
-    }
-    return dir;
+    const d: string | undefined = config.get("workspaceFilesLocation");
+    return (d !== undefined && d !== "")? d : os.homedir + path.sep + "ws";
 }
 
-
-// /**
-//  * Get the code workspace file path for the given repo.
-//  *
-//  * @param repo The repo to get the code workspace file path for.
-//  * @returns The code workspace file path as a string.
-//  */
-//  function getCodeWorkspacePath(
-//     config: vscode.WorkspaceConfiguration,
-//     repo: github.Repo
-// ): string {
-//     return [getWSLocation(config), repo.name + ".code-workspace"].join(path.sep);
-// }
 
 
 
@@ -1389,11 +1103,34 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
  * @param filePath The file path to be opened in the current window.
  */
 export async function openInThisWindow(filePath: string) {
-    await vscode.commands.executeCommand(
-        "vscode.openFolder",
-        vscode.Uri.file(filePath),
-        false
-    );
+    await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(filePath), false);
+}
+
+
+
+export function getWorkspaceFoldersPaths(): string[] {
+	return (vscode.workspace.workspaceFolders?.map((wf) => wf.uri.path) ?? []);
+}
+
+
+export function hasWorkspaceAnyFolder(): boolean {
+	return !!(vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length);
+}
+
+
+export function hasWorkspaceMoreThanOneFolder(): boolean {
+	return !!(vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 1);
+}
+
+
+export function getNameFromUri(uri: vscode.Uri): string {
+	return uri.path.split("/").pop() as string;
+}
+
+
+
+export function isDirectory(uri: vscode.Uri): boolean {
+	return !getNameFromUri(uri).includes(".");
 }
 
 
@@ -1408,648 +1145,65 @@ export async function openInThisWindow(filePath: string) {
 
 
 
+// async function getUrisOrFetchIfEmpty(
+// 	uris?: vscode.Uri[]
+//   ): Promise<vscode.Uri[]> {
+// 	return uris && uris.length ? uris : await fetchUris();
+//   }
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const vscodeVariables = require('vscode-variables');
-
-export class Command {
-    constructor(
-        private readonly exe: string,
-        private readonly args: object | undefined,
-        private readonly repeat: number,
-        private readonly onSuccess: Array<Command> | undefined,
-        private readonly onFail: Array<Command> | undefined,
-        private readonly variableSubstitution: boolean
-    ) {}
-
-    public async execute() {
-        try {
-            if (this.args) {
-                let args;
-                if (this.variableSubstitution) {
-                    args = this.substituteVariables(this.args);
-                } else {
-                    args = this.args;
-                }
-                for(let i = 0; i < this.repeat; i++) {
-                    await vscode.commands.executeCommand(this.exe, args);
-                }
-            } else {
-                for(let i = 0; i < this.repeat; i++) {
-                    await vscode.commands.executeCommand(this.exe);
-                }
-            }
-            if (this.onSuccess) {
-                for (let command of this.onSuccess) {
-                    await command.execute();
-                }
-            }
-        } catch(e) {
-            if (this.onFail) {
-                for (let command of this.onFail) {
-                    await command.execute();
-                }
-            } else {
-                throw(e);
-           }
-        }
-    }
-
-    private substituteVariables(args: any ): any {
-        if (typeof args === 'string') {
-            args = args.replace(/\${userHome}/g, process.env['HOME'] || '');
-            // return vscodeVariables(args);
-        } else if (typeof args === 'object') {
-            let rt: any = {};
-            for(const key of Object.keys(args)) {
-                rt[key] = this.substituteVariables(args[key]);
-            }
-            return rt;
-        } else {
-            return args;
-        }
-    }
-    
-}
-
-
-export class MultiCommand {
-    constructor(
-        readonly id: string,
-        readonly label: string | undefined,
-        readonly description: string | undefined,
-        readonly interval: number | undefined,
-        readonly sequence: Array<Command>,
-        readonly languages: Array<string> | undefined
-    ) {}
-
-    public async execute() {
-        for (let command of this.sequence) {
-            await command.execute();
-            await delay(this.interval || 0);
-        }
-    }
-}
-
-function delay(ms: number) {
-    if (ms > 0) return new Promise((resolve) => setTimeout(resolve, ms));
-	else return Promise.resolve();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export interface ExecuteControllerOptions { openFileInEditor?: boolean; }
-// export interface CommandConstructorOptions { relativeToRoot?: boolean; }
-// export interface Command { execute(uri?: vscode.Uri): Promise<void>; }
-
-
-// export interface DialogOptions {
-//     prompt?: string;
-//     uri?: vscode.Uri;
-// }
-
-// export interface ExecuteOptions {
-//     fileItem: FileItem;
-// }
-
-// export interface GetSourcePathOptions {
-//     relativeToRoot?: boolean;
-//     ignoreIfNotExists?: boolean;
-//     uri?: vscode.Uri;
-// }
-
-// export interface FileController {
-//     showDialog(options?: DialogOptions): Promise<FileItem | FileItem[] | undefined>;
-//     execute(options: ExecuteOptions): Promise<FileItem>;
-//     openFileInEditor(fileItem: FileItem): Promise<vscode.TextEditor | undefined>;
-//     closeCurrentFileEditor(): Promise<unknown>;
-//     getSourcePath(options?: GetSourcePathOptions): Promise<string>;
-// }
-
-// export abstract class BaseCommand<T extends FileController> implements Command {
-//     constructor(protected controller: T, readonly options?: CommandConstructorOptions) {}
-
-//     public abstract execute(uri?: vscode.Uri): Promise<void>;
-
-//     protected async executeController(
-//         fileItem: FileItem | undefined,
-//         options?: ExecuteControllerOptions
-//     ): Promise<void> {
-//         if (fileItem) {
-//             const result = await this.controller.execute({ fileItem });
-//             if (options?.openFileInEditor) {
-//                 await this.controller.openFileInEditor(result);
-//             }
-//         }
-//     }
-// }
-
-
-// export class FileItem {
-//     // private SourcePath: Uri;
-//     // private TargetPath: Uri | undefined;
-
-//     // constructor(sourcePath: Uri | string, targetPath?: Uri | string, private IsDir: boolean = false) {
-//     //     this.SourcePath = this.toUri(sourcePath);
-//     //     if (targetPath !== undefined) {
-//     //         this.TargetPath = this.toUri(targetPath);
-//     //     }
-//     // }
-
-//     // get name(): string {
-//     //     return path.basename(this.SourcePath.path);
-//     // }
-
-//     // get path(): Uri {
-//     //     return this.SourcePath;
-//     // }
-
-//     // get targetPath(): Uri | undefined {
-//     //     return this.TargetPath;
-//     // }
-
-//     // get exists(): boolean {
-//     //     if (this.targetPath === undefined) {
-//     //         return false;
-//     //     }
-//     //     return fs.existsSync(this.targetPath.fsPath);
-//     // }
-
-//     // get isDir(): boolean {
-//     //     return this.IsDir;
-//     // }
-
-//     // public async move(): Promise<FileItem> {
-//     //     assertTargetPath(this.targetPath);
-
-//     //     const edit = new WorkspaceEdit();
-//     //     edit.renameFile(this.path, this.targetPath, { overwrite: true });
-//     //     await workspace.applyEdit(edit);
-
-//     //     this.SourcePath = this.targetPath;
-//     //     return this;
-//     // }
-
-//     // public async duplicate(): Promise<FileItem> {
-//     //     assertTargetPath(this.targetPath);
-
-//     //     await workspace.fs.copy(this.path, this.targetPath, { overwrite: true });
-
-//     //     return new FileItem(this.targetPath, undefined, this.isDir);
-//     // }
-
-//     // public async remove(): Promise<FileItem> {
-//     //     const edit = new WorkspaceEdit();
-//     //     edit.deleteFile(this.path, { recursive: true, ignoreIfNotExists: true });
-//     //     await workspace.applyEdit(edit);
-//     //     return this;
-//     // }
-
-//     // public async create(mkDir?: boolean): Promise<FileItem> {
-//     //     assertTargetPath(this.targetPath);
-
-//     //     if (this.exists) {
-//     //         await workspace.fs.delete(this.targetPath, { recursive: true });
-//     //     }
-
-//     //     if (mkDir === true || this.isDir) {
-//     //         await workspace.fs.createDirectory(this.targetPath);
-//     //     } else {
-//     //         await workspace.fs.writeFile(this.targetPath, new Uint8Array());
-//     //     }
-
-//     //     return new FileItem(this.targetPath, undefined, this.isDir);
-//     // }
-
-//     // private toUri(uriOrString: Uri | string): Uri {
-//     //     return uriOrString instanceof Uri ? uriOrString : Uri.file(uriOrString);
-//     // }
+// async function fetchUris(include: vscode.GlobPattern, exclude: vscode.GlobPattern): Promise<vscode.Uri[]> {
+// 	try {
+// 	return await vscode.workspace.findFiles(include, exclude);
+// 	} catch (error) {
+// 		Debug.LogException(error as Exception);
+// 		return Promise.resolve([]);
+// 	}
 // }
 
 
 
 
+// function filterFile(filename: string, config: Config) {
+// 	if (config.showHiddenFiles) {
+// 	return true;
+// 	}
 
+// 	return !isFileHidden(filename, config);
+// }
 
+// function isFileHidden(filename: string, config: Config) {
+// 	return filename.startsWith('.') || isFileHiddenByVsCode(filename, config);
+// }
 
 
+// // files.exclude has the following form. key is the glob
+// // {
+// //    "**//*.js": true
+// //    "**//*.js": true "*.git": true
+// // }
+// function isFileHiddenByVsCode(filename: string, config: Config) {
+// 	if (!config.filesExclude) {
+// 	return false;
+// 	}
 
+// 	for (const key of Object.keys(config.filesExclude)) {
+// 	if (minimatch(filename, key)) {
+// 		return true;
+// 	}
+// 	}
+// 	return false;
+// }
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-export interface IProgressStatus {
-	steps: number;
-	stepsMax: number;
-	readonly increment: number;
-	readonly progress: number;
-  }
-  
-  
-  export class ProgressStatus implements IProgressStatus {
-	private stepsIntern: number;
-	private stepsMaxIntern: number;
-	private incrementIntern: number = 0;
-	constructor(steps: number, stepsMax: number) {
-	  this.stepsIntern = steps;
-	  this.stepsMaxIntern = stepsMax;
-	  this.updateIncrement(steps, this.stepsMax);
-	}
-	public get steps(): number { return this.stepsIntern; }
-	public set steps(val: number) {
-	  this.updateIncrement(val, this.stepsMax);
-	  this.stepsIntern = val;
-	}
-
-	public get stepsMax(): number { return this.stepsMaxIntern; }
-	public set stepsMax(val: number) {
-	  this.updateIncrement(this.steps, val);
-	  this.stepsMaxIntern = val;
-	}
-
-	public get increment(): number { return this.incrementIntern; }
-	public get progress(): number { return this.steps / this.stepsMax; }
-
-	private updateIncrement(steps: number, max: number) {
-	  let progressNew = steps / max;
-	  let progressOld = this.steps / this.stepsMax;
-	  this.incrementIntern = progressNew - progressOld;
-	}
-  }
-
-  
-export type visualizerType = 'dialogBox' | 'statusBar';
-
-interface IProgressVisualizer {
-  progress(status: IProgressStatus): void;
-  close(): void;
-}
-
-// Progress class
-export class Progress {
-	// Registered visualizers
-	private static progressVisualizers = new Map<string, IProgressVisualizer>();
-	public static autoCloseTimeout = 2000;
-
-	public static showDialogBox<T extends IProgressStatus>(
-	  id: string,
-	  title: string,
-	  progressFormatter: (status: T) => string,
-	  cancellationHandler?: () => void
-	) {
-	  ProgressDialogBox.show<T>(id, title, progressFormatter, cancellationHandler);
-	}
-  
-	public static showStatusBar<T extends IProgressStatus>(
-	  id: string,
-	  title: string,
-	  progressFormatter: (status: T) => string,
-	  cancellationHandler?: () => void,
-	  icon?: Icon
-	) {
-	  ProgressStatusBarItem.show(id, title, progressFormatter, cancellationHandler, icon);
-	}
-  
-	public static progress(id: string, status: IProgressStatus) {
-	  this.progressVisualizers.get(id)?.progress(status);
-	}
-  
-	public static close(id: string) {
-	  const handler = this.progressVisualizers.get(id);
-	  if (handler) {
-		handler.close();
-		this.remove(id);
-	  }
-	}
-  
-	private static remove(id: string) {
-	  this.progressVisualizers.delete(id);
-	}
-  
-	public static addVisualizer(id: string, visualizer: IProgressVisualizer) {
-	  this.progressVisualizers.set(id, visualizer);
-	}
-  
-  }
-
-
-
-
-
-
-
-
-  
-// DialogBox Variant
-class ProgressDialogBox<T extends IProgressStatus> implements IProgressVisualizer {
-	private lastProgress = 0;
-	constructor(
-	  private readonly progressHandler: (increment: number, message: string) => void,
-	  private readonly progressFormatter: (status: T) => string,
-	  private readonly closeHandler: () => void
-	) {}
-  
-	public progress(status: T) {
-	  let increment = status.progress > this.lastProgress ? status.increment : 0;
-	  this.lastProgress = status.progress;
-	  let message = this.progressFormatter(status);
-	  this.progressHandler(100 * increment, message);
-	}
-  
-	public close() { this.closeHandler(); }
-  
-	public static show<T extends IProgressStatus>(
-	  id: string,
-	  title: string,
-	  progressFormatter: (status: T) => string,
-	  cancellationHandler?: () => void
-	) {
-	  vscode.window.withProgress(
-		{
-		  location: vscode.ProgressLocation.Notification,
-		  title: title,
-		  cancellable: cancellationHandler != undefined
-		},
-		(progress, token) => {
-		  return new Promise<void>((resolve) => {
-			// Final no response timeout:
-			let createTimeout = (time: number) => setTimeout(resolve, time);
-			let timeout = createTimeout(30000);
-			token.onCancellationRequested(() => {
-			  clearTimeout(timeout);
-			  cancellationHandler?.();
-			  resolve();
-			});
-			
-			const progressHandler = (increment: number, message: string) => {
-			  clearTimeout(timeout);
-			  timeout = createTimeout(30000);
-			  progress.report({ increment: increment, message: message });
-			};
-			const closeHandler = () => {
-			  clearTimeout(timeout);
-			  timeout = createTimeout(Progress.autoCloseTimeout);
-			};
-			Progress.addVisualizer(id, new ProgressDialogBox(progressHandler, progressFormatter, closeHandler));
-		  });
-		}
-	  );
-	}
-  }
-  
-  // ProgressBar Variant
-  class ProgressStatusBarItem<T extends IProgressStatus> implements IProgressVisualizer {
-	private statusBarItem: vscode.StatusBarItem;
-  
-	constructor(
-	  private readonly title: string,
-	  private readonly progressFormatter: (status: T) => string,
-	  private readonly closeHandler?: () => void,
-	  private readonly maxSize?: number,
-	  private readonly icon?: Icon
-	) {
-	  this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-	}
-  
-	public progress(status: T) {
-	  this.statusBarItem.text = `${this.getIconPlaceholder()} ${this.title} (${status.steps}/${status.stepsMax}) ${this.getAsciiProgress(status)}`.trimStart();
-	  this.statusBarItem.tooltip = this.progressFormatter(status);
-	  this.statusBarItem.show();
-	}
-  
-	public close() {
-	  this.closeHandler?.();
-	  setTimeout(this.statusBarItem.hide, Progress.autoCloseTimeout);
-	}
-  
-	private getAsciiProgress(status: T) {
-	  let barCount = Math.min(status.stepsMax, this.maxSize || 15);
-	  let preCount = Math.floor(status.progress * barCount);
-	  let remCount = Math.floor((1 - status.progress) * barCount);
-	  let midCount = barCount - preCount - remCount;
-	  let pre = '█'.repeat(preCount);
-	  let mid = '▓'.repeat(midCount);
-	  let rem = '▒'.repeat(remCount);
-	  return `${pre}${mid}${rem}`;
-	}
-  
-	private getIconPlaceholder() {
-	  return this.icon ? this.icon.toPlaceholder() : '';
-	}
-  
-	public static show<T extends IProgressStatus>(
-	  id: string,
-	  title: string,
-	  progressFormatter: (status: T) => string,
-	  cancellationHandler?: () => void,
-	  icon?: Icon
-	) {
-	  Progress.addVisualizer(
-		id,
-		new ProgressStatusBarItem<T>(title, progressFormatter, cancellationHandler, undefined, icon)
-	  );
-	}
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class FileItem implements vscode.QuickPickItem {
-
-	label: string;
-	description: string;
-
-	constructor(public base: vscode.Uri, public uri: vscode.Uri) {
-		this.label = path.basename(uri.fsPath);
-		this.description = path.dirname(path.relative(base.fsPath, uri.fsPath));
-	}
-}
-
-class MessageItem implements vscode.QuickPickItem {
-
-	label: string;
-	description = '';
-	detail: string;
-
-	constructor(public base: vscode.Uri, public message: string) {
-		this.label = message.replace(/\r?\n/g, ' ');
-		this.detail = base.fsPath;
-	}
-}
-
-  
-async function pickFile() {
-	const cp = await import('child_process');
-	const disposables: vscode.Disposable[] = [];
-	try {
-		return await new Promise<vscode.Uri | undefined>((resolve, reject) => {
-			const input = vscode.window.createQuickPick<FileItem | MessageItem>();
-			input.placeholder = 'Type to search for files';
-			let rgs: import('child_process').ChildProcess[] = [];
-			disposables.push(
-				input.onDidChangeValue(value => {
-					rgs.forEach(rg => rg.kill());
-					if (!value) {
-						input.items = [];
-						return;
-					}
-					input.busy = true;
-					const cwds = vscode.workspace.workspaceFolders?.map(f => f.uri.fsPath) ?? [process.cwd()];
-					const q = process.platform === 'win32' ? '"' : '\'';
-					rgs = cwds.map(cwd => {
-						const rg = cp.exec(`rg --files -g ${q}*${value}*${q}`, { cwd }, (err, stdout) => {
-							const i = rgs.indexOf(rg);
-							if (i !== -1) {
-								if (rgs.length === cwds.length) input.items = [];
-								if (!err) input.items = input.items.concat(stdout
-									.split('\n').slice(0, 50)
-									.map(relative => new FileItem(vscode.Uri.file(cwd), vscode.Uri.file(path.join(cwd, relative))))
-								);
-								if (err && !(<any>err).killed && (<any>err).code !== 1 && err.message) {
-									input.items = input.items.concat([new MessageItem(vscode.Uri.file(cwd), err.message)]);
-								}
-								rgs.splice(i, 1);
-								if (!rgs.length) input.busy = false;
-							}
-						});
-						return rg;
-					});
-				}),
-
-
-
-				input.onDidChangeSelection(items => {
-					const item = items[0];
-					if (item instanceof FileItem) {
-						resolve(item.uri);
-						input.hide();
-					}
-				}),
-
-
-
-				input.onDidHide(() => {
-					rgs.forEach(rg => rg.kill());
-					resolve(undefined);
-					input.dispose();
-				})
-			);
-			input.show();
-		});
-	} finally {
-		disposables.forEach(d => d.dispose());
-	}
+export function endWithSlash(path: string): string {
+	return (path.charCodeAt(path.length - 1) === CharCode.Slash)? path : path+'/';
 }
 
 
@@ -2059,33 +1213,186 @@ async function pickFile() {
 
 
 
+// export function isWindows(): boolean {
+// 	return process.platform === "win32";
+//   }
 
 
-export async function SearchBoxInput(message:string, placeHolder:string = 'Type to search') {
-	const InputBox = vscode.window.createInputBox();
-	InputBox.prompt = message;
-	InputBox.placeholder = placeHolder;
-	InputBox.ignoreFocusOut = true;
 
-	const disposables: vscode.Disposable[] = [];
-	try { return await new Promise<string | undefined>((resolve) => {
-		disposables.push(
-			InputBox.onDidAccept(() => {
 
-			}),
-			InputBox.onDidChangeValue((value) => {
 
-			}),
-			InputBox.onDidHide(() => {
-				resolve(undefined);
-				InputBox.dispose();
-			}),
+  
+
+
+
+/**
+ * Replace ${workspaceRoot} with workfolder.uri.path
+ *
+ * @param mappings
+ * @param workfolder
+ */
+ export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], workfolder?: vscode.WorkspaceFolder): KeyValPair<string,string>[] {
+	const rootPath = workfolder?.uri.path;
+	if (rootPath) {
+		// Replace placeholder with workspace folder
+		return mappings.map(({ Key, Val }) => ({
+			Key, Val: replaceWorkspaceFolderWithRootPath(Val, rootPath),
+		}));
+	} else {
+		// Filter items out which contain a workspace root
+		return mappings.filter(({ Val }) => !valueContainsWorkspaceFolder(Val));
+	}
+}
+
+/**
+ * Replaces both placeholders with the rootpath
+ * - ${workspaceRoot}    // old way and only legacy support
+ * - ${workspaceFolder}  // new way
+ *
+ * @param value
+ * @param rootPath
+**/
+function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
+	return value.replace('${workspaceRoot}', rootPath).replace('${workspaceFolder}', rootPath);
+}
+
+function valueContainsWorkspaceFolder(value: string): boolean {
+	return value.includes('${workspaceFolder}') || value.includes('${workspaceRoot}');
+}
+
+
+
+ export function getWorkspaceRelativePath( filePath: string, pathToResolve: string) {
+	// In case the user wants to use ~/.prettierrc on Mac
+	if (process.platform === 'darwin' && pathToResolve.startsWith('~') && homedir()) {
+		return pathToResolve.replace(/^~(?=$|\/|\\)/, homedir());
+	} else if (vscode.workspace.workspaceFolders) {
+		const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+		return ((folder)
+			? (path.isAbsolute(pathToResolve))
+				? pathToResolve
+				: path.join(folder.uri.fsPath, pathToResolve)
+			: undefined
 		);
-		
-	
-	
-	
-	
-	});
-	} finally { disposables.forEach(d => d.dispose()); }
+	} else return undefined;
+  }
+
+
+/**
+ * Get all symbols for active document.
+ */
+export async function getSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]> {
+	let symbols: vscode.DocumentSymbol[]|null = null;
+
+	for (let timeout = 800; (timeout <= 2000); timeout+=600) {
+		if (!symbols || symbols.length === 0) symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
+		if (!symbols || symbols.length === 0) await sleep(timeout);
+		else break;
+	}
+
+	return symbols || [];
 }
+
+/**
+ * Recursively walk through document symbols.
+ */
+export function forEachSymbol(f: (symbol: vscode.DocumentSymbol)=> void, symbols: vscode.DocumentSymbol[]): void {
+	for (const symbol of symbols) {
+		f(symbol);
+		if (symbol.children.length) {
+			forEachSymbol(f, symbol.children);
+		}
+	}
+}
+
+/**
+ * Reveal symbol in editor.
+ *
+ * - Briefly highlight the entire line
+ * - Move cursor to the symbol position
+ */
+ export async function goToSymbol(editor: vscode.TextEditor | undefined, symbolName: string): Promise<void> {
+	if (!editor) {
+		vscode.window.showErrorMessage('No TextEditor provided.');
+		return;
+	}
+	const symbols = await getSymbols(editor.document);
+
+	let foundSymbol: vscode.DocumentSymbol | undefined;
+	forEachSymbol(symbol => {
+		if (symbol.name === symbolName) {
+			foundSymbol = symbol;
+		}
+	}, symbols);
+
+	if (foundSymbol) {
+		editor.selection = new vscode.Selection(foundSymbol.range.start, foundSymbol.range.start);
+		editor.revealRange(foundSymbol.range, vscode.TextEditorRevealType.AtTop);
+		// Highlight for a short time revealed range
+		const range = new vscode.Range(foundSymbol.range.start.line, 0, foundSymbol.range.start.line, 0);
+		const lineHighlightDecorationType = vscode.window.createTextEditorDecorationType({
+			backgroundColor: '#ffb12938',
+			isWholeLine: true,
+		});
+		editor.setDecorations(lineHighlightDecorationType, [range]);
+		setTimeout(() => editor.setDecorations(lineHighlightDecorationType, []), 700);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   export function prepareEdit(
+//     cb: (
+//       editBuilder: EditorBuilder,
+//       selection: Selection,
+//       lines: Array<TextLine>
+//     ) => void,
+//     withSortSelections: boolean = true ) {
+//   const activeTextEditor = Window.activeTextEditor;
+//   activeTextEditor.edit((editBuilder) => {
+//     let selections = activeTextEditor.selections;
+//     if(withSortSelections){
+//       selections = sortSelections(selections);
+//     }
+//     selections.forEach((selection) => {
+//       cb(new EditorBuilder(editBuilder), selection, getLines(selection));
+//     });
+//   });
+// }
+
+
+
+
+
+
+
+
+
+
+

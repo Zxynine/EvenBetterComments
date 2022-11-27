@@ -7,6 +7,7 @@ import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
 import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { LanguageLoader } from './providers/LanguageProvider';
 import { StandardLineTokens } from './Tokenisation/tokenisation';
+import { Configuration } from './configuration';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
 	console.error("HyperScopes: "+message, ...optionalParams, err);
@@ -14,7 +15,8 @@ function HyperScopeError(err : any, message : string, ...optionalParams : any[])
 
 
 export function LoadDocumentsAndGrammer() {
-	LanguageLoader.LoadLanguages();
+	// LanguageLoader.LoadLanguages();
+	Configuration.UpdateLanguagesDefinitions();
 	TMRegistry.ReloadGrammar();
 	DocumentLoader.reloadDocuments();
 }
@@ -146,54 +148,12 @@ export class DocumentLoader {
 
 abstract class DisposableContext implements vscode.Disposable {
 	protected readonly subscriptions: vscode.Disposable[] = [];
-	public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
+	public readonly dispose = () =>	{
+		this.subscriptions.forEach((s) => s.dispose());
+		this.subscriptions.length = 0;
+	}
 }
 
-
-
-// //TODO: add notification delay
-
-// export class DocumentMonitor extends DisposableContext {
-// 	// private readonly subscriptions: vscode.Disposable[] = [];
-// 	// public readonly dispose = () =>	this.subscriptions.forEach((s) => s.dispose());
-
-// 	// Stores the state for each line
-// 	public readonly document: vscode.TextDocument;
-
-// 	//Tools
-// 	private static readonly ChangeSorter = (ChangeL:ChangeEvent, ChangeR:ChangeEvent) => ChangeL.range.start.isAfter(ChangeR.range.start) ? 1 : -1;
-// 	private static readonly GetTextLinecount = (text : string) => text.match(/[\r\n]+/g)?.length ?? 0;
-// 	private static readonly GetRangeLinecount = (range : vscode.Range) => (range.end.line - range.start.line);
-
-
-// 	public constructor(doc: vscode.TextDocument) { super();
-// 		this.document = doc;
-// 		/* Store content changes. Will be clear when calling `getScopeAt()`. */
-// 		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange));
-// 		// this.parseEntireDocument();
-// 	}
-
-// 	private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
-// 		if (event.document == this.document && event.contentChanges.length) { //Validates changes
-// 			this.applyChanges([...event.contentChanges].sort(DocumentMonitor.ChangeSorter)); //Sorts changes to apply so that line changes can just reparse the rest of the doc.
-// 		}
-// 	}
-
-
-// 	private applyChanges(sortedChanges: readonly vscode.TextDocumentContentChangeEvent[]) {
-// 		for(let change of sortedChanges){
-// 			const changeEndLine = change.range.end.line;
-// 			// if (insert line count !== replaced content line count) then: parse the rest of document and return;
-// 			if((DocumentMonitor.GetRangeLinecount(change.range) !== DocumentMonitor.GetTextLinecount(change.text))){
-// 				// this.parseRange(new vscode.Range(changeEndLine+1, 0 , this.document.lineCount, 0));
-// 				return;
-// 			} else {
-
-// 			}
-// 		}
-// 	}
-
-// }
 
 
 
@@ -211,6 +171,8 @@ abstract class DisposableContext implements vscode.Disposable {
 //TODO: look into content changes array and see what its used or if its needed
 
 export class DocumentController extends DisposableContext {
+	private readonly SortedChangeEvent = new vscode.EventEmitter<readonly vscode.TextDocumentContentChangeEvent[]>();
+
 	// Stores the state for each line
 	private readonly grammar: IGrammar;
 	public readonly document: vscode.TextDocument;
@@ -239,6 +201,7 @@ export class DocumentController extends DisposableContext {
 
 
 	private applyChanges(sortedChanges: readonly vscode.TextDocumentContentChangeEvent[]) {
+		this.SortedChangeEvent.fire(sortedChanges);
 		for(let change of sortedChanges){
 			const changeEndLine = change.range.end.line;
 			// compare ruleStack
@@ -252,7 +215,8 @@ export class DocumentController extends DisposableContext {
 			}
 		}
 	}
-
+		
+	public onSortedTextDocumentChange = this.SortedChangeEvent.event;
 	//...............................................................................
 	
 	public refresh() {

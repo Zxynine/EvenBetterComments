@@ -531,6 +531,10 @@ namespace CharCodes {
 		return CharCodes.IsDigit(code) || CharCodes.IsLetter(code);
 	}
 
+	export function IsSlash(code : number) : bool {
+    	return code === CharCode.ForwardSlash || code === CharCode.Backslash;
+	}
+
 
 
 	export function ParseHexDigit(code : number) {
@@ -551,6 +555,16 @@ namespace CharCodes {
 	export function parseHexDigitDouble(codeA : number, codeB : number) {
 		return (CharCodes.ParseHexDigit(codeA) << 4) + CharCodes.ParseHexDigit(codeB);
 	}
+
+
+
+
+
+	export function IsAny(code : number, ...args : CharCode[]) {
+		for (const Char of args) if (code === Char) return true;
+		return false;
+	}
+
 
 
 

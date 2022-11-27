@@ -45,7 +45,7 @@ export class LanguageLoader {
 	public static readonly languageToDefinition = new Map<string, IExtensionLanguage>();
 	public static readonly scopeNameToDefinition = new Map<string, IExtensionGrammar>();
 
-	public static LoadLanguages() {
+	public static async LoadLanguages() {
 		console.log("EvenBetterComments: Language Definitions Updated!");
 		LanguageLoader.scopeNameToPath.clear();
 		LanguageLoader.scopeNameToLanguage.clear();

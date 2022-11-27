@@ -401,12 +401,18 @@ export class TokenTools {
 		const count = (tokens.length >>> 1);
 		let metaResult = 0;
 		for (let i = 0; i<count; i++) metaResult |= tokens[(i<<1)+1];
-		const IsolatedTypes = TokenMetadata.getTokenType(metaResult);
-		return (IsolatedTypes & desiredType) === desiredType;
-
+		return TokenMetadata.ContainsTokenType(metaResult, desiredType);
 	}
+	
 
-
+	public static tokenTypeCount(tokens: IToken2Array, desiredType: StandardTokenType) {
+		const count = (tokens.length >>> 1);
+		let tokenCount = 0;
+		for (let i = 0; i<count; i++) {
+			if ((TokenMetadata.getTokenType(tokens[(i<<1)+1]) & desiredType) === desiredType) tokenCount++;
+		}
+		return tokenCount;
+	}
 	
 
 	public static _equals(_a: ITokenArrayRange, _b: ITokenArrayRange) {
@@ -650,12 +656,46 @@ export abstract class AbstractTokenArray {
 	 */
 	public IndexOf(offset: number): number { return AbstractTokenArray.findIndexInTokensArray(this._tokens, offset); }
 	public Contains(tokenType:StandardTokenType) { return TokenMetadata.ContainsTokenType(this.LineMetadata, tokenType); }
+	public ContainsBefore(offset: number): bool {
+		let metaResult = 0;
+		for (let i = 0; i<this._tokensCount; i++) {
+			if (this.EndOffset(i) >= offset) break;
+			else metaResult |= this._tokens[(i<<1)+1];
+		}
+		return TokenMetadata.ContainsTokenType(this.LineMetadata, metaResult);
+	}
+
+
 	public FindIndexOf(tokenType:StandardTokenType) {
 		for (let i = 0; i<this._tokensCount; i++) {
 			if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) == tokenType) return i;
 		}
 		return -1;
 	}
+
+	public FindRangesOf(tokenType:StandardTokenType) {
+		const RangeArray = new Array<Range>();
+		let startPos: Position|undefined = undefined;
+
+		for (let i = 0; i<this._tokensCount; i++) {
+			if (startPos !== undefined) {
+				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) !== tokenType) {
+					RangeArray.push(new Range(startPos, new Position(0, this.StartOffset(i))))
+					startPos = undefined;
+				}
+			} else {
+				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) === tokenType) {
+					startPos = new Position(0, this.StartOffset(i));
+				}
+			}
+		}
+
+		if (startPos !== undefined) {
+			RangeArray.push(new Range(startPos, new Position(0, this._tokensEndOffset)))
+		}
+		return RangeArray;
+	}
+
 
 	/**
 	 * Find the token containing offset `offset` //Talking about column offset.

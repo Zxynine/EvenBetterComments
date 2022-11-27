@@ -33,6 +33,14 @@ declare global {
 		 * @param {Func<[T], boolean>} predicate - find calls predicate once for each element of the array, in decending order, until it finds one where predicate returns true. If such an element is found, find immediately returns that element value. Otherwise, find returns undefined.
 		**/
 		last<T>(this:Array<T>, predicate:Func<[T], boolean>) : T|undefined;
+		
+		firstOrDefault<T, NotFound = T>(array: Array<T>, notFoundValue: NotFound): T | NotFound;
+		firstOrDefault<T>(array: Array<T>): T | undefined;
+		firstOrDefault<T, NotFound = T>(array: Array<T>, notFoundValue?: NotFound): T | NotFound | undefined;
+
+		lastOrDefault<T, NotFound = T>(array: Array<T>, notFoundValue: NotFound): T | NotFound;
+		lastOrDefault<T>(array: Array<T>): T | undefined;
+		lastOrDefault<T, NotFound = T>(array: Array<T>, notFoundValue?: NotFound): T | NotFound | undefined;
 
 		firstIndex<T>(this:Array<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
 		lastIndex<T>(this:Array<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
@@ -73,6 +81,14 @@ declare global {
 		 * @param {Func<[T], boolean>} predicate - find calls predicate once for each element of the array, in decending order, until it finds one where predicate returns true. If such an element is found, find immediately returns that element value. Otherwise, find returns undefined.
 		**/
 		last<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>) : T|undefined;
+
+		firstOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue: NotFound): T | NotFound;
+		firstOrDefault<T>(array: ReadonlyArray<T>): T | undefined;
+		firstOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined;
+
+		lastOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue: NotFound): T | NotFound;
+		lastOrDefault<T>(array: ReadonlyArray<T>): T | undefined;
+		lastOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined;
 
 		firstIndex<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
 		lastIndex<T>(this:ReadonlyArray<T>, predicate:Func<[T], boolean>, failReturn?:number) : number;
@@ -156,7 +172,6 @@ Array.prototype.flatMappedFilter = function <T,TR>(this : Array<T>, filter:Func<
 
 
 
-
 Array.prototype.first = function <T>(this : Array<T>, predicate:Func<[T], boolean>) : T|undefined {
 	for (let i=0; i<this.length; i++) {
 		if (predicate(this[i])) return this[i];
@@ -184,6 +199,18 @@ Array.prototype.lastIndex = function <T>(this : Array<T>, predicate:Func<[T], bo
 	}
 	return failReturn;
 }
+
+
+Array.prototype.firstOrDefault = function <T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
+	return array.length > 0 ? array[0] : notFoundValue;
+}
+
+Array.prototype.lastOrDefault = function <T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
+	return array.length > 0 ? array[array.length - 1] : notFoundValue;
+}
+
+
+
 
 Array.prototype.count = function <T>(this : Array<T>, conditional:Action<[T]>) : number {
 	let count : number = 0;
@@ -406,17 +433,6 @@ export function range(arg: number, to?: number): number[] {
 
 
 
-export function firstOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue: NotFound): T | NotFound;
-export function firstOrDefault<T>(array: ReadonlyArray<T>): T | undefined;
-export function firstOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
-	return array.length > 0 ? array[0] : notFoundValue;
-}
-
-export function lastOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue: NotFound): T | NotFound;
-export function lastOrDefault<T>(array: ReadonlyArray<T>): T | undefined;
-export function lastOrDefault<T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
-	return array.length > 0 ? array[array.length - 1] : notFoundValue;
-}
 
 
 
@@ -524,3 +540,9 @@ export function binarySearch2(length: number, compareToKey: (index: number) => n
 	return array[array.length - (1 + n)];
 }
 
+export function del<T>(array: T[], e: T): void {
+	const idx = array.indexOf(e);
+	if (idx >= 0) {
+		array.splice(idx, 1);
+	}
+}

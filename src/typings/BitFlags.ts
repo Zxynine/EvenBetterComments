@@ -253,7 +253,7 @@ export class FlagsArray {
         } else {
 			if ((this.Flags[StartPrimeIndex] & (-1 >>> StartSubIndex)) !== 0) return true; //Checks start
 			for (let i=StartPrimeIndex+1; i<EndPrimeIndex; ++i) if (this.Flags[i] !== 0) return true; //Checks intermediates
-			if ((this.Flags[EndPrimeIndex] & ~(-1 >>> EndSubIndex)) !== 0) return true; //Checks end
+			if ((this.Flags[EndPrimeIndex] & (-1 << 31-EndSubIndex)) !== 0) return true; //Checks end
 			return false;
 		}
 	}
@@ -269,8 +269,8 @@ export class FlagsArray {
 		//Simplification for single chunk ranges.
         if (StartPrimeIndex === EndPrimeIndex) {
             this.Flags[StartPrimeIndex] = ((value) 
-				? this.Flags[StartPrimeIndex]  & ~((-1 << (31-EndSubIndex)) & (-1 >>> StartSubIndex))
-				: this.Flags[StartPrimeIndex]  |  ((-1 << (31-EndSubIndex)) & (-1 >>> StartSubIndex))
+				? this.Flags[StartPrimeIndex]  |  ((-1 << (31-EndSubIndex)) & (-1 >>> StartSubIndex))
+				: this.Flags[StartPrimeIndex]  & ~((-1 << (31-EndSubIndex)) & (-1 >>> StartSubIndex))
 			);
         } else {
 			const SetValue = (value? 1 : 0);
@@ -283,8 +283,8 @@ export class FlagsArray {
 			for (let i=StartPrimeIndex+1; i<EndPrimeIndex; ++i) this.Flags[i] = SetValue;
 
 			this.Flags[EndPrimeIndex] = (value
-				? this.Flags[EndPrimeIndex] | ~(-1 >>> EndSubIndex)
-				: this.Flags[EndPrimeIndex] & (-1 >>> EndSubIndex)
+				? this.Flags[EndPrimeIndex] |  (-1 << 31-EndSubIndex)
+				: this.Flags[EndPrimeIndex] & ~(-1 << 31-EndSubIndex)
 			);
 		}
 	}
@@ -303,7 +303,7 @@ export class FlagsArray {
         } else {
 			this.Flags[StartPrimeIndex] ^= (-1 >>> StartSubIndex);
 			for (let i=StartPrimeIndex+1; i<EndPrimeIndex; ++i) this.Flags[i] ^= -1;
-			this.Flags[EndPrimeIndex] ^= ~(-1 >>> EndSubIndex);
+			this.Flags[EndPrimeIndex] ^= (-1 << 31-EndSubIndex);
 		}
 		
 	}
@@ -323,7 +323,7 @@ export class FlagsArray {
         } else {
 			this.Flags[StartPrimeIndex] &= ~(-1 >>> StartSubIndex);
 			for (let i=StartPrimeIndex+1; i<EndPrimeIndex; ++i) this.Flags[i] = 0;
-			this.Flags[EndPrimeIndex] &= (-1 >>> EndSubIndex);
+			this.Flags[EndPrimeIndex] &= ~(-1 << 31-EndSubIndex);
 		}
 	}
 
