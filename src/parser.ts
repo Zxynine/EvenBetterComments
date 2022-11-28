@@ -43,8 +43,9 @@ export class Parser {
 	private highlightMultilineComments = false;
 	private highlightJSDoc = true;
 	private highlightLinkedComments = true;
-	// @ts-ignore
 	private highlightFullBlockComments = false;
+	// @ts-ignore
+	private highlightTagOnly = false;
 
 	// * this will allow plaintext files to show comment highlighting if switched on
 	private isPlainText = false;
@@ -631,10 +632,10 @@ export class Parser {
 		if (config) {
 			this.supportedLanguage = true;
 
-			const blockCommentStart = config.blockComment ? config.blockComment[0] : null;
-			const blockCommentEnd = config.blockComment ? config.blockComment[1] : null;
+			const blockCommentStart = config.blockComment?.[0];
+			const blockCommentEnd = config.blockComment?.[1];
 
-			this.setCommentFormat(config.lineComment ?? null, blockCommentStart, blockCommentEnd);
+			this.setCommentFormat(config.lineComment, blockCommentStart, blockCommentEnd);
 
 			this.ignoreFirstLine = Configuration.GetHasShebang(languageCode);
 		}
@@ -700,7 +701,7 @@ export class Parser {
 	 * @param start The start delimiter for block comments
 	 * @param end The end delimiter for block comments
 	 */
-	private setCommentFormat(monoLine: string|string[]|null, start: string|null = null, end: string|null = null): void {
+	private setCommentFormat(monoLine: string|string[]|nulldefined, start: string|nulldefined = null, end: string|nulldefined = null): void {
 		this.delimiter = "";
 		this.blockCommentStart = "";
 		this.blockCommentEnd = "";

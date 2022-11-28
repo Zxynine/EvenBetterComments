@@ -86,11 +86,18 @@ export const getLinksRangesString = (str:string) => {
 export const getLinksRangesDoc = (doc:TextDocument) => {
 	const result: Range[] = [];
 	
+	const workspacePath = DocumentTools.GetWorkspacePath(doc);
+	const basePath = DocumentTools.GetBasePath(doc);
+	
 	const indexedMatch = /\[(\[.*?[./].*?\])\]/g;
 	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
 		const line = doc.lineAt(lineNumber).text;
 		if (!isComment(line)) continue;
 		for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
+			const fullPath = CreateFullPath(basePath,workspacePath, match[0].replace(CLEAN_LINK, ""));
+			// Don't show the codelens if the file doesn't exist
+			if (!fullPath || !DocumentTools.FileExists(fullPath)) continue;
+
 			result.push(new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length));
 		}
 	}
