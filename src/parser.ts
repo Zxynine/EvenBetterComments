@@ -715,6 +715,8 @@ export class Parser {
 			// if multiple delimiters are passed, the language has more than one single line comment format
 			} else if (monoLine.length > 0) {
 				this.delimiter = monoLine.map(Parser.escapeRegExp).map(Parser.escapeSlashes).join('|');
+			} else {
+				this.highlightMonolineComments = false;
 			}
 		}
 
