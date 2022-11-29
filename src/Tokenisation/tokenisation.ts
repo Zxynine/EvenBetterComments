@@ -673,29 +673,30 @@ export abstract class AbstractTokenArray {
 		return -1;
 	}
 
-	public FindRangesOf(tokenType:StandardTokenType) {
+	public FindRangesOf(tokenType:StandardTokenType, line:int = 0) {
 		const RangeArray = new Array<Range>();
 		let startPos: Position|undefined = undefined;
 
 		for (let i = 0; i<this._tokensCount; i++) {
 			if (startPos !== undefined) {
 				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) !== tokenType) {
-					RangeArray.push(new Range(startPos, new Position(0, this.StartOffset(i))))
+					RangeArray.push(new Range(startPos, new Position(line, this.EndOffset(i))))
 					startPos = undefined;
 				}
 			} else {
 				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) === tokenType) {
-					startPos = new Position(0, this.StartOffset(i));
+					startPos = new Position(line, this.EndOffset(i));
 				}
 			}
 		}
 
 		if (startPos !== undefined) {
-			RangeArray.push(new Range(startPos, new Position(0, this._tokensEndOffset)))
+			RangeArray.push(new Range(startPos, new Position(line, this._tokensEndOffset)))
 		}
 		return RangeArray;
 	}
 
+	
 
 	/**
 	 * Find the token containing offset `offset` //Talking about column offset.

@@ -3,7 +3,7 @@
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
 	"icon": "icon.png",
-	"version": "5.0.0",
+	"version": "5.0.2",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
@@ -65,6 +65,11 @@
 			{
 				"title": "BetterHyperScopes: Show Inspector",
 				"command": "evenbettercomments.hscopes.show-scope-inspector",
+				"when": "editorTextFocus"
+			},
+			{
+				"title": "BetterHyperScopes: Show Line Comments",
+				"command": "evenbettercomments.hscopes.show-line-comments",
 				"when": "editorTextFocus"
 			}
 		],

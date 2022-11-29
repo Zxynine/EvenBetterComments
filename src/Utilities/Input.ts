@@ -13,14 +13,13 @@ import { CommandId } from './StatusBar';
 
 
 
-
-export interface TokenArgs {
-    text?: string
-}
-
-export async function getInput(args: TokenArgs | undefined, message: string, validate: (str: string) => string | undefined){
-    if (!args || !args.text) return vscode.window.showInputBox(<vscode.InputBoxOptions>{ prompt: message, validateInput: validate});
-    else return Promise.resolve(args.text);
+export async function getInput(message: string, validate?: (str: string) => string | undefined){
+	return vscode.window.showInputBox(<vscode.InputBoxOptions>{ prompt: message, validateInput: validate}).then(
+		(value) => {
+			if (value === undefined) return Promise.reject();
+			else return Promise.resolve(value);
+		}
+	)
 }
 
 export async function showInputBox(placeHolder: string): Promise<string> {

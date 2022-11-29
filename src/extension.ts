@@ -25,6 +25,7 @@ export const ExtentionID = "evenbettercomments";
 	ShowScope = 'evenbettercomments.hscopes.show-scope',
 	ShowLineScopes = 'evenbettercomments.hscopes.show-line-scopes',
 	ShowScopeInspector = 'evenbettercomments.hscopes.show-scope-inspector',
+	ShowLineComments = 'evenbettercomments.hscopes.show-line-comments',
 }
 
 const AllLanguages : vscode.DocumentSelector = { language: "*" };
@@ -135,10 +136,37 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	const StartScopeInspector = async () => (vscode.window.activeTextEditor)&& vscode.commands.executeCommand('editor.action.inspectTMScopes');
-	
+
+	async function HyperscopesDisplayLineComments() {
+		console.log("HyperScopes: show line comments command run!");
+		const activeTextEditor = vscode.window.activeTextEditor;
+		if (activeTextEditor) {
+			const Selection = activeTextEditor.selection;
+			if (Selection.isEmpty) return;
+			const ActiveDocument = DocumentLoader.getDocument(activeTextEditor.document.uri);
+			if (!ActiveDocument) return;
+
+			
+			extensionOutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
+			function RangeToString(range:vscode.Range){ return `[Ln ${range.start.line}, Col ${range.start.character}-${range.end.character}]` }
+
+			const CollectedRanges:vscode.Range[] = []
+			const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
+			let i = Selection.start.line;
+			for (const TokenArray of TokensArrays) {
+				const Ranges = TokenArray.FindRangesOf(StandardTokenType.Comment, i++);
+				CollectedRanges.push(...Ranges);
+				extensionOutputChannel.appendLine(Ranges.map(RangeToString).join(', '));
+			}
+			PulseRange(activeTextEditor, CollectedRanges);
+
+			extensionOutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
+		}
+	}
 
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScope, HyperscopesDisplayScopes));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineScopes, HyperscopesDisplayScopesLine));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineComments, HyperscopesDisplayLineComments));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
 	//............................................................................
 	/** EXPORT API */
@@ -150,3 +178,58 @@ export function deactivate() { DocumentLoader.unloadDocuments() }
 
 
 
+
+
+
+
+
+
+
+
+
+export async function RemoveAllCommentsInDocument() {
+	const ActiveEditor = vscode.window.activeTextEditor;
+	if (!ActiveEditor) return;
+	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
+	if (!ActiveDocument) return;
+
+	const CollectedRanges:vscode.Range[] = []
+	const TokensArrays = ActiveDocument.getDocumentTokenData();
+	let i = 0;
+	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	PulseRange(ActiveEditor, CollectedRanges);
+	
+	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all comments?", "Yes", "No");
+	if (Confirmation === 'Yes') {
+		await ActiveEditor.edit(Builder => {
+			for (const Range of CollectedRanges) {
+				Builder.delete(Range);
+			}
+		});
+	}
+}
+
+
+export async function RemoveAllCommentsInSelection() {
+	const ActiveEditor = vscode.window.activeTextEditor;
+	if (!ActiveEditor) return;
+	const Selection = ActiveEditor.selection;
+	if (Selection.isEmpty) return;
+	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
+	if (!ActiveDocument) return;
+
+	const CollectedRanges:vscode.Range[] = []
+	const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
+	let i = Selection.start.line;
+	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	PulseRange(ActiveEditor, CollectedRanges);
+	
+	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all selected comments?", "Yes", "No");
+	if (Confirmation === 'Yes') {
+		await ActiveEditor.edit(Builder => {
+			for (const Range of CollectedRanges) {
+				Builder.delete(Range);
+			}
+		});
+	}
+}

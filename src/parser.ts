@@ -82,11 +82,9 @@ export class Parser {
 	//TODO: Allow multiline block comment formatting by placing the tag on the same line just after the start delimiter. 
 	//Tools==========================================================================================================================================
 	
- 	//TODO: just save the regex string, this.tags should not change.	
+ 	//TODO: just save the regex string, this.tags should not change.
 	/** Build up regex matcher for custom delimiter tags */
-	private static JoinDelimiterArray(tags : Array<CommentTag>) : string {
-		return `(?:${tags.map(commentTag => commentTag.escapedTag).join('|')})`;
-	}
+	private static JoinDelimiterArray = (tags : Array<CommentTag>) => `(?:${tags.map(Tag => Tag.escapedTag).join('|')})`;
 
 	private static CreateRange(document: vscode.TextDocument, startIndex : number, endIndex : number) : vscode.Range {
 		return new vscode.Range(document.positionAt(startIndex), document.positionAt(endIndex));
@@ -137,8 +135,8 @@ export class Parser {
 	private static escapeRegExp(input: string): string { return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } // $& means the whole matched string
 	private static escapeSlashes(input: string): string { return input.replace(/\//ig, "\\/"); } // /? hardcoded to escape slashes
 
-	// @ts-ignore
-	private static escapeRegExp2(s:string) { return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
+	// // @ts-ignore
+	// private static escapeRegExp2(s:string) { return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
 	// private static escapeMarkdownSyntaxTokens(text: string): string {
 	// 	return text.replace(/[.,_~-*+/;:^`'"!?%#&$@<=>()[\]{|}]/g, '\\$&');
 	// }
@@ -630,10 +628,7 @@ export class Parser {
 		if (config) {
 			this.supportedLanguage = true;
 
-			const blockCommentStart = config.blockComment?.[0];
-			const blockCommentEnd = config.blockComment?.[1];
-
-			this.setCommentFormat(config.lineComment, blockCommentStart, blockCommentEnd);
+			this.setCommentFormat(config.lineComment, config.blockComment?.[0], config.blockComment?.[1]);
 
 			this.ignoreFirstLine = Configuration.GetHasShebang(languageCode);
 		}
@@ -672,10 +667,10 @@ export class Parser {
 				break;
 		}
 
-		if (languageCode == 'markdown') {
-			console.log(`'${this.delimiter}', '${this.blockCommentStart}'-'${this.blockCommentEnd}'`);
-			console.log(`'${this.highlightMonolineComments}', '${this.highlightMultilineComments}'`);
-		}
+		// if (languageCode == 'markdown') {
+		// 	console.log(`'${this.delimiter}', '${this.blockCommentStart}'-'${this.blockCommentEnd}'`);
+		// 	console.log(`'${this.highlightMonolineComments}', '${this.highlightMultilineComments}'`);
+		// }
 	}
 	
 
@@ -760,41 +755,57 @@ const IsString = (item:any): item is String => typeof item === 'string';
 
 
 
-/*  "(^)+([ \\t]*[ \\t]*)(|chars|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-	
-	"(^)+                 ([ \\t]*[ \\t]*)              (|chars|)                   ([ ]*|[:])+                         ([^* /][^\\r\\n]*)"
-capture start pos        capture whitespace          capture any tag        capture trailing spaces/colon         capture char not {* or /} any char not {\r\n}
-at least one of them    any number of leading     first tag first non ws            one or more                             one char             any chars
-
-				([ \\t]*                  (?:this.blockCommentStart)?              [ \\t]*)
-capture    any leading whitespace       dont index block start            any trailing whitespace
-*/
-
-
-
-/*                 "(^)+([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)(|characters|)([ ]*|[:])+([^* /][^\\r\\n]*)"
-		"(^)+                          ([ \\t]*(?:/\\*\\*|\\*)[ \\t]*)                      (|characters|)           ([ ]*|[:])+         ([^* /][^\\r\\n]*)"
-one or many beginings     any-all whitespace {dont group '/**' or '/*'} any-all whitespace     some tag        all space/one colon       one '*-/' any chars not newline
-
-				"([ \\t]*\\*[ \\t]*)"
-*/
 
 
 
 
 
-		/*                         "(^|[ \\t])(this.blockCommentStart[\\s])+([\\s\\S]*?)(this.blockCommentEnd)"
+
+// export namespace CustomCommands {
+// 	export async function RemoveSelectedComments() {
+// 		const ActiveEditor = vscode.window.activeTextEditor;
+// 		if (!ActiveEditor) return;
+// 		const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
+// 		if (ActiveDocument === undefined) return; //No tokens loaded yet, cant properly find comments.
+// 		const Selections = ActiveEditor.selections;
 		
-		        "(^|[ \\t])                 (this.blockCommentStart[\\s])+               ([\\s\\S]*?)          (this.blockCommentEnd)"
-		capture newline or whitespace   capture block start and whitespace char     capture any characters        capture block end
-		     single character                       at least one                        all non greedy                single char    
-		*/
 
 
-		/*                               /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm
-		        (^|[ \t])                         (\/\*\*)+            ([\s\S]*?)                 (\*\/)                gm
-		begining of line or whitespace       one or more '/ **'    all characters non greedy    one match '*-/'   global multiline
-		*/
+		
+// 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -287,14 +287,33 @@ export function *ToBits(number:number, bitOrder:Endianness = Endianness.LittleEn
 
 
 
+/**
+ * Trim leading and ending spaces on every line
+ * See https://blog.stevenlevithan.com/archives/faster-trim-javascript for
+ * possible ways of implementing trimming
+ *
+ * @param text a multiline string
+ */
+ export function trimMultiLineString(text: string): string {
+    return text.replace(/^\s\s*/gm, '').replace(/\s\s*$/gm, '')
+}
 
 
 
+export function getCurrentThemeLightness(): 'light' | 'dark' {
+	return (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light)? 'light' : 'dark';
+}
 
 
 
-
-
+// //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/unescape
+// export function svgToDataUrl(xml: string): string {
+//     // We have to call encodeURIComponent and unescape because SVG can includes non-ASCII characters.
+//     // We have to encode them before converting them to base64.
+//     const svg64 = Buffer.from(unescape(encodeURIComponent(xml)), 'binary').toString('base64')
+//     const b64Start = 'data:image/svg+xml;base64,'
+//     return b64Start + svg64
+// }
 
 
 // export const notify = (message: string, log = false) => {
