@@ -11,12 +11,12 @@ interface IOnigString {
     readonly content: string;
     dispose?(): void;
 }
+interface IOnigMatch {
+    index: number;
+    captureIndices: IOnigCaptureIndex[];
+}
 interface IOnigCaptureIndex {
     start: number;
     end: number;
     length: number;
-}
-interface IOnigMatch {
-    index: number;
-    captureIndices: IOnigCaptureIndex[];
 }

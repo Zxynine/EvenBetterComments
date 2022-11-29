@@ -110,15 +110,6 @@ interface IGrammar {
 // 	readonly grammar: IRawGrammar;
 // }
 
-/** A registry helper that can locate grammar file paths given scope names. */
-interface RegistryOptions {
-	onigLib: Promise<IOnigLib>;
-	theme?: IRawTheme;
-	colorMap?: string[];
-	loadGrammar(scopeName: ScopeName): Promise<IRawGrammar | undefined | null>;
-	getInjections?(scopeName: ScopeName): ScopeName[] | undefined;
-}
-
 
 interface IRawGrammar extends ILocatable {
 	repository: IRawRepository;

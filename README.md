@@ -16,6 +16,9 @@ With this extension, you will be able to categorise your annotations into:
 ## Configuration
 
 This extension can be configured in User Settings or Workspace settings.
+`evenbettercomments.enabled : true`
+This setting will enable or disable the entire extension.
+When false, the entire extension will be disabled. (WIP)
 
 `"evenbettercomments.monolineComments": true`  
 This setting will control whether monoline comments are styled using the annotation tags.
@@ -28,6 +31,10 @@ When false, multiline comments will be presented without decoration.
 `"evenbettercomments.highlightPlainText": false`  
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first non-whitespace character on a line.
+
+`"evenbettercomments.highlightTagOnly": false`  
+This setting will control if any matching tags will have just the tag, or the entire line highlighted.
+When true, only the actual tag will be highlighted instead of the entire line.
 
 `"evenbettercomments.allowFullBlockHighlights": false`  
 This setting will tell the parser whether it should check for a tag at the beginning of a block comment for a style.

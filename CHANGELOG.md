@@ -1,5 +1,24 @@
 # Change Log
 
+## [5.0.2] (2022-11-28)
+### Development
+This is a hotfix to solve a number of small bugs either created during the last major update, or have always been present but never addressed.
+
+### Features
+* Added `highlightTagOnly` option to settings. Closes[#1](https://github.com/Zxynine/EvenBetterComments/issues/1)
+* Added `allowFullBlockHighlights` option to settings.
+* Added preview feature `tag.CSSTextDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration)
+* Added preview feature `tag.CSSOutlineDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/outline)
+* Added preview feature `tag.CSSBorderDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/border)
+
+### Bug Fixes
+* Fixed issue of Markdown(and others) having matching tags outside of comments. Closes[#4](https://github.com/Zxynine/EvenBetterComments/issues/4)
+* Fixed issue of Tag-matching not respecting word boundaries. Closes[#3](https://github.com/Zxynine/EvenBetterComments/issues/3)
+
+## [5.0.1] (2022-11-26)
+### Development
+This is just a quick push to update the documentation. Will have another one in the coming days.
+
 ## [5.0.0] (2022-11-26)
 ### Development
 Update v5.0.0 is a full rework of the parsing system I have been planning for months now. It uses tokenisation based off of vscode's source-code to enable accurately locating/detecting comments in code. There is less guess work than in any other version and so there should be far less false positives (*hopefully*).

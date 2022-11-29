@@ -17,7 +17,7 @@ export type Target = 'global' | 'workspace';
 }
 
 
-
+// The configuration necessary to find supported languages on startup
 export class Configuration {
 	private static readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
 	private static readonly languageHasShebang = new Map<string, boolean>();

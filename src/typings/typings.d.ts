@@ -10,10 +10,12 @@ interface CommentTag {
 
 
 interface Contributions {
+	enabled: boolean;
 	monolineComments: boolean;
 	multilineComments: boolean;
 	useJSDocStyle: boolean;
 	highlightPlainText: boolean;
+	highlightTagOnly: boolean;
 	allowFullBlockHighlights: boolean;
 	tags: Array<TagDefinition>;
 }
@@ -29,120 +31,16 @@ interface TagDefinition {
 	bold: boolean;
 	italic: boolean;
 	backgroundColor: string;
+	CSSTextDecoration?: string;
+	CSSOutlineDecoration?: string;
+	CSSBorderDecoration?: string;
 }
 
+//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
-
-
-
-
-
-
-// type Configuration = {
-// 	paths?: string[],
-// 	rules?: Rule[],
-// };
-
-// type Rule = {
-// 	patterns?: string[];
-// 	color?: string|import('vscode').ThemeColor;
-// 	matchCase?: boolean;
-// 	matchWholeWord?: boolean;
-
-// 	bold?: boolean;
-// 	italic?: boolean;
-// 	underline?: boolean;
-// 	strikeThrough?: boolean;
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type CharEmpty = '';
-type IsEmptyChar<T> = T extends CharEmpty ? true : false;
-
-// type ClassEmpty = { [Key in any] : never }
-
-// type IsEmptyObject<T> = T extends EmptyObject ? true : false;
-
-
-
-type IsNever<T, True=true, False=false> = [T] extends [never] ? True : False;
-
-
-
-/**
- * mixed
- * @desc An arbitrary type that could be anything
- * @example
- *
- * stringify = (value: mixed) => ...;
- *
- *   stringify("foo");
- *   stringify(3.14);
- *   stringify(null);
- *   stringify({});
- */ type mixed = unknown;
-
-
-
-
-
-
-interface IHash<T> { [details: string]: T; }
-
-
-/** A union of given const enum values. **/
-type Flags<T extends number> = number;
-/** A union of given const enum values. **/
-type OrMask<T extends number> = number;
-
-
-
-// Syntax sugar
-type Func<TArgs extends any[] = [], TResult = void> = (...args: TArgs) => TResult; 
-type Action<TArgs extends any[] = []> = Func<TArgs>; 
-
-type Event = Func<[], void>;
-
-type nulldefined = null|undefined;
-
-type Nullable<T> = T|null;
-type Undefinable<T> = T|undefined;
-
-
-// (/\*\*)\n.+\*(.*)\n.*( \*/)
-// $1$2$3
-
-type bool = boolean;
-type int = number;
-type float = number;
-type num = number;
-type char = string;
-
-type Exception = Error;
-
-
-
-type Bit = 0|1;
 
 /**
 Matches any [primitive value](https://developer.mozilla.org/en-US/docs/Glossary/Primitive).
@@ -177,6 +75,95 @@ type Printable = (
  *   Exclude<Various, Falsy>;
  */
 type Falsy = false | '' | 0 | null | undefined;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+type CharEmpty = '';
+type IsEmptyChar<T> = T extends CharEmpty ? true : false;
+
+// type ClassEmpty = { [Key in any] : never }
+
+// type IsEmptyObject<T> = T extends EmptyObject ? true : false;
+
+type IsNever<T, True=true, False=false> = [T] extends [never] ? True : False;
+
+
+
+/**
+ * mixed
+ * @desc An arbitrary type that could be anything
+ * @example
+ *
+ * stringify = (value: mixed) => ...;
+ *
+ *   stringify("foo");
+ *   stringify(3.14);
+ *   stringify(null);
+ *   stringify({});
+ */ 
+type mixed = unknown;
+
+
+
+
+
+
+interface IHash<T> { [details: string]: T; }
+
+
+/** A union of given const enum values. **/
+type Flags<T extends number> = number;
+/** A union of given const enum values. **/
+type OrMask<T extends number> = number;
+
+
+
+// Syntax sugar
+type Func<TArgs extends any[] = [], TResult = void> = (...args: TArgs) => TResult; 
+type Action<TArgs extends any[] = []> = Func<TArgs>; 
+
+type Event = Func<[], void>;
+
+
+type nulldefined = null|undefined;
+
+type Nullable<T> = T|null;
+type Undefinable<T> = T|undefined;
+type NonNull<T> = Remove<T, null>
+type NonUndefined<T> = Remove<T, null>
+
+type Remove<T, R, Default = never> = T extends R ? Default : T;
+
+
+
+// (/\*\*)\n.+\*(.*)\n.*( \*/)
+// $1$2$3
+
+type bool = boolean;
+type int = number;
+type float = number;
+type num = number;
+type char = string;
+
+type Exception = Error;
+
+
+
+type Bit = 0|1;
 
 
 /**
@@ -262,52 +249,10 @@ type Character = string & { __type: "Character" };
 
 
 
-/**
- * `UnionKeys<T>` will distribute keys of an union to individual types.
- * This should be used in conjuncture with distributive types.
- */
- type UnionKeys<T> = keyof T | (T extends unknown ? keyof T : never)
 
 
 
 
-
-
-/**
-Creates a type that represents a multidimensional array of the given type and dimension.
-Use-cases:
-- Return a n-dimensional array from functions.
-- Declare a n-dimensional array by defining its dimensions rather than declaring `[]` repetitively.
-- Infer the dimensions of a n-dimensional array automatically from function arguments.
-- Avoid the need to know in advance the dimensions of a n-dimensional array allowing them to be dynamic.
-@example
-```
-import type {MultidimensionalArray} from 'type-fest';
-function emptyMatrix<T extends number>(dimensions: T): MultidimensionalArray<unknown, T> {
-	const matrix: unknown[] = [];
-	let subMatrix = matrix;
-	for (let dimension = 1; dimension < dimensions; ++dimension) {
-		console.log(`Initializing dimension #${dimension}`);
-		subMatrix[0] = [];
-		subMatrix = subMatrix[0] as unknown[];
-	}
-	return matrix as MultidimensionalArray<unknown, T>;
-}
-const matrix = emptyMatrix(3);
-matrix[0][0][0] = 42;
-```
-@category Array
-*/
-type MultidimensionalArray<Element, Dimensions extends number> = number extends Dimensions
-	? Recursive<Element>: IsEqual<Dimensions, 0> extends true ? Element : Array<MultidimensionalArray<Element, Subtract<Dimensions, 1>>>;
-
-
-
-
-
-
-// type testlower = Lowercase<"HiIIII">
-// type testToString = ToString<>
 
 
 type Recursive<T> = Array<Recursive<T>>;
@@ -372,10 +317,8 @@ type Optional<Type> = {
 //Operation types
 type Measured<Unit> = {readonly length: Unit};
 
-
 //Dont use elsewhere.
 type Extends<T> = <U>() => U extends T? true : false;
-
 
 /**
 Returns a boolean for whether the two given types extends the base type.
@@ -384,20 +327,7 @@ type IsBothExtends<Base, FirstType, SecondType> = (
 	FirstType extends Base?SecondType extends Base ? true: false:false
 );
 
-// type IsAllExtends<Base, T extends T[]> = (
-// 	T extends []? false : 
-// 	T extends [infer U extends Base]? true :
-// 	T extends [infer U extends Base, ...infer Rest]? IsAllExtends<Base, ...Rest> :
-// 	false
-// 	// FirstType extends Base?SecondType extends Base ? true: false:false
-// );
 
-
-
-
-// type AllExtends<Base, T, TArr extends any[] = []> = (
-// 	TArr extends []? (T extends Base? true:false) : ((T extends Base? true:false) extends AllExtends<Base, TArr[0], >)
-// );
 
 /**
 Returns a boolean for whether the two given types are equal.
@@ -488,15 +418,6 @@ type LiteralUnion<LiteralType, BaseType extends Primitive> = LiteralType | (Base
 
 
 
-/**
-Create a tuple of length `A` and a tuple composed of two other tuples,
-the inferred tuple `U` and a tuple of length `B`, then extracts the length of tuple `U`.
-@link https://itnext.io/implementing-arithmetic-within-typescripts-type-system-a1ef140a6f6f
-*/
-type Subtract<A extends number, B extends number> = BuildTuple<A> extends [...(infer U), ...BuildTuple<B>]? TupleLength<U> : never;
-
-
-
 
 
 
@@ -547,7 +468,7 @@ type Trim<S extends string, Char extends string = ' '> = (
 
 
 
-type IsEmptyObject<T> = T extends {} ? {} extends T ? true : false : false
+// type IsEmptyObject<T> = T extends {} ? {} extends T ? true : false : false
 
 
 
@@ -574,11 +495,6 @@ type StringUnion<L extends ArrayOrTuple<Printable>> = (
 // type TestUn22 = CharUnion<"f ">
 // type TestUn3 = CharUnion<"">
 
-
-type NonNull<T> = Remove<T, null>
-type NonUndefined<T> = Remove<T, null>
-
-type Remove<T, R, Default = never> = T extends R ? Default : T;
 
 
 
@@ -618,37 +534,24 @@ type Remove<T, R, Default = never> = T extends R ? Default : T;
 
 
 
-
-
-type Extendable<A, B> = A extends B ? A : never
-type NotExtendable<A, B> = A extends B ? never : A
-type IsExtend<A, B, Then = true, Else = false> = A extends B ? Then : Else
-type IsNotExtend<A, B, Then = true, Else = false> = A extends B ? Else : Then
-
+// type And<A extends bool, B extends bool> = A extends true ? B extends true ? true : false :false
+// type Or<A extends bool, B extends bool> = A extends true ? true : B extends true ? true :false
+// type Xor<A extends bool, B extends bool> = A extends true ? Not<B> : B extends true ? true :false
+// type Not<X extends bool> = X extends true ? false : true
 
 
 
-
-
-
-type And<A extends bool, B extends bool> = A extends true ? B extends true ? true : false :false
-type Or<A extends bool, B extends bool> = A extends true ? true : B extends true ? true :false
-type Xor<A extends bool, B extends bool> = A extends true ? Not<B> : B extends true ? true :false
-type Not<X extends bool> = X extends true ? false : true
-
-
-
-type If<Condition extends boolean, Then = true, Else = false> = Condition extends true ? Then : Else
+// type If<Condition extends boolean, Then = true, Else = false> = Condition extends true ? Then : Else
 
 
 
 
-type Switch<T, Cases extends Array<[any, any]>, Default = never> = (
-	Cases extends [] ? Default :
-	Cases extends [[infer Key, infer Val], ...infer Rest extends Array<[any, any]>] ? (
-		IsEqual<T, Key> extends true ? Val : Switch<T, Rest, Default>
-	) : Default
-);
+// type Switch<T, Cases extends Array<[any, any]>, Default = never> = (
+// 	Cases extends [] ? Default :
+// 	Cases extends [[infer Key, infer Val], ...infer Rest extends Array<[any, any]>] ? (
+// 		IsEqual<T, Key> extends true ? Val : Switch<T, Rest, Default>
+// 	) : Default
+// );
 
 
 

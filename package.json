@@ -71,6 +71,11 @@
 		"configuration": {
 			"title": "EvenBetterComments configuration",
 			"properties": {
+				"evenbettercomments.enabled": {
+					"type": "boolean",
+					"description": "Controls if the extension will highlight or not",
+					"default": true
+				},
 				"evenbettercomments.monolineComments": {
 					"type": "boolean",
 					"description": "Whether the monoline comment highlighter should be active",
@@ -86,6 +91,11 @@
 					"description": "Whether the plaintext comment highlighter should be active",
 					"default": false
 				},
+				"evenbettercomments.highlightTagOnly": {
+					"type": "boolean",
+					"description": "Whether to only highlight the tag of the comment instead of the entire line",
+					"default": false
+				},
 				"evenbettercomments.allowFullBlockHighlights": {
 					"type": "boolean",
 					"description": "Whether to enable highlighting an entire block comment if a tag is places at the start of it",
@@ -96,9 +106,7 @@
 					"description": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect",
 					"items": {
 						"type": "object",
-						"required": [
-							"tag"
-						],
+						"required": ["tag"],
 						"properties": {
 							"tag": {
 								"type": "string"
@@ -730,6 +738,18 @@
 							"italic": {
 								"type": "boolean",
 								"default": false
+							},
+							"CSSTextDecoration": {
+								"type": "string",
+								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
+							},
+							"CSSOutlineDecoration": {
+								"type": "string",
+								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
+							},
+							"CSSBorderDecoration": {
+								"type": "string",
+								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
 							}
 						}
 					},
