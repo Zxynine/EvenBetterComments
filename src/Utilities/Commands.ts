@@ -140,6 +140,38 @@ export interface KeyBinding {
 
 
 
+
+
+
+
+export class OpenFileCommand implements vscode.Command {
+    command = 'extension.openFile';
+    title = 'Open File';
+    arguments?: any[];
+	tooltip?: string;
+
+    constructor(uri: vscode.Uri, position: number) {
+        this.arguments = [uri, position];
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const VARIABLE_REGEXP = /\$\{(.*?)\}/g;
 export const HASVARIABLE = /\${(userHome|workspaceFolder|workspaceFolderBasename|fileWorkspaceFolder|relativeFile|fileBasename|fileBasenameNoExtension|fileExtname|fileDirname|cwd|pathSeparator|lineNumber|selectedText|env:(.*?)|config:(.*?))}/
 
@@ -150,8 +182,8 @@ export const enum VariableNames {
 	File = '${file}', // the current opened file (absolute path?)
 	FileBasename = '${fileBasename}', // the current opened file's basename
 	FileBasenameNoExtension = '${fileBasenameNoExtension}', // the current opened file's basename with no file extension
-	FileExtname = '${fileExtname}', // the current opened file's extension
 	FileDirname = '${fileDirname}', // the current opened file's dirname
+	FileExtname = '${fileExtname}', // the current opened file's extension
 	FileWorkspaceFolder = '${fileWorkspaceFolder}', // the current opened file's workspace folder
 	WorkspaceFolder = '${workspaceFolder}', // the path of the folder opened in VS Code
 	WorkspaceFolderBasename = '${workspaceFolderBasename}', // the name of the folder opened in VS Code without any slashes (/)
@@ -167,6 +199,7 @@ export const enum VariableNames {
 	RelativeFile = '${relativeFile}', // the current opened file relative to `workspaceFolder`
 	RelativeFileDirname = '${relativeFileDirname}', // the current opened file's dirname relative to `workspaceFolder`
 	Cwd = '${cwd}', // the task runner's current working directory on startup
+	// ────────────────────────────────────────────────────────────
 }
 
 
@@ -203,9 +236,8 @@ const variableRegexps : Record<string, RegExp> = {
 
 // https://github.com/microsoft/vscode/blob/main/src/vs/workbench/services/configurationResolver/common/variableResolver.ts
 
-// const vscodeVariables = require('vscode-variables');
 const vscodeVariables = function (string:string, recursive = false): string {
-	string = string.replace(/\${userHome}/g, process.env['HOME'] || '');
+	string = string.replace(/\${userHome}/g, process.env['HOME'] ?? '');
 
     const workspaces = vscode.workspace.workspaceFolders;
     const workspace = workspaces?.length ? workspaces[0] : null;
@@ -234,7 +266,7 @@ const vscodeVariables = function (string:string, recursive = false): string {
             break;
         }
     }
-    if (activeWorkspace) string = string.replace(/\${fileWorkspaceFolder}/g, activeWorkspace?.uri.fsPath);
+    if (activeWorkspace) string = string.replace(/\${fileWorkspaceFolder}/g, activeWorkspace.uri.fsPath);
     if (relativeFilePath) string = string.replace(/\${relativeFile}/g, relativeFilePath);
     if (relativeFilePath) string = string.replace(/\${relativeFileDirname}/g, relativeFilePath.slice(0, relativeFilePath.lastIndexOf(path.sep)));
 
@@ -254,6 +286,71 @@ const vscodeVariables = function (string:string, recursive = false): string {
 	);
 }
 
+
+
+
+
+
+/**
+ * Try to emulate variable substitution in tasks https://code.visualstudio.com/docs/editor/variables-reference
+ *
+ * TODO: throw errors (window.showMessage) when variable exists but can't resolve
+ */
+ export function substituteVariables(str: string): string {
+	const activeTextEditor = vscode.window.activeTextEditor;
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+	const document = activeTextEditor?.document;
+	const documentPath = document?.uri.fsPath;
+
+	if (str.includes(VariableNames.UserHome)) {
+		str = str.replace(variableRegexps[VariableNames.UserHome], process.env['HOME'] ?? '');
+	}
+	if (str.includes(VariableNames.SelectedText) && activeTextEditor) {
+		str = str.replace(variableRegexps[VariableNames.SelectedText], activeTextEditor.document.getText(activeTextEditor.selection));
+	}
+	if (str.includes(VariableNames.LineNumber) && activeTextEditor) {
+		str = str.replace(variableRegexps[VariableNames.LineNumber], String(activeTextEditor.selection.active.line + 1));
+	}
+	if (str.includes(VariableNames.PathSeparator)) {
+		str = str.replace(variableRegexps[VariableNames.PathSeparator], path.sep);
+	}
+	if (str.includes(VariableNames.ExecPath)) {
+		str = str.replace(variableRegexps[VariableNames.ExecPath], vscode.env.appRoot);
+	}
+	if (str.includes(VariableNames.File) && documentPath) {
+		str = str.replace(variableRegexps[VariableNames.File], documentPath);
+	}
+	if (str.includes(VariableNames.FileBasename) && documentPath) {
+		str = str.replace(variableRegexps[VariableNames.FileBasename], path.basename(documentPath));
+	}
+	if (str.includes(VariableNames.FileExtname) && documentPath) {
+		str = str.replace(variableRegexps[VariableNames.FileExtname], path.extname(documentPath));
+	}
+	if (str.includes(VariableNames.FileDirname) && documentPath) {
+		str = str.replace(variableRegexps[VariableNames.FileDirname], path.dirname(documentPath));
+	}
+	if (str.includes(VariableNames.FileBasenameNoExtension) && documentPath) {
+		str = str.replace(variableRegexps[VariableNames.FileBasenameNoExtension], path.basename(documentPath, path.extname(documentPath)));
+	}
+	if (str.includes(VariableNames.WorkspaceFolder) && workspaceFolder) {
+		str = str.replace(variableRegexps[VariableNames.WorkspaceFolder], workspaceFolder);
+	}
+	if (str.includes(VariableNames.WorkspaceFolderBasename) && workspaceFolder) {
+		str = str.replace(variableRegexps[VariableNames.WorkspaceFolderBasename], path.basename(workspaceFolder));
+	}
+	if (str.includes(VariableNames.FileWorkspaceFolder) && document) {
+		str = str.replace(variableRegexps[VariableNames.FileWorkspaceFolder], vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath ?? '');
+	}
+	if (variableRegexps[VariableNames.EnvironmentVariable].test(str)) {
+		for (const _ of (str.match(variableRegexps[VariableNames.EnvironmentVariable]) ?? [])) 
+			str = str.replace(variableRegexps[VariableNames.SingleEnvironmentVariable], (__, g1) => process.env[g1] ?? g1);
+	}
+	if (variableRegexps[VariableNames.ConfigurationVariable].test(str)) {
+		for (const _ of (str.match(variableRegexps[VariableNames.ConfigurationVariable]) ?? [])) 
+			str = str.replace(variableRegexps[VariableNames.SingleConfigurationVariable], (__, g1) => replaceConfigurationVariable(g1));
+	}
+	return str;
+}
 
 
 export function replaceConfigurationVariable(configName: string): string {
@@ -278,14 +375,10 @@ export function replaceConfigurationVariable(configName: string): string {
 	if (typeof arg === 'string') return vscodeVariables(arg);
 
 	if (Array.isArray(arg)) {
-		for (const [key, value] of arg.entries()) {
-			arg[key] = substituteVariableRecursive(value);
-		}
+		for (const [key, value] of arg.entries()) arg[key] = substituteVariableRecursive(value);
 	} else if (typeof arg === 'object' && arg !== null) {
-		for (const key in arg) {
-			// @ts-ignore
-			arg[key] = substituteVariableRecursive(arg[key]);
-		}
+		/** @ts-ignore */ 
+		for (const key in arg) arg[key] = substituteVariableRecursive(arg[key]);
 	}
 
 	return arg;
@@ -295,64 +388,80 @@ export function replaceConfigurationVariable(configName: string): string {
 
 
 
-/**
- * Try to emulate variable substitution in tasks https://code.visualstudio.com/docs/editor/variables-reference
- *
- * TODO: throw errors (window.showMessage) when variable exists but can't resolve
- */
- export function substituteVariables(str: string): string {
-	const activeTextEditor = vscode.window.activeTextEditor;
-	const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-	const document = activeTextEditor?.document;
 
-	if (str.includes(VariableNames.SelectedText) && activeTextEditor) {
-		const selectedText = activeTextEditor.document.getText(activeTextEditor.selection);
-		str = str.replace(variableRegexps[VariableNames.SelectedText], selectedText);
-	}
-	if (str.includes(VariableNames.LineNumber) && activeTextEditor) {
-		str = str.replace(variableRegexps[VariableNames.LineNumber], String(activeTextEditor.selection.active.line + 1));
-	}
-	if (str.includes(VariableNames.PathSeparator)) {
-		str = str.replace(variableRegexps[VariableNames.PathSeparator], path.sep);
-	}
-	if (str.includes(VariableNames.ExecPath)) {
-		str = str.replace(variableRegexps[VariableNames.ExecPath], vscode.env.appRoot);
-	}
-	if (str.includes(VariableNames.File) && document) {
-		str = str.replace(variableRegexps[VariableNames.File], document.uri.fsPath);
-	}
-	if (str.includes(VariableNames.FileBasename) && document) {
-		str = str.replace(variableRegexps[VariableNames.FileBasename], path.basename(document.uri.fsPath));
-	}
-	if (str.includes(VariableNames.FileBasenameNoExtension) && document) {
-		str = str.replace(variableRegexps[VariableNames.FileBasenameNoExtension], path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)));
-	}
-	if (str.includes(VariableNames.FileExtname) && document) {
-		str = str.replace(variableRegexps[VariableNames.FileExtname], path.extname(document.uri.fsPath));
-	}
-	if (str.includes(VariableNames.FileDirname) && document) {
-		str = str.replace(variableRegexps[VariableNames.FileDirname], path.dirname(document.uri.fsPath));
-	}
-	if (str.includes(VariableNames.WorkspaceFolder) && workspaceFolder) {
-		str = str.replace(variableRegexps[VariableNames.WorkspaceFolder], workspaceFolder);
-	}
-	if (str.includes(VariableNames.WorkspaceFolderBasename) && workspaceFolder) {
-		str = str.replace(variableRegexps[VariableNames.WorkspaceFolderBasename], path.basename(workspaceFolder));
-	}
-	if (str.includes(VariableNames.FileWorkspaceFolder) && document && workspaceFolder) {
-		const fileWorkspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
-		if (fileWorkspaceFolder) str = str.replace(variableRegexps[VariableNames.FileWorkspaceFolder], fileWorkspaceFolder);
-	}
-	if (variableRegexps[VariableNames.EnvironmentVariable].test(str)) {
-		for (const _ of (str.match(variableRegexps[VariableNames.EnvironmentVariable]) || [])) 
-			str = str.replace(variableRegexps[VariableNames.SingleEnvironmentVariable], (__, g1) => process.env[g1] || g1);
-	}
-	if (variableRegexps[VariableNames.ConfigurationVariable].test(str)) {
-		for (const _ of (str.match(variableRegexps[VariableNames.ConfigurationVariable]) || [])) 
-			str = str.replace(variableRegexps[VariableNames.SingleConfigurationVariable], (__, g1) => replaceConfigurationVariable(g1));
-	}
-	return str;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function checkCancellation(token: vscode.CancellationToken): void {
+	if (token.isCancellationRequested) throw new Error('Operation cancelled');
 }
+
+
+
+
+
+export interface IIEntry {
+	uri: vscode.Uri;
+	type: vscode.FileType;
+}
+
+export interface IICommand {
+	label?:string;
+	script?:string;
+	time?:number;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1761,3 +1870,126 @@ export default class ReplaceRulesEditProvider {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function executeDelayCommand(time:number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, time))
+}
+
+
+
+ export async function executeCommandRepeat(command:string, times:int) {
+    for (; times >= 0; --times) await vscode.commands.executeCommand(`macros.${command}`);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// local functions for user-defined button execution follow, based on
+// https://github.com/ppatotski/vscode-commandbar/ Copyright 2018 Petr Patotski
+
+export function executeNext(action: String, palettes: String[], index: number) {
+	try {
+		let [cmd, ...args] = palettes[index].split("|");
+		if (args) args = args.map((arg) => resolveVariables(arg));
+		cmd = cmd.trim();
+		vscode.commands.executeCommand(cmd, ...args).then(() => {
+			index++;
+			if (index < palettes.length) executeNext(action, palettes, index);
+		},
+			(err: any) => vscode.window.showErrorMessage(`Execution of '${action}' command has failed: ${err.message}`)
+		);
+	} catch (err: any) {
+		vscode.window.showErrorMessage(`Execution of '${action}' command has failed: ${err.message}`);
+		console.error(err);
+	}
+}
+
+
+
+const variableRegEx = /\$\{(.*?)\}/g;
+function resolveVariables(commandLine: String) {
+  return commandLine
+    .trim()
+    .replace(variableRegEx, function replaceVariable(match, variableValue) {
+      const [variable, argument] = variableValue.split(":");
+      const resolver = resolveVariablesFunctions[variable];
+      if (!resolver) throw new Error(`Variable ${variable} not found!`);
+
+      return resolver(argument);
+    });
+}
+
+
+
+const resolveVariablesFunctions:any = {
+	env: (name:string) => process.env[name.toUpperCase()],
+	cwd: () => process.cwd(),
+	workspaceRoot: () => getWorkspaceFolder(),
+	workspaceFolder: () => getWorkspaceFolder(),
+	workspaceRootFolderName: () => path.basename(getWorkspaceFolder()),
+	workspaceFolderBasename: () => path.basename(getWorkspaceFolder()),
+	lineNumber: () => vscode.window.activeTextEditor?.selection.active.line,
+	selectedText: () => vscode.window.activeTextEditor?.document.getText(vscode.window.activeTextEditor.selection),
+	file: () => getActiveEditorName(),
+	fileDirname: () => path.dirname(getActiveEditorName()),
+	fileExtname: () => path.extname(getActiveEditorName()),
+	fileBasename: () => path.basename(getActiveEditorName()),
+	fileBasenameNoExtension: () => {
+		const edtBasename = path.basename(getActiveEditorName());
+		return edtBasename.slice(0, edtBasename.length - path.extname(edtBasename).length);
+	},
+	execPath: () => process.execPath,
+};
+
+
+export function getWorkspaceFolder(activeTextEditor = vscode.window.activeTextEditor) {
+	let folder;
+	if (vscode.workspace.workspaceFolders) {
+		if (vscode.workspace.workspaceFolders.length === 1) {
+			folder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+		} else if (activeTextEditor) {
+			folder = vscode.workspace.getWorkspaceFolder(activeTextEditor.document.uri)?.uri.fsPath ?? undefined;
+		} else if (vscode.workspace.workspaceFolders.length > 0) {
+			folder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+		}
+	}
+	return folder ?? '';
+}
+
+export function getActiveEditorName() {
+	return vscode.window.activeTextEditor?.document.fileName ?? '';
+}

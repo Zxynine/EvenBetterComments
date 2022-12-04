@@ -6,7 +6,6 @@ import { KeyValPair } from '../typings/Collections';
 import { Endianness } from '../typings/BitFlags';
 import { statSync } from 'fs';
 import * as fs from 'fs';
-import * as minimatch from 'minimatch';
 import { showQuickPick } from './Input';
 import * as process from 'process';
 // import { Color } from 'vscode';
@@ -26,6 +25,75 @@ import { sleep } from './Async';
 }
 
 
+
+/**
+ *
+ * @param aS The set of
+ * @param bS
+ */
+export function setsAreEqual(aS: Set<any>, bS: Set<any>) {
+	// Stop early
+	if (aS.size !== bS.size) return false;
+
+	// Check every key
+	for (const a of aS) {
+		if (!bS.has(a)) return false;
+	}
+
+	// Sets are equal
+	return true;
+}
+
+
+
+
+
+
+
+export class CodeActionCreator {
+    public constructor(
+        private document: vscode.TextDocument,
+        private range: vscode.Range | vscode.Selection,
+        private context: vscode.CodeActionContext
+    ) { }
+
+    public create(title: string, command: string, kind: vscode.CodeActionKind) {
+        return {
+            title,
+            kind,
+            command: 'extension.contextMenu',
+            arguments: [this.document, this.range, this.context, command]
+        };
+    }
+
+	public static createArray(document: vscode.TextDocument, range: vscode.Range | vscode.Selection, context: vscode.CodeActionContext, constructor:Func<[Builder:CodeActionCreator], any[]>) {
+		const Builder = new CodeActionCreator(document, range, context);
+		return constructor(Builder);
+	}
+}
+
+
+
+
+
+
+
+
+export function hasOwnProperty(arg: {}, key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(arg, key);
+}
+
+
+
+
+
+
+
+export const entries = <T extends LooseRecord<unknown>>(value: T) => Object.entries(value) as { [K in keyof Concrete<T>]: [K, T[K]]; }[keyof T][];
+
+export const keys = <T extends LooseRecord<unknown>>(value: T) => Object.keys(value) as (keyof T)[];
+
+export const values = <T extends LooseRecord<unknown>>(value: T) => Object.values(value) as T[keyof T][];
 
 
 
@@ -83,6 +151,112 @@ export function mergeObjects(target: any, ...sources: any[]): any {
 
 
 
+/**
+ * Calls `JSON.Stringify` with a replacer to break apart any circular references.
+ * This prevents `JSON`.stringify` from throwing the exception
+ *  "Uncaught TypeError: Converting circular structure to JSON"
+ */
+ export function safeStringify(obj: any): string {
+	const seen = new Set<any>();
+	return JSON.stringify(obj, (key, value) => {
+		if (isObject(value) || Array.isArray(value)) {
+			if (seen.has(value)) return '[Circular]';
+			else seen.add(value);
+		}
+		return value;
+	});
+}
+
+
+
+/**
+ * @returns whether the provided parameter is of type `object` but **not**
+ *	`null`, an `array`, a `regexp`, nor a `date`.
+ */
+ export function isObject(obj: unknown): obj is Object {
+	// The method can't do a type cast since there are type (like strings) which
+	// are subclasses of any put not positvely matched by the function. Hence type
+	// narrowing results in wrong results.
+	return typeof obj === 'object'
+		&& obj !== null
+		&& !Array.isArray(obj)
+		&& !(obj instanceof RegExp)
+		&& !(obj instanceof Date);
+}
+
+/**
+ * @returns whether the provided parameter is an empty JavaScript Object or not.
+ */
+ export function isEmptyObject(obj: unknown): obj is object {
+	const hasOwnProperty = Object.prototype.hasOwnProperty;
+	if (!isObject(obj)) return false;
+
+	for (const key in obj) {
+		if (hasOwnProperty.call(obj, key)) return false;
+	}
+
+	return true;
+}
+
+
+
+
+
+export function deepClone<T>(obj: T): T {
+	if (!obj || typeof obj !== 'object' || obj instanceof RegExp) return obj;
+	const result: any = Array.isArray(obj) ? [] : {};
+	Object.entries(obj).forEach(([key, value]) => {
+		result[key] = (value && typeof value === 'object') ? deepClone(value) : value;
+	});
+	return result;
+}
+
+/** Prevents the modification of existing property attributes and values, and prevents the addition of new properties. */
+export function deepFreeze<T>(obj: T): T {
+	if (!obj || typeof obj !== 'object') return obj;
+	const stack: any[] = [obj];
+	while (stack.length > 0) {
+		const obj = stack.shift();
+		Object.freeze(obj);
+		for (const key in obj) {
+			if (Object.prototype.hasOwnProperty.call(obj, key)) {
+				const prop = obj[key];
+				if (typeof prop === 'object' && !Object.isFrozen(prop) && !isTypedArray(prop)) {
+					stack.push(prop);
+				}
+			}
+		}
+	}
+	return obj;
+}
+
+
+
+
+
+
+/**
+ * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
+ */
+ export function isTypedArray(obj: unknown): obj is Object {
+	return typeof obj === 'object' && obj instanceof Object.getPrototypeOf(Uint8Array);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -116,6 +290,26 @@ export const MarkdownFormat = {
 
 
 
+/**
+ * Converts null to undefined, passes all other values through.
+ */
+ export function withNullAsUndefined<T>(x: T | null): T | undefined {
+	return x === null ? undefined : x;
+}
+
+/**
+ * Converts undefined to null, passes all other values through.
+ */
+export function withUndefinedAsNull<T>(x: T | undefined): T | null {
+	return typeof x === 'undefined' ? null : x;
+}
+
+/**
+ * @returns whether the provided parameter is an Iterable, casting to the given generic
+ */
+ export function isIterable<T>(obj: unknown): obj is Iterable<T> {
+	return !!obj && typeof (obj as any)[Symbol.iterator] === 'function';
+}
 
 /**
  * Checks whether the input value is the type 'string'
@@ -141,8 +335,10 @@ export function IsInteger(number: unknown): number is Integer { return Number.is
 /**
  * Checks whether the input value is a number. Anything that could be parsed as a number will yield false.
  * Example: The string '1' yields false.
+ * In **contrast** to just checking `typeof` this will return `false` for `NaN`.
+ * @returns whether the provided parameter is a JavaScript Number or not.
  */
-export function IsNumber(value : unknown) : value is number { return typeof value === 'number'; }
+export function IsNumber(value : unknown) : value is number { return typeof value === 'number' && !isNaN(value); }
 
 /**
  * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
@@ -202,6 +398,9 @@ export function AreFunctions(...objects: unknown[]): boolean { return objects.le
 }
 
 
+export function isThenable<T>(obj: unknown): obj is Promise<T> {
+	return !!obj && typeof (obj as unknown as Promise<T>).then === 'function';
+}
 
 
 
@@ -263,40 +462,68 @@ export function *ToBits(number:number, bitOrder:Endianness = Endianness.LittleEn
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Trim leading and ending spaces on every line
- * See https://blog.stevenlevithan.com/archives/faster-trim-javascript for
- * possible ways of implementing trimming
- *
- * @param text a multiline string
- */
- export function trimMultiLineString(text: string): string {
-    return text.replace(/^\s\s*/gm, '').replace(/\s\s*$/gm, '')
+export function getIconPath(type: string, theme: 'light' | 'dark') {
+    const iconPath = path.join(__filename, '..', '..', '..', '..', 'icons', theme, type.toLowerCase() + '.svg');
+    if (fs.existsSync(iconPath)) return iconPath;
+    return path.join(__filename, '..', '..', '..', '..', 'icons', theme, 'todo.svg');
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const doubleWidthCharsReg =/[\uAC00-\uD7A3\u2010\u2012-\u2016\u2020-\u2022\u2025-\u2027\u2030\u2035\u203B\u203C\u2042\u2047-\u2049\u2051\u20DD\u20DE\u2100\u210A\u210F\u2121\u2135\u213B\u2160-\u216B\u2170-\u217B\u2215\u221F\u22DA\u22DB\u22EF\u2305-\u2307\u2312\u2318\u23B0\u23B1\u23BF-\u23CC\u23CE\u23DA\u23DB\u2423\u2460-\u24FF\u2600-\u2603\u2609\u260E\u260F\u2616\u2617\u261C-\u261F\u262F\u2668\u2672-\u267D\u26A0\u26BD\u26BE\u2702\u273D\u273F\u2740\u2756\u2776-\u277F\u2934\u2935\u29BF\u29FA\u29FB\u2B1A\u2E3A\u2E3B\u2E80-\u9FFF\uF900-\uFAFF\uFB00-\uFB04\uFE10-\uFE19\uFE30-\uFE6B\uFF01-\uFF60\uFFE0-\uFFE6\u{1F100}-\u{1F10A}\u{1F110}-\u{1F12E}\u{1F130}-\u{1F16B}\u{1F170}-\u{1F19A}\u{1F200}-\u{1F251}\u{2000B}-\u{2F9F4}]/gu;
+
+
+export const calculateColumnFromCharIndex = (
+	lineText: string,
+	charIndex: number,
+	tabSize: number,
+): number => {
+	let spacing = 0;
+	for (let index = 0; index < charIndex; index++) {
+		spacing += ((lineText.charAt(index) === "\t")? (tabSize - (spacing % tabSize)) : 1);
+	}
+	return spacing;
+};
+
+export const calculateCharIndexFromColumn = (
+	lineText: string,
+	column: number,
+	tabSize: number,
+): number => {
+	let spacing = 0;
+	for (let index = 0; index <= column; index++) {
+		if (spacing >= column) return index;
+		spacing += ((lineText.charAt(index) === "\t")? (tabSize - (spacing % tabSize)) : 1);
+	}
+	return spacing;
+};
+
+
+
+
+
+
+
+
+
+
+// export function tabsToSpaces(text: string) {
+// 	vscode.window.activeTextEditor?.ind
+// }
+
 
 
 
@@ -470,7 +697,6 @@ export namespace Debug {
 	export function LogException(exception: Exception, ...buttons: any[]) : Thenable<undefined|any> {
 		return vscode.window.showErrorMessage(`[${Debug.GetTimeStamp()}] Exception occured! Stack: ${exception.stack}`, ...buttons);
 	}
-
 }
 
 
@@ -603,9 +829,9 @@ export async function copyWholeBuffer(statusBarTimeout : number = 5000) {
 
 
 
-export function getProjects(itemsSorted: any[]): Promise<{}> {
-    return new Promise((resolve) => resolve(itemsSorted));
-}
+// export function getProjects(itemsSorted: any[]): Promise<{}> {
+//     return new Promise((resolve) => resolve(itemsSorted));
+// }
 
 
 
@@ -638,13 +864,6 @@ export function getProjects(itemsSorted: any[]): Promise<{}> {
  */
  export async function createNewEditor(text?: string): Promise<vscode.TextEditor> {
 	return vscode.workspace.openTextDocument({ content: text, preview: true } as any).then(vscode.window.showTextDocument);
-
-    // return new Promise(async (resolve, reject) => {
-    //     await vscode.workspace.openTextDocument({ content: text, preview: true } as any).then(
-    //         (doc) => resolve(vscode.window.showTextDocument(doc)),
-    //         (err) => reject(err)
-    //     );
-    // });
 }
 
 
@@ -653,6 +872,8 @@ export function getProjects(itemsSorted: any[]): Promise<{}> {
 
 
 
+
+export const getDefaultURI = () => (vscode.workspace.workspaceFolders?.[0].uri);
 
 export function getPath(activeEditor: vscode.TextEditor) {
     return _getPath(activeEditor, false).fsPath;
@@ -709,10 +930,7 @@ function _getPath(activeEditor: vscode.TextEditor, relative: boolean) {
     let fsPath = relative ? relativePathToWorkspace(uri) : uriToFsPath(uri);
 
     const platformPath = getPlatformPath(uri);
-    if (platformPath === path.win32) {
-        // Replace all / to \
-        fsPath = fsPath.replace(/\//g, "\\");
-    }
+    if (platformPath === path.win32) fsPath = fsPath.replace(/\//g, "\\"); // Replace all / to \
 
     const activePos = activeEditor.selection.active;
     const line = activePos.line;
@@ -720,8 +938,6 @@ function _getPath(activeEditor: vscode.TextEditor, relative: boolean) {
     return { fsPath, path: platformPath, line, col };
 }
 
-
-export const getDefaultURI = () => (vscode.workspace.workspaceFolders?.[0].uri);
 
 
 
@@ -898,6 +1114,88 @@ export class FileInfo {
 
 
 
+
+
+
+
+
+function assertTargetPath(targetPath: vscode.Uri | undefined): asserts targetPath is vscode.Uri {
+    if (targetPath === undefined) throw new Error("Missing target path");
+}
+
+export class FileItem {
+    private SourcePath: vscode.Uri;
+    private TargetPath: vscode.Uri | undefined;
+
+    constructor(sourcePath: vscode.Uri | string, targetPath?: vscode.Uri | string, private IsDir: boolean = false) {
+        this.SourcePath = this.toUri(sourcePath);
+        if (targetPath !== undefined) this.TargetPath = this.toUri(targetPath);
+    }
+
+    get name(): string { return path.basename(this.SourcePath.path); }
+    get path(): vscode.Uri { return this.SourcePath; }
+    get targetPath(): vscode.Uri | undefined { return this.TargetPath; }
+    get exists(): boolean { return (this.targetPath !== undefined) && fs.existsSync(this.targetPath.fsPath); }
+    get isDir(): boolean { return this.IsDir; }
+
+    public async move(): Promise<FileItem> {
+        assertTargetPath(this.targetPath);
+
+        const edit = new vscode.WorkspaceEdit();
+        edit.renameFile(this.path, this.targetPath, { overwrite: true });
+        await vscode.workspace.applyEdit(edit);
+
+        this.SourcePath = this.targetPath;
+        return this;
+    }
+
+    public async duplicate(): Promise<FileItem> {
+        assertTargetPath(this.targetPath);
+
+        await vscode.workspace.fs.copy(this.path, this.targetPath, { overwrite: true });
+        return new FileItem(this.targetPath, undefined, this.isDir);
+    }
+
+    public async remove(): Promise<FileItem> {
+        const edit = new vscode.WorkspaceEdit();
+        edit.deleteFile(this.path, { recursive: true, ignoreIfNotExists: true });
+        await vscode.workspace.applyEdit(edit);
+        return this;
+    }
+
+    public async create(mkDir?: boolean): Promise<FileItem> {
+        assertTargetPath(this.targetPath);
+
+        if (this.exists) await vscode.workspace.fs.delete(this.targetPath, { recursive: true });
+
+		await ((mkDir === true || this.isDir)
+			? vscode.workspace.fs.createDirectory(this.targetPath)
+			: vscode.workspace.fs.writeFile(this.targetPath, new Uint8Array())
+		);
+
+        return new FileItem(this.targetPath, undefined, this.isDir);
+    }
+
+    private toUri(UriOrString: vscode.Uri | string): vscode.Uri {
+        return UriOrString instanceof vscode.Uri ? UriOrString : vscode.Uri.file(UriOrString);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Returns the active file path
  * @export
@@ -961,12 +1259,75 @@ export async function findParent(cwd: string, predicate: (dir: string) => Promis
 
 
 
-export function GlobSearch(editor : vscode.TextEditor, path : string) {
-	// Support matches by filenames and relative file paths.
-	const pattern = path.includes('/') || path.includes('\\') ? path : '**/' + path;
-	const options = <minimatch.IOptions>{ nocase: (process.platform === 'win32') };
-	return minimatch(vscode.workspace.asRelativePath(editor.document.fileName), pattern, options);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
@@ -978,6 +1339,27 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
 		)
 	}"`
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //. todoEditors.forEach(todoEditor => {
 // const applicableConfigurations = configurations.filter(configuration =>
@@ -1154,6 +1536,159 @@ export function isDirectory(uri: vscode.Uri): boolean {
 
 
 
+export function getWorkspaceFolder(activeTextEditor = vscode.window.activeTextEditor) {
+	let folder;
+	if (vscode.workspace.workspaceFolders) {
+		if (vscode.workspace.workspaceFolders.length === 1) {
+			folder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+		} else if (activeTextEditor) {
+			folder = vscode.workspace.getWorkspaceFolder(activeTextEditor.document.uri)?.uri.fsPath ?? undefined;
+		} else if (vscode.workspace.workspaceFolders.length > 0) {
+			folder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+		}
+	}
+	return folder;
+}
+
+export function getActiveEditorName() {
+	return vscode.window.activeTextEditor?.document.fileName ?? '';
+}
+
+
+
+
+
+
+// function getSplitter(): string {
+// 	return "§&§";
+//   }
+
+
+
+// function getUrisForDirectoryPathUpdate(
+// 	data: vscode.QuickPickItem[],
+// 	uri: vscode.Uri,
+// 	fileKind: number
+//   ): vscode.Uri[] {
+// 	return data
+// 	  .filter(
+// 		(qpItem: vscode.QuickPickItem) =>
+// 		  qpItem.uri.path.includes(uri.path) && qpItem.symbolKind === fileKind
+// 	  )
+// 	  .map((qpItem: vscode.QuickPickItem) => qpItem.uri);
+//   }
+
+export function hasWorkspaceChanged(event: vscode.WorkspaceFoldersChangeEvent): boolean {
+	return !!event.added.length || !!event.removed.length;
+}
+
+
+  
+
+
+
+
+
+/**
+ * Get the relative path to the workspace folder  
+ * @param {string} filePath   
+ * @returns {string} relativePath of file 
+ */
+ export function getRelativeFilePath2(filePath:string) {
+
+	const basename = path.basename(filePath);
+	let relativePath = vscode.workspace.asRelativePath(filePath, false);
+
+	if (basename === "settings.json" || basename === "keybindings.json") {
+		if (os.type() === "Windows_NT") relativePath = filePath.substring(3);  // for Windows
+		// else relativePath = filePath.substring(1); // test for linux/mac
+	}
+	// else {
+	// 	const wsFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(filePath)).uri.path;
+	// 	relativePath = path.posix.relative(wsFolder, filePath);
+	// }
+
+	return relativePath;
+}
+
+/**
+ * Get the relative path to the workspace folder  
+ * @param {string} filePath   
+ * @returns {string} relativePath of folder
+ */
+export function getRelativeFolderPath(filePath:string) {
+
+	// const isWindows = process.platform === 'win32';
+	// const env = process.env;
+	// const homedir = os.homedir();
+
+	const dirname = path.dirname(filePath);
+	return vscode.workspace.asRelativePath(dirname);
+}
+
+
+
+
+
+// function normalizeUriPath(path: string): string {
+// 	const workspaceFoldersPaths = getWorkspaceFoldersPaths();
+// 	let normalizedPath = path;
+  
+// 	if (hasWorkspaceMoreThanOneFolder()) {
+// 	  normalizedPath = normalizedPath.replace(
+// 		// getWorkspaceFoldersCommonPathProp(),
+// 		"",
+// 		""
+// 	  );
+// 	} else {
+// 	  workspaceFoldersPaths.forEach((wfPath: string) => {
+// 		normalizedPath = normalizedPath.replace(wfPath, "");
+// 	  });
+// 	}
+  
+// 	return normalizedPath;
+//   }
+  
+
+
+
+  /**
+   *
+   * @param uri
+   */
+export function getPathRelativeToWorkspaceFolder(uri: vscode.Uri): string {
+    const currentWorkspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+    return ((typeof currentWorkspaceFolder !== "undefined")
+        ? path.relative(currentWorkspaceFolder.uri.path, uri.path)
+        : uri.path
+	);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   function isDebounceConfigurationToggled(
+// 	event: vscode.ConfigurationChangeEvent
+//   ): boolean {
+// 	return event.affectsConfiguration("searchEverywhere.shouldUseDebounce");
+//   }
+  
+//   function isSortingConfigurationToggled(
+// 	event: vscode.ConfigurationChangeEvent
+//   ): boolean {
+// 	return event.affectsConfiguration("searchEverywhere.shouldItemsBeSorted");
+//   }
+  
 
 
 // <Command>{
@@ -1219,11 +1754,6 @@ export function isDirectory(uri: vscode.Uri): boolean {
 // }
 
 
-
-
-export function endWithSlash(path: string): string {
-	return (path.charCodeAt(path.length - 1) === CharCode.Slash)? path : path+'/';
-}
 
 
 

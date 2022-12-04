@@ -31,9 +31,7 @@ interface TagDefinition {
 	bold: boolean;
 	italic: boolean;
 	backgroundColor: string;
-	CSSTextDecoration?: string;
-	CSSOutlineDecoration?: string;
-	CSSBorderDecoration?: string;
+	CustomDecoration?: import('vscode').DecorationRenderOptions;
 }
 
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -205,6 +203,32 @@ declare const enum CompareResult {
 
 
 
+
+
+interface IRange {        
+	/** The start position. It is before or equal to {@link IRange.end end}. */
+	readonly start: IPosition;
+
+	/** The end position. It is after or equal to {@link IRange.start start}. */
+	readonly end:IPosition;
+}
+
+interface IPosition {
+	/** The zero-based line value. */
+	readonly line: int;
+
+	/** The zero-based character value. */
+	readonly character: int;
+}
+
+
+
+
+
+
+
+
+
 // /**
 //  * Swaps the elements at the specified positions in the specified array.
 //  * @param {Array} array The array in which to swap elements.
@@ -282,7 +306,7 @@ type Constructor<T, Arguments extends unknown[] = any[]> = new(...arguments: Arg
 Matches any unknown record.
 */
 type UnknownRecord = Record<PropertyKey, unknown>;
-
+type LooseRecord<T> = Record<keyof any, T>;
 /**
 Matches any unknown array or tuple.
 */

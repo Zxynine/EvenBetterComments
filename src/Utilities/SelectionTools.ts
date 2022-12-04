@@ -17,20 +17,20 @@ import * as vscode from 'vscode';
  * Returns the Position of the cursor in the editor. Supports multicursor
  * @export
  * @param {TextEditor} editor The editor to get the cursor position from
- * @return {*}  {Position[]}
+ * @return {*}	{Position[]}
  */
  export function getCursorPosition(editor: vscode.TextEditor): vscode.Position[] {
-    return editor.selections.map(Selection => Selection.active);
+		return editor.selections.map(Selection => Selection.active);
 }
 
 /**
  * Returns the Position of the cursor in the editor. Supports multicursor
  * @export
  * @param {TextEditor} editor The editor to get the cursor position from
- * @return {*}  {Position[]}
+ * @return {*}	{Position[]}
  */
  export function getCursorLine(editor: vscode.TextEditor): int[] {
-    return editor.selections.map(Selection => Selection.active.line);
+		return editor.selections.map(Selection => Selection.active.line);
 }
 
 
@@ -47,33 +47,33 @@ export function setSelectionString (editor : vscode.TextEditor, theString: strin
 
 
 export function selectWordAtCursorPosition(editor: vscode.TextEditor): boolean {
-    if (!editor.selection.isEmpty) return true;    
+	if (!editor.selection.isEmpty) return true;		
 
-    const cursorWordRange = editor.document.getWordRangeAtPosition(editor.selection.active);
-    if (!cursorWordRange) {
-        return false;
-    } else {
+	const cursorWordRange = editor.document.getWordRangeAtPosition(editor.selection.active);
+	if (!cursorWordRange) {
+		return false;
+	} else {
 		editor.selection = new vscode.Selection(cursorWordRange.start, cursorWordRange.end);
-		return true;            
+		return true;						
 	}
 }
 
 
 
 export function selectLines(editor: vscode.TextEditor, lines: number[]): readonly vscode.Selection[] {
-    return editor.selections = lines.map(line => new vscode.Selection(line, 0, line, editor.document.lineAt(line).text.length));
+		return editor.selections = lines.map(line => new vscode.Selection(line, 0, line, editor.document.lineAt(line).text.length));
 }
 
 
 
 
 export function move(editor: vscode.TextEditor, toLine: number) {
-    let currentCharacter = editor.selection.anchor.character;
-    let newPosition = editor.selection.active.with(toLine, currentCharacter);
+		let currentCharacter = editor.selection.anchor.character;
+		let newPosition = editor.selection.active.with(toLine, currentCharacter);
 
-    editor.selection = new vscode.Selection(newPosition, newPosition);
-    editor.revealRange(new vscode.Range(newPosition, newPosition));
-  }
+		editor.selection = new vscode.Selection(newPosition, newPosition);
+		editor.revealRange(new vscode.Range(newPosition, newPosition));
+	}
 
 
 
@@ -180,48 +180,48 @@ export class MarkRing {
 	private maxNum = 16;
 	private ring: Array<readonly vscode.Position[]>;
 	private pointer: number | null;
-  
+	
 	constructor(maxNum?: number) {
-	  if (maxNum) {
+		if (maxNum) {
 		this.maxNum = maxNum;
-	  }
-  
-	  this.pointer = null;
-	  this.ring = [];
+		}
+	
+		this.pointer = null;
+		this.ring = [];
 	}
-  
+	
 	public push(marks: readonly vscode.Position[], replace = false): void {
-	  if (replace) {
+		if (replace) {
 		this.ring[0] = marks;
-	  } else {
+		} else {
 		this.ring = [marks].concat(this.ring);
 		if (this.ring.length > this.maxNum) {
-		  this.ring = this.ring.slice(0, this.maxNum);
+			this.ring = this.ring.slice(0, this.maxNum);
 		}
-	  }
-	  this.pointer = 0;
+		}
+		this.pointer = 0;
 	}
-  
+	
 	public getTop(): readonly vscode.Position[] | undefined {
-	  if (this.pointer == null || this.ring.length === 0) {
+		if (this.pointer == null || this.ring.length === 0) {
 		return undefined;
-	  }
-  
-	  return this.ring[this.pointer];
+		}
+	
+		return this.ring[this.pointer];
 	}
-  
+	
 	public pop(): readonly vscode.Position[] | undefined {
-	  if (this.pointer == null || this.ring.length === 0) {
+		if (this.pointer == null || this.ring.length === 0) {
 		return undefined;
-	  }
-  
-	  const ret = this.ring[this.pointer];
-  
-	  this.pointer = (this.pointer + 1) % this.ring.length;
-  
-	  return ret;
+		}
+	
+		const ret = this.ring[this.pointer];
+	
+		this.pointer = (this.pointer + 1) % this.ring.length;
+	
+		return ret;
 	}
-  }
+	}
 
 
 
@@ -230,152 +230,152 @@ export class MarkRing {
 
 
 
-  
+	
 export function revealPrimaryActive(textEditor: vscode.TextEditor): void {
 	return textEditor.revealRange(new vscode.Range(textEditor.selection.active, textEditor.selection.active));
-  }
+	}
 
 
-  
+	
 export function getNonEmptySelections(textEditor: vscode.TextEditor): vscode.Selection[] {
 	return textEditor.selections.filter((selection) => !selection.isEmpty);
-  }
-  
-  export function makeSelectionsEmpty(textEditor: vscode.TextEditor): void {
+	}
+	
+	export function makeSelectionsEmpty(textEditor: vscode.TextEditor): void {
 	textEditor.selections = textEditor.selections.map((selection) => new vscode.Selection(selection.active, selection.active));
-  }
+	}
 
-  
+	
 enum RecenterPosition {
 	Middle,
 	Top,
 	Bottom,
-  }
-  
-  export class RecenterTopBottom {
+	}
+	
+	export class RecenterTopBottom {
 	public readonly id = "recenterTopBottom";
-  
+	
 	private recenterPosition: RecenterPosition = RecenterPosition.Middle;
-  
+	
 	public execute(textEditor: vscode.TextEditor, isInMarkMode: boolean, prefixArgument: number | undefined): void {
-	  const activeRange = new vscode.Range(textEditor.selection.active, textEditor.selection.active);
-  
-	  switch (this.recenterPosition) {
+		const activeRange = new vscode.Range(textEditor.selection.active, textEditor.selection.active);
+	
+		switch (this.recenterPosition) {
 		case RecenterPosition.Middle: {
-		  textEditor.revealRange(activeRange, vscode.TextEditorRevealType.InCenter);
-		  this.recenterPosition = RecenterPosition.Top;
-		  break;
+			textEditor.revealRange(activeRange, vscode.TextEditorRevealType.InCenter);
+			this.recenterPosition = RecenterPosition.Top;
+			break;
 		}
 		case RecenterPosition.Top: {
-		  textEditor.revealRange(activeRange, vscode.TextEditorRevealType.AtTop);
-		  this.recenterPosition = RecenterPosition.Bottom;
-		  break;
+			textEditor.revealRange(activeRange, vscode.TextEditorRevealType.AtTop);
+			this.recenterPosition = RecenterPosition.Bottom;
+			break;
 		}
 		case RecenterPosition.Bottom: {
-		  // TextEditor.revealRange does not support to set the cursor at the bottom of window.
-		  // Therefore, the number of lines to scroll is calculated here.
-		  const visibleRange = textEditor.visibleRanges[0];
-		  if (visibleRange == null) {
+			// TextEditor.revealRange does not support to set the cursor at the bottom of window.
+			// Therefore, the number of lines to scroll is calculated here.
+			const visibleRange = textEditor.visibleRanges[0];
+			if (visibleRange == null) {
 			return;
-		  }
-		  const visibleTop = visibleRange.start.line;
-		  const visibleBottom = visibleRange.end.line;
-		  const visibleHeight = visibleBottom - visibleTop;
-  
-		  const current = textEditor.selection.active.line;
-  
-		  const nextVisibleTop = Math.max(current - visibleHeight, 1);
-  
-		  // Scroll so that `nextVisibleTop` is the top of window
-		  const p = new vscode.Position(nextVisibleTop, 0);
-		  const r = new vscode.Range(p, p);
-		  textEditor.revealRange(r);
-  
-		  this.recenterPosition = RecenterPosition.Middle;
-		  break;
+			}
+			const visibleTop = visibleRange.start.line;
+			const visibleBottom = visibleRange.end.line;
+			const visibleHeight = visibleBottom - visibleTop;
+	
+			const current = textEditor.selection.active.line;
+	
+			const nextVisibleTop = Math.max(current - visibleHeight, 1);
+	
+			// Scroll so that `nextVisibleTop` is the top of window
+			const p = new vscode.Position(nextVisibleTop, 0);
+			const r = new vscode.Range(p, p);
+			textEditor.revealRange(r);
+	
+			this.recenterPosition = RecenterPosition.Middle;
+			break;
 		}
-	  }
+		}
 	}
-  
+	
 	public onDidInterruptTextEditor(): void {
-	  this.recenterPosition = RecenterPosition.Middle;
+		this.recenterPosition = RecenterPosition.Middle;
 	}
-  }
+	}
 
 
-  
+	
 export class DeleteBlankLines {
 	public readonly id = "deleteBlankLines";
-  
+	
 	public async execute(
-	  textEditor: vscode.TextEditor,
-	  isInMarkMode: boolean,
-	  prefixArgument: number | undefined
+		textEditor: vscode.TextEditor,
+		isInMarkMode: boolean,
+		prefixArgument: number | undefined
 	): Promise<void> {
-	  const document = textEditor.document;
-  
-	  for (let iSel = 0; iSel < textEditor.selections.length; ++iSel) {
+		const document = textEditor.document;
+	
+		for (let iSel = 0; iSel < textEditor.selections.length; ++iSel) {
 		// `selection[iSel]` is mutated during the loop,
 		// therefore, each selection must be obtained
 		// by indexing on each iteration.
 		// That's why for-of loop is not appropriate here.
 		const selection = textEditor.selections[iSel]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-  
+	
 		const curLineNum = selection.active.line;
 		const curLine = document.lineAt(curLineNum);
 		const subsequentText = curLine.text.substr(selection.active.character);
-  
+	
 		const cursorIsAtTheEndOfLine = subsequentText.search(/\S/) === -1;
 		if (!cursorIsAtTheEndOfLine) {
-		  break;
+			break;
 		}
-  
+	
 		// Search for the following empty lines and get the final line number
 		let followingLineOffset = 0;
 		while (
-		  curLineNum + followingLineOffset + 1 < document.lineCount &&
-		  document.lineAt(curLineNum + followingLineOffset + 1).isEmptyOrWhitespace
+			curLineNum + followingLineOffset + 1 < document.lineCount &&
+			document.lineAt(curLineNum + followingLineOffset + 1).isEmptyOrWhitespace
 		) {
-		  followingLineOffset++;
+			followingLineOffset++;
 		}
-  
+	
 		// Search for the previous empty lines and get the first line number
 		let previousLineOffset = 0;
 		while (
-		  curLineNum - previousLineOffset - 1 >= 0 &&
-		  document.lineAt(curLineNum - previousLineOffset - 1).isEmptyOrWhitespace
+			curLineNum - previousLineOffset - 1 >= 0 &&
+			document.lineAt(curLineNum - previousLineOffset - 1).isEmptyOrWhitespace
 		) {
-		  previousLineOffset++;
+			previousLineOffset++;
 		}
-  
+	
 		await textEditor.edit((editBuilder) => {
-		  if (followingLineOffset > 0) {
+			if (followingLineOffset > 0) {
 			// Following empty lines exist
 			const finalFollowingEmptyLineNum = curLineNum + followingLineOffset;
-  
+	
 			editBuilder.delete(
-			  new vscode.Range(
+				new vscode.Range(
 				new vscode.Position(curLineNum + 1, 0),
 				document.lineAt(finalFollowingEmptyLineNum).rangeIncludingLineBreak.end
-			  )
+				)
 			);
-		  }
-  
-		  if (previousLineOffset > 0) {
+			}
+	
+			if (previousLineOffset > 0) {
 			// Previous empty lines exist
 			const firstPreviousEmptyLineNum = curLineNum - previousLineOffset;
-  
+	
 			editBuilder.delete(
-			  new vscode.Range(
+				new vscode.Range(
 				new vscode.Position(firstPreviousEmptyLineNum, 0),
 				document.lineAt(curLineNum - 1).rangeIncludingLineBreak.end
-			  )
+				)
 			);
-		  }
+			}
 		});
-	  }
+		}
 	}
-  }
+	}
 
 
 
@@ -401,134 +401,134 @@ export class DeleteBlankLines {
 
 
 
-  export interface IKillRingEntity {
+	export interface IKillRingEntity {
 	type: string;
 	isSameClipboardText(clipboardText: string): boolean;
 	isEmpty(): boolean;
 	asString(): string;
-  }
+	}
 
-  export enum AppendDirection {
+	export enum AppendDirection {
 	Forward,
 	Backward,
-  }
-  
-  interface IRegionText {
+	}
+	
+	interface IRegionText {
 	text: string;
 	range: vscode.Range;
-  }
-  
-  class AppendedRegionTexts {
+	}
+	
+	class AppendedRegionTexts {
 	/**
 	 * This class represents a sequence of IRegionTexts appended by kill command.
 	 * Each element come from one cursor (selection) at single kill.
 	 */
 	private regionTexts: IRegionText[];
-  
+	
 	constructor(regionText: IRegionText) {
-	  this.regionTexts = [regionText];
+		this.regionTexts = [regionText];
 	}
-  
+	
 	public append(another: AppendedRegionTexts, appendDirection: AppendDirection = AppendDirection.Forward) {
-	  if (appendDirection === AppendDirection.Forward) {
+		if (appendDirection === AppendDirection.Forward) {
 		this.regionTexts = this.regionTexts.concat(another.regionTexts);
-	  } else {
+		} else {
 		this.regionTexts = another.regionTexts.concat(this.regionTexts);
-	  }
+		}
 	}
-  
+	
 	public isEmpty() {
-	  return this.regionTexts.every((regionText) => regionText.text === "");
+		return this.regionTexts.every((regionText) => regionText.text === "");
 	}
-  
+	
 	public getAppendedText(): string {
-	  return this.regionTexts.map((regionText) => regionText.text).join("");
+		return this.regionTexts.map((regionText) => regionText.text).join("");
 	}
-  
+	
 	public getLastRange(): vscode.Range {
-	  return this.regionTexts[this.regionTexts.length - 1]!.range; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+		return this.regionTexts[this.regionTexts.length - 1]!.range; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 	}
-  }
-  
-  export class EditorTextKillRingEntity implements IKillRingEntity {
+	}
+	
+	export class EditorTextKillRingEntity implements IKillRingEntity {
 	public readonly type = "editor";
 	private regionTextsList: AppendedRegionTexts[];
-  
+	
 	constructor(regionTexts: IRegionText[]) {
-	  this.regionTextsList = regionTexts.map((regionText) => new AppendedRegionTexts(regionText));
+		this.regionTextsList = regionTexts.map((regionText) => new AppendedRegionTexts(regionText));
 	}
-  
+	
 	public isSameClipboardText(clipboardText: string): boolean {
-	  return this.asString() === clipboardText;
+		return this.asString() === clipboardText;
 	}
-  
+	
 	public isEmpty(): boolean {
-	  return this.regionTextsList.every((regionTexts) => regionTexts.isEmpty());
+		return this.regionTextsList.every((regionTexts) => regionTexts.isEmpty());
 	}
-  
+	
 	// TODO: Cache the result of this method because it is called repeatedly
 	public asString(): string {
-	  const appendedTexts = this.regionTextsList.map((appendedRegionTexts) => ({
+		const appendedTexts = this.regionTextsList.map((appendedRegionTexts) => ({
 		range: appendedRegionTexts.getLastRange(),
 		text: appendedRegionTexts.getAppendedText(),
-	  }));
-  
-	  const sortedAppendedTexts = appendedTexts.sort((a, b) => {
+		}));
+	
+		const sortedAppendedTexts = appendedTexts.sort((a, b) => {
 		if (a.range.start.line === b.range.start.line) {
-		  return a.range.start.character - b.range.start.character;
+			return a.range.start.character - b.range.start.character;
 		} else {
-		  return a.range.start.line - b.range.start.line;
+			return a.range.start.line - b.range.start.line;
 		}
-	  });
-  
-	  let allText = "";
-	  sortedAppendedTexts.forEach((item, i) => {
+		});
+	
+		let allText = "";
+		sortedAppendedTexts.forEach((item, i) => {
 		const prevItem = sortedAppendedTexts[i - 1];
 		if (prevItem && prevItem.range.start.line !== item.range.start.line) {
-		  allText += "\n" + item.text;
+			allText += "\n" + item.text;
 		} else {
-		  allText += item.text;
+			allText += item.text;
 		}
-	  });
-  
-	  return allText;
+		});
+	
+		return allText;
 	}
-  
+	
 	public getRegionTextsList(): AppendedRegionTexts[] {
-	  return this.regionTextsList;
+		return this.regionTextsList;
 	}
-  
+	
 	public append(entity: EditorTextKillRingEntity, appendDirection: AppendDirection = AppendDirection.Forward): void {
-	  const additional = entity.getRegionTextsList();
-	  if (additional.length !== this.regionTextsList.length) {
+		const additional = entity.getRegionTextsList();
+		if (additional.length !== this.regionTextsList.length) {
 		throw Error("Not appendable");
-	  }
-  
-	  this.regionTextsList.map(
+		}
+	
+		this.regionTextsList.map(
 		// `additional.length === this.regionTextsList.length` has already been checked,
 		// so noUncheckedIndexedAccess rule can be skipped here.
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		(appendedRegionTexts, i) => appendedRegionTexts.append(additional[i]!, appendDirection)
-	  );
+		);
 	}
-  }
+	}
 
-  export class ClipboardTextKillRingEntity implements IKillRingEntity {
+	export class ClipboardTextKillRingEntity implements IKillRingEntity {
 	public readonly type = "clipboard";
 	private text: string;
-  
+	
 	constructor(clipboardText: string) {
-	  this.text = clipboardText;
+		this.text = clipboardText;
 	}
-  
+	
 	public isSameClipboardText(clipboardText: string): boolean {
-	  return clipboardText === this.text;
+		return clipboardText === this.text;
 	}
-  
+	
 	public isEmpty(): boolean {
-	  return this.text === "";
+		return this.text === "";
 	}
-  
+	
 	public asString(): string {
 	return this.text;
 	}
@@ -575,23 +575,23 @@ export class KillRing {
 
 
 
-//   export class AddSelectionToNextFindMatch extends EmacsCommand {
+//	 export class AddSelectionToNextFindMatch extends EmacsCommand {
 // 	public readonly id = "addSelectionToNextFindMatch";
-  
+	
 // 	public execute(textEditor: TextEditor, isInMarkMode: boolean, prefixArgument: number | undefined): Thenable<void> {
-// 	  this.emacsController.enterMarkMode(false);
-// 	  return vscode.commands.executeCommand<void>("editor.action.addSelectionToNextFindMatch");
+// 		this.emacsController.enterMarkMode(false);
+// 		return vscode.commands.executeCommand<void>("editor.action.addSelectionToNextFindMatch");
 // 	}
-//   }
-  
-//   export class AddSelectionToPreviousFindMatch extends EmacsCommand {
+//	 }
+	
+//	 export class AddSelectionToPreviousFindMatch extends EmacsCommand {
 // 	public readonly id = "addSelectionToPreviousFindMatch";
-  
+	
 // 	public execute(textEditor: TextEditor, isInMarkMode: boolean, prefixArgument: number | undefined): Thenable<void> {
-// 	  this.emacsController.enterMarkMode(false);
-// 	  return vscode.commands.executeCommand<void>("editor.action.addSelectionToPreviousFindMatch");
+// 		this.emacsController.enterMarkMode(false);
+// 		return vscode.commands.executeCommand<void>("editor.action.addSelectionToPreviousFindMatch");
 // 	}
-//   }
+//	 }
 
 
 
@@ -600,15 +600,15 @@ export class KillRing {
 
 
 
-//   export abstract class KillYankCommand extends EmacsCommand {
+//	 export abstract class KillYankCommand extends EmacsCommand {
 // 	protected killYanker: KillYanker;
-  
+	
 // 	public constructor(emacsController: IEmacsController, killYanker: KillYanker) {
-// 	  super(emacsController);
-  
-// 	  this.killYanker = killYanker;
+// 		super(emacsController);
+	
+// 		this.killYanker = killYanker;
 // 	}
-//   }
+//	 }
 
 
 // https://www.emacswiki.org/emacs/KillingAndYanking#:~:text=The%20command%20for%20saving%20(copying,%27%20(%20%27M-k%27%20).
@@ -741,11 +741,11 @@ export class KillRing {
 
 export function insertSnippet(text: string) {
 	return vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(text));
-  }
-  
+	}
+	
 export function insertBind(configChar: string) {
 	// if(!config().disableRebindForEdit && config().rebind[configChar]) {
-	//   insertSnippet(config().rebind[configChar]);
+	//	 insertSnippet(config().rebind[configChar]);
 	// } else {
 	insertSnippet(configChar);
 	// }
@@ -758,11 +758,11 @@ export function insertBind(configChar: string) {
 export function getLines(selection: vscode.Selection): Array<vscode.TextLine> {
 	const lines: Array<vscode.TextLine> = [];
 	for (var i = selection.start.line; i < selection.end.line + 1; i++) {
-	  lines.push(vscode.window.activeTextEditor!.document.lineAt(i));
+		lines.push(vscode.window.activeTextEditor!.document.lineAt(i));
 	}
 	return lines;
-  }
-  
+	}
+	
 
 
 
@@ -794,17 +794,17 @@ export function sortAllSelections(selections: Array<vscode.Selection>) {
 
 export function nextToken(c: string|number) : string|number {
 	if(typeof c === 'string') {
-	  if( c === 'Z') {
+		if( c === 'Z') {
 		return 'A';
-	  } else if (c === 'z') {
+		} else if (c === 'z') {
 		return 'a';
-	  } else {
+		} else {
 		return String.fromCharCode(c.charCodeAt(0) + 1);
-	  }
+		}
 	} else {
-	  return ++c;
+		return ++c;
 	}
-  }
+	}
 
 
 
@@ -830,26 +830,26 @@ function findOccurances(doc: vscode.TextDocument, line: number, char: string): A
 	return matches;
 }
 
-  function findNext(doc: vscode.TextDocument, line: number, char: string, start_index: number = 0, nest_char: string|undefined = undefined, nested: number = 0): vscode.Position|undefined {
+	function findNext(doc: vscode.TextDocument, line: number, char: string, start_index: number = 0, nest_char: string|undefined = undefined, nested: number = 0): vscode.Position|undefined {
 	if (line === doc.lineCount) { return undefined };
 	var occurances = findOccurances(doc, line, char).filter(n => n >= start_index);
 	var nests = nest_char ? findOccurances(doc, line, nest_char).filter(n => n >= start_index) : [];
 	var occurance_index = 0;
 	var nests_index = 0;
 	while ((occurance_index < occurances.length || nests_index < nests.length) && nested >= 0) {
-	  if (occurances[occurance_index] < nests[nests_index] || !nests[nests_index]) {
+		if (occurances[occurance_index] < nests[nests_index] || !nests[nests_index]) {
 		if (nested === 0) return new vscode.Position(line, occurances[occurance_index]);
 		nested--
 		occurance_index++;
-	  } else if (nests[nests_index] < occurances[occurance_index] || !occurances[occurance_index]) {
+		} else if (nests[nests_index] < occurances[occurance_index] || !occurances[occurance_index]) {
 		nested++;
 		nests_index++;
-	  }
+		}
 	}
 	return findNext(doc, ++line, char, 0, nest_char, nested);
-  }
-  
-  function findPrevious(doc: vscode.TextDocument, line: number, char: string, start_index?: number, nest_char: string|undefined = undefined, nested: number = 0): vscode.Position|undefined {
+	}
+	
+	function findPrevious(doc: vscode.TextDocument, line: number, char: string, start_index?: number, nest_char: string|undefined = undefined, nested: number = 0): vscode.Position|undefined {
 	if (line === -1) return undefined
 	if (start_index === undefined) { start_index = doc.lineAt(line).text.length; }
 	var occurances = findOccurances(doc, line, char).filter(n => n <= start_index!);
@@ -857,88 +857,88 @@ function findOccurances(doc: vscode.TextDocument, line: number, char: string): A
 	var occurance_index = occurances.length - 1;
 	var nests_index = nests.length - 1;
 	while ((occurance_index > -1 || nests_index > -1) && nested >= 0) {
-	  if (occurances[occurance_index] > nests[nests_index] || !nests[nests_index]) {
+		if (occurances[occurance_index] > nests[nests_index] || !nests[nests_index]) {
 		if (nested === 0) return new vscode.Position(line, occurances[occurance_index]);
 		nested--
 		occurance_index--;
-	  } else if (nests[nests_index] > occurances[occurance_index] || !occurances[occurance_index]) {
+		} else if (nests[nests_index] > occurances[occurance_index] || !occurances[occurance_index]) {
 		nested++;
 		nests_index--;
-	  }
+		}
 	}
 	return findPrevious(doc, --line, char, undefined, nest_char, nested);
-  }
-  
-  function findSingleSelect(s: vscode.Selection, doc: vscode.TextDocument, char: string, outer?: boolean, multiline?: boolean) {
+	}
+	
+	function findSingleSelect(s: vscode.Selection, doc: vscode.TextDocument, char: string, outer?: boolean, multiline?: boolean) {
 	let { line, character } = s.active;
 	let matches = findOccurances(doc, line, char);
 	let next = matches.find(a => a > character);
 	let next_index = matches.indexOf(next!);
 	let offset = outer ? char.length : 0;
 	if (matches.length > 1 && matches.length % 2 === 0) {
-	  // Jump inside the next matching pair
-	  if (next === -1) { return s }
-	  if (next_index % 2 !== 0) {
+		// Jump inside the next matching pair
+		if (next === -1) { return s }
+		if (next_index % 2 !== 0) {
 		next_index--;
-	  }
-	  //Automatically grow to outer selection
-	  if (!outer &&
+		}
+		//Automatically grow to outer selection
+		if (!outer &&
 		new vscode.Position(line, matches[next_index]).isEqual(s.anchor) &&
 		new vscode.Position(line, matches[next_index + 1] - 1).isEqual(s.end)) {
 		offset = char.length
-	  }
-	  return new vscode.Selection(
+		}
+		return new vscode.Selection(
 		new vscode.Position(line, matches[next_index] - offset),
 		new vscode.Position(line, matches[next_index + 1] - 1 + offset)
-	  );
+		);
 	} else if (multiline) {
-	  let start_pos = findPrevious(doc, line, char, character) || new vscode.Position(line, matches[next_index])
-	  if (!start_pos) { return s };
-	  let end_pos: vscode.Position = findNext(doc, start_pos.line, char, start_pos.character + 1)!;
-	  //Automatically grow to outer selection
-	  if (!outer &&
+		let start_pos = findPrevious(doc, line, char, character) || new vscode.Position(line, matches[next_index])
+		if (!start_pos) { return s };
+		let end_pos: vscode.Position = findNext(doc, start_pos.line, char, start_pos.character + 1)!;
+		//Automatically grow to outer selection
+		if (!outer &&
 		start_pos.isEqual(s.anchor) &&
 		new vscode.Position(end_pos.line, end_pos.character - 1).isEqual(s.end)) {
 		offset = char.length
-	  }
-	  if (start_pos && end_pos) {
+		}
+		if (start_pos && end_pos) {
 		start_pos = new vscode.Position(start_pos.line, start_pos.character - offset);
 		end_pos = new vscode.Position(end_pos.line, end_pos.character - 1 + offset);
 		return new vscode.Selection(start_pos, end_pos)
-	  }
+		}
 	}
 	return s;
-  
-  }
-  
-  export function selectEitherQuote(updateSelect: boolean = true) {
+	
+	}
+	
+	export function selectEitherQuote(updateSelect: boolean = true) {
 	let editor = vscode.window.activeTextEditor;
 	if (!editor) { return; };
 	let doc = editor.document
 	let sel = editor.selections
 	const selectionsResult = sel.map((s: vscode.Selection) => {
-	  let selections = ['"', "'", "`"].map(char => findSingleSelect(s, doc, char, false, char === '`'))
+		let selections = ['"', "'", "`"].map(char => findSingleSelect(s, doc, char, false, char === '`'))
 		.filter(sel => sel !== s)
 		.filter(sel => sel.start.isBeforeOrEqual(s.start) && sel.end.isAfterOrEqual(s.end))
 		.sort((a, b) => a.start.isBefore(b.start) ? 1 : -1)
-	  if (selections.length > 0) {
+		if (selections.length > 0) {
 		return selections[0]
-	  }
-	  return s;
+		}
+		return s;
 	})
-  
+	
 	if (updateSelect) {
-	  editor.selections = selectionsResult
+		editor.selections = selectionsResult
 	}
-  
+	
 	return selectionsResult
-  }
-  
-  interface MatchingSelectOptions { start_char: string, end_char: string, outer?: boolean }
-  export function matchingSelect(
+	}
+	
+	interface MatchingSelectOptions { start_char: string, end_char: string, outer?: boolean }
+	export function matchingSelect(
 	{ start_char, end_char, outer = false }: MatchingSelectOptions,
 	updateSelect: boolean = true
-  ) {
+	) {
 	let editor = vscode.window.activeTextEditor;
 	if (!editor) { return; };
 	let doc = editor.document
@@ -947,40 +947,40 @@ function findOccurances(doc: vscode.TextDocument, line: number, char: string): A
 	let start_offset = outer ? start_char.length : 0;
 	let end_offset = outer ? end_char.length : 0;
 	const selections = sel.map(s => {
-	  let { line, character } = s.active;
-	  let starts = findOccurances(doc, line, start_char);
-	  // let ends = findOccurances(doc, line, end_char);
-	  let start = starts.find(a => a > character);
-	  // let end = ends.find(a => a > character);
-	  let start_index = starts.indexOf(start!);
-	  // let end_index = ends.indexOf(end);
-	  let start_pos: vscode.Position = findPrevious(doc, line, start_char, character, end_char) || new vscode.Position(line, starts[start_index]);
-	  if (!start_pos) { return s };
-	  let end_pos: vscode.Position = findNext(doc, start_pos.line, end_char, start_pos.character + 1, start_char)!;
-	  if (start_pos && end_pos) {
-		success = true;
-		//Automatically grow to outer selection
-		if (!outer &&
-		  start_pos.isEqual(s.anchor) &&
-		  new vscode.Position(end_pos.line, end_pos.character - 1).isEqual(s.end)) {
-		  start_offset = start_char.length;
-		  end_offset = end_char.length;
+		let { line, character } = s.active;
+		let starts = findOccurances(doc, line, start_char);
+		// let ends = findOccurances(doc, line, end_char);
+		let start = starts.find(a => a > character);
+		// let end = ends.find(a => a > character);
+		let start_index = starts.indexOf(start!);
+		// let end_index = ends.indexOf(end);
+		let start_pos: vscode.Position = findPrevious(doc, line, start_char, character, end_char) || new vscode.Position(line, starts[start_index]);
+		if (!start_pos) { return s };
+		let end_pos: vscode.Position = findNext(doc, start_pos.line, end_char, start_pos.character + 1, start_char)!;
+		if (start_pos && end_pos) {
+			success = true;
+			//Automatically grow to outer selection
+			if (!outer &&
+				start_pos.isEqual(s.anchor) &&
+				new vscode.Position(end_pos.line, end_pos.character - 1).isEqual(s.end)) {
+				start_offset = start_char.length;
+				end_offset = end_char.length;
+			}
+			start_pos = new vscode.Position(start_pos.line, start_pos.character - start_offset);
+			end_pos = new vscode.Position(end_pos.line, end_pos.character - 1 + end_offset);
+		
+			return new vscode.Selection(start_pos, end_pos)
 		}
-		start_pos = new vscode.Position(start_pos.line, start_pos.character - start_offset);
-		end_pos = new vscode.Position(end_pos.line, end_pos.character - 1 + end_offset);
-  
-		return new vscode.Selection(start_pos, end_pos)
-	  }
-	  return s;
+		return s;
 	})
 	if (updateSelect) {
-	  editor.selections = selections
-	  if (success && start_char === "<") {
+		editor.selections = selections
+		if (success && start_char === "<") {
 		vscode.commands.executeCommand("editor.action.addSelectionToNextFindMatch")
-	  }
+		}
 	}
 	return selections
-  }
+	}
 
 
 
@@ -1007,43 +1007,38 @@ export class RangeBuilder {
 	private indexRanges: IndexRange[];
 
 	constructor(source: string) {
-		let regex = /(.*)(\r?\n|$)/g;
+		const regex = /(.*)(\r?\n|$)/g;
 
-		let indexRanges: IndexRange[] = [];
+		const indexRanges: IndexRange[] = [];
 
 		while (true) {
-			let groups = regex.exec(source);
+			const groups = regex.exec(source);
 			if (!groups) break;
-			let lineText = groups[1];
-			let lineEnding = groups[2];
+			const lineText = groups[1];
+			const lineEnding = groups[2];
 
-			let lastIndex = regex.lastIndex - lineEnding.length;
+			const lastIndex = regex.lastIndex - lineEnding.length;
 
-			indexRanges.push({
-				start: lastIndex - lineText.length,
-				end: lastIndex
-			});
+			indexRanges.push(<IndexRange>{ start: lastIndex - lineText.length, end: lastIndex });
 
-			if (!lineEnding.length) {
-				break;
-			}
+			if (!lineEnding.length) break;
 		}
 
 		this.indexRanges = indexRanges;
 	}
 
 	getPosition(index: number): vscode.Position|undefined {
-		let indexRanges = this.indexRanges;
+		const indexRanges = this.indexRanges;
 
 		for (let i = 0; i < indexRanges.length; i++) {
-			let indexRange = indexRanges[i];
+			const indexRange = indexRanges[i];
 			if (indexRange.end >= index) {
 				if (indexRange.start <= index) {
 					// Within range.
 					return new vscode.Position(i, index - indexRange.start);
 				} else {
 					// End of line?
-					let previousIndexRange = indexRanges[i - 1];
+					const previousIndexRange = indexRanges[i - 1];
 					return new vscode.Position(i, previousIndexRange.end - previousIndexRange.start + 1);
 				}
 			}
@@ -1052,9 +1047,72 @@ export class RangeBuilder {
 	}
 
 	getRange(startIndex: number, endIndex: number): vscode.Range {
-		let start = this.getPosition(startIndex)!;
-		let end = this.getPosition(endIndex)!;
-		return new vscode.Range(start, end);
+		return new vscode.Range(
+			this.getPosition(startIndex)!, 
+			this.getPosition(endIndex)!
+		);
 	}
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/ArturoDent/find-and-transform/blob/master/src/transform.js
+
+
+
+
+
+/**
+ * Add any empty/words at cursor position to the editor.selections.
+ * Modifies existing selections.
+ * @param {window.activeTextEditor} editor
+ */
+ exports.addEmptySelectionMatches = async function (editor: vscode.TextEditor) {
+
+	const { document } = vscode.window.activeTextEditor!;
+	
+	await Promise.all(editor.selections.map(async (selection) => {
+	
+		const emptySelections = [];
+	
+		// if selection start = end then just a cursor no actual selected text
+		if (selection.isEmpty) {
+	
+		const wordRange = document.getWordRangeAtPosition(selection.start);
+		if (!wordRange) return;
+	
+		emptySelections.push(new vscode.Selection(wordRange.start, wordRange.end));
+	
+		// filter out the original empty selection
+		editor.selections = editor.selections.filter(oldSelection => oldSelection !== selection);
+		editor.selections = emptySelections.concat(editor.selections);
+		}
+	}));
+};
+	
+
+// /**
+//  * @returns {Array} - all the available path variables
+//  */
+// exports.getPathVariables = function() {
+
+// 	return [
+// 	  "${file}", "${relativeFile}", "${fileBasename}", "${fileBasenameNoExtension}", "${fileExtname}", "${fileDirname}",
+// 	  "${fileWorkspaceFolder}", "${workspaceFolder}", "${relativeFileDirname}", "${workspaceFolderBasename}", 
+// 	  "${selectedText}", "${pathSeparator}", "${lineIndex}", "${lineNumber}", "${CLIPBOARD}",     
+// 	  "${matchIndex}", "${matchNumber}"
+// 	];
+//   }

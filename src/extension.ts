@@ -50,8 +50,8 @@ export function activate(context: vscode.ExtensionContext) {
 		timeout = setTimeout(updateDecorations, 100);
 	}
 
-	function CheckSetActiveEditor(editor : vscode.TextEditor|undefined) { (editor)&& SetActiveEditor(editor); }
-	function SetActiveEditor(editor : vscode.TextEditor) {
+	function CheckSetActiveEditor(editor? : vscode.TextEditor) {
+		if (editor === undefined) return;
 		// Set new editor
 		activeEditor = editor;
 		// Set regex for updated language
@@ -68,7 +68,7 @@ export function activate(context: vscode.ExtensionContext) {
 	
 
 	// Get the active editor for the first time and initialise the regex
-	if (vscode.window.activeTextEditor) SetActiveEditor(vscode.window.activeTextEditor);
+	CheckSetActiveEditor(vscode.window.activeTextEditor);
 
 
 
@@ -148,9 +148,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 			
 			extensionOutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
+			extensionOutputChannel.appendLine("Ranges of comments in selection (goes by char not col!): ");
 			function RangeToString(range:vscode.Range){ return `[Ln ${range.start.line}, Col ${range.start.character}-${range.end.character}]` }
 
-			const CollectedRanges:vscode.Range[] = []
+			const CollectedRanges:vscode.Range[] = [];
 			const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
 			let i = Selection.start.line;
 			for (const TokenArray of TokensArrays) {
@@ -187,24 +188,60 @@ export function deactivate() { DocumentLoader.unloadDocuments() }
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function GetAllDocumentComments(ActiveEditor:vscode.TextEditor) {
+	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
+	if (!ActiveDocument) return [];
+
+	const TokensArrays = ActiveDocument.getDocumentTokenData();
+	let i = 0;
+	const CollectedRanges:vscode.Range[] = [];
+	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	return CollectedRanges;
+}
+
+export function GetAllSelectedComments(ActiveEditor:vscode.TextEditor) {
+	const Selection = ActiveEditor.selection;
+	if (Selection.isEmpty) return [];
+	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
+	if (!ActiveDocument) return [];
+
+	const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
+	let i = Selection.start.line;
+	const CollectedRanges:vscode.Range[] = [];
+	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	return CollectedRanges;
+}
+
+
+
+
+
+
+
+
 export async function RemoveAllCommentsInDocument() {
 	const ActiveEditor = vscode.window.activeTextEditor;
 	if (!ActiveEditor) return;
-	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
-	if (!ActiveDocument) return;
-
-	const CollectedRanges:vscode.Range[] = []
-	const TokensArrays = ActiveDocument.getDocumentTokenData();
-	let i = 0;
-	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	const CollectedRanges:vscode.Range[] = GetAllDocumentComments(ActiveEditor);
 	PulseRange(ActiveEditor, CollectedRanges);
 	
 	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all comments?", "Yes", "No");
 	if (Confirmation === 'Yes') {
 		await ActiveEditor.edit(Builder => {
-			for (const Range of CollectedRanges) {
-				Builder.delete(Range);
-			}
+			for (const Range of CollectedRanges) Builder.delete(Range);
 		});
 	}
 }
@@ -213,23 +250,13 @@ export async function RemoveAllCommentsInDocument() {
 export async function RemoveAllCommentsInSelection() {
 	const ActiveEditor = vscode.window.activeTextEditor;
 	if (!ActiveEditor) return;
-	const Selection = ActiveEditor.selection;
-	if (Selection.isEmpty) return;
-	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
-	if (!ActiveDocument) return;
-
-	const CollectedRanges:vscode.Range[] = []
-	const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
-	let i = Selection.start.line;
-	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
+	const CollectedRanges:vscode.Range[] = GetAllSelectedComments(ActiveEditor);
 	PulseRange(ActiveEditor, CollectedRanges);
-	
+
 	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all selected comments?", "Yes", "No");
 	if (Confirmation === 'Yes') {
 		await ActiveEditor.edit(Builder => {
-			for (const Range of CollectedRanges) {
-				Builder.delete(Range);
-			}
+			for (const Range of CollectedRanges) Builder.delete(Range);
 		});
 	}
 }

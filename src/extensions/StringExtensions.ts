@@ -8,6 +8,10 @@ declare global {
 	interface String {
 		/** Returns the number of sections separated by new line characters there are within the strong. */
 		readonly lineCount : number;
+		
+		/** Returns if the string contains no characters */
+		readonly IsEmpty : bool;
+
 		/**
 		 * Returns a 32-bit hash value hash function for the String. 
 		 * Inspired by Java source.
@@ -114,6 +118,8 @@ declare global {
 		IndexOfDifference(LHS:string, RHS:string, ignoreCase:bool): int;
 
 		Similarity(LHS:string, RHS:string): int;
+
+		IsWhiteSpace(input:string): bool;
 	}
 
 }
@@ -127,6 +133,11 @@ Object.defineProperty(String.prototype, "lineCount", {
 }); 
 
 
+Object.defineProperty(String.prototype, "IsEmpty", {
+    get (this: String) {return this.length === 0;},
+    enumerable: false,
+    configurable: true
+}); 
 
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //instance methods
@@ -249,9 +260,7 @@ String.Compare = (LHS:string, RHS:string, invert:bool = false): CompareResult =>
 
 
 
-String.CompareInsensitive = function caseInsensitiveCompare(LHS: string, RHS: string): CompareResult {
-	return LHS.localeCompare(RHS, undefined, {sensitivity: 'base'});
-}
+String.CompareInsensitive = (LHS: string, RHS: string): CompareResult => LHS.localeCompare(RHS, undefined, {sensitivity: 'base'});
 
 String.CompareArrays = function (a: string[], b: string[]): CompareResult {
 	if (!a) return CompareResult.Lesser;
@@ -344,7 +353,7 @@ const editDistance = (s1: string, s2: string) => {
 
 
 
-
+String.IsWhiteSpace = (input:string) => input.trim().length === 0;
 
 
 
@@ -447,7 +456,47 @@ export function hexDecode (theString: string) {
 }
 
 
-
+// /**
+//  * Returns the file extension part or an empty string 
+//  * if there is none.
+//  */
+//  export function getFileExtension(filename: string): string {
+// 	if (!filename)
+// 	  return;
+// 	let ext = '', temp = '';
+// 	for (let i = filename.length - 1; i >= 0; --i) {
+// 	  let char = filename[i];
+// 	  if (char === '.') {
+// 		ext = temp; // avoid filename without extension
+// 		break;
+// 	  }
+// 	  temp = char + temp;
+// 	}
+// 	return ext;
+//   }
+  
+//   /**
+//    * Returns the folder name part of a file path.
+//    * @param path  The file path.
+//    */
+//   export function getFolderName(path: string): string {
+// 	if (!path)
+// 	  return;
+// 	// Remove the last dash (/)
+// 	if(path[path.length - 1] === '\\' || path[path.length - 1] === '/')
+// 	  path = path.substr(0, path.length - 1);
+	  
+// 	let ext = '', temp = '';
+// 	for (let i = path.length - 1; i >= 0; --i) {
+// 	  let char = path[i];
+// 	  if (char === '/' || char === '\\') {
+// 		ext = temp;
+// 		break;
+// 	  }
+// 	  temp = char + temp;
+// 	}
+// 	return ext;
+//   }
 
 
 
@@ -535,3 +584,452 @@ export function removeControlCharacters(text: string) {
 	// eslint-disable-next-line no-control-regex
 	return text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
 }
+
+
+
+
+
+
+
+
+
+export function truncate(value: string, maxLength: number, suffix = '…'): string {
+	if (value.length <= maxLength) {
+		return value;
+	}
+
+	return `${value.substr(0, maxLength)}${suffix}`;
+}
+
+
+
+
+
+/**
+ * Removes all occurrences of needle from the beginning and end of haystack.
+ * @param haystack string to trim
+ * @param needle the thing to trim (default is a blank)
+ */
+ export function trim(haystack: string, needle: string = ' '): string {
+	const trimmed = ltrim(haystack, needle);
+	return rtrim(trimmed, needle);
+}
+
+
+/**
+ * Removes all occurrences of needle from the beginning of haystack.
+ * @param haystack string to trim
+ * @param needle the thing to trim
+ */
+export function ltrim(haystack: string, needle: string): string {
+	if (!haystack || !needle) return haystack;
+
+	const needleLen = needle.length;
+	if (needleLen === 0 || haystack.length === 0) {
+		return haystack;
+	}
+
+	let offset = 0;
+
+	while (haystack.indexOf(needle, offset) === offset) {
+		offset = offset + needleLen;
+	}
+	return haystack.substring(offset);
+}
+
+
+/**
+ * Removes all occurrences of needle from the end of haystack.
+ * @param haystack string to trim
+ * @param needle the thing to trim
+ */
+ export function rtrim(haystack: string, needle: string): string {
+	if (!haystack || !needle) return haystack;
+
+	const needleLen = needle.length, haystackLen = haystack.length;
+
+	if (needleLen === 0 || haystackLen === 0) {
+		return haystack;
+	}
+
+	let offset = haystackLen, idx = -1;
+
+	while (true) {
+		idx = haystack.lastIndexOf(needle, offset - 1);
+		if (idx === -1 || idx + needleLen !== offset)  break;
+		if (idx === 0)  return '';
+		offset = idx;
+	}
+
+	return haystack.substring(0, offset);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * @returns the length of the common prefix of the two strings.
+ */
+ export function commonPrefixLength(a: string, b: string): number {
+
+	const len = Math.min(a.length, b.length);
+	let i: number;
+
+	for (i = 0; i < len; i++) {
+		if (a.charCodeAt(i) !== b.charCodeAt(i)) {
+			return i;
+		}
+	}
+
+	return len;
+}
+
+/**
+ * @returns the length of the common suffix of the two strings.
+ */
+export function commonSuffixLength(a: string, b: string): number {
+
+	const len = Math.min(a.length, b.length);
+	let i: number;
+
+	const aLastIndex = a.length - 1;
+	const bLastIndex = b.length - 1;
+
+	for (i = 0; i < len; i++) {
+		if (a.charCodeAt(aLastIndex - i) !== b.charCodeAt(bLastIndex - i)) {
+			return i;
+		}
+	}
+
+	return len;
+}
+
+
+
+
+
+
+
+
+
+
+export function getNLines(str: string, n = 1): string {
+	if (n === 0) {
+		return '';
+	}
+
+	let idx = -1;
+	do {
+		idx = str.indexOf('\n', idx + 1);
+		n--;
+	} while (n > 0 && idx >= 0);
+
+	if (idx === -1) {
+		return str;
+	}
+
+	if (str[idx - 1] === '\r') {
+		idx--;
+	}
+
+	return str.substr(0, idx);
+}
+
+
+
+
+
+
+
+
+/**
+ * Produces 'a'-'z', followed by 'A'-'Z'... followed by 'a'-'z', etc.
+ */
+ export function singleLetterHash(n: number): string {
+	const LETTERS_CNT = (CharCode.Z - CharCode.A + 1);
+
+	n = n % (2 * LETTERS_CNT);
+
+	if (n < LETTERS_CNT) {
+		return String.fromCharCode(CharCode.a + n);
+	}
+
+	return String.fromCharCode(CharCode.A + n - LETTERS_CNT);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// /**
+//  * Strips single and multi line JavaScript comments from JSON
+//  * content. Ignores characters in strings BUT doesn't support
+//  * string continuation across multiple lines since it is not
+//  * supported in JSON.
+//  * @param content the content to strip comments from
+//  * @returns the content without comments
+//  */
+//  export function stripComments(content: string): string;
+
+// (function () {
+// 	function factory(path, os, productName, cwd) {
+// 		// First group matches a double quoted string
+// 		// Second group matches a single quoted string
+// 		// Third group matches a multi line comment
+// 		// Forth group matches a single line comment
+// 		// Fifth group matches a trailing comma
+// 		const regexp = /("[^"\\]*(?:\\.[^"\\]*)*")|('[^'\\]*(?:\\.[^'\\]*)*')|(\/\*[^\/\*]*(?:(?:\*|\/)[^\/\*]*)*?\*\/)|(\/{2,}.*?(?:(?:\r?\n)|$))|(,\s*[}\]])/g;
+
+// 		/**
+// 		 *
+// 		 * @param {string} content
+// 		 * @returns {string}
+// 		 */
+// 		function stripComments(content) {
+// 			return content.replace(regexp, function (match, _m1, _m2, m3, m4, m5) {
+// 				// Only one of m1, m2, m3, m4, m5 matches
+// 				if (m3) {
+// 					// A block comment. Replace with nothing
+// 					return '';
+// 				} else if (m4) {
+// 					// Since m4 is a single line comment is is at least of length 2 (e.g. //)
+// 					// If it ends in \r?\n then keep it.
+// 					const length = m4.length;
+// 					if (m4[length - 1] === '\n') {
+// 						return m4[length - 2] === '\r' ? '\r\n' : '\n';
+// 					}
+// 					else {
+// 						return '';
+// 					}
+// 				} else if (m5) {
+// 					// Remove the trailing comma
+// 					return match.substring(1);
+// 				} else {
+// 					// We match a string
+// 					return match;
+// 				}
+// 			});
+// 		}
+// 		return {
+// 			stripComments
+// 		};
+// 	}
+
+
+// 	if (typeof define === 'function') {
+// 		// amd
+// 		define([], function () { return factory(); });
+// 	} else if (typeof module === 'object' && typeof module.exports === 'object') {
+// 		// commonjs
+// 		module.exports = factory();
+// 	} else {
+// 		console.trace('strip comments defined in UNKNOWN context (neither requirejs or commonjs)');
+// 	}
+// })();
+
+
+
+
+
+
+
+/**
+ * Trim leading and ending spaces on every line
+ * See https://blog.stevenlevithan.com/archives/faster-trim-javascript for
+ * possible ways of implementing trimming
+ *
+ * @param text a multiline string
+ */
+ export function trimMultiLineString(text: string): string {
+    return text.replace(/^\s\s*/gm, '').replace(/\s\s*$/gm, '')
+}
+
+
+
+/**
+ * Counts how often `character` occurs inside `value`.
+ */
+ export function count(value: string, character: string): number {
+	let result = 0;
+	const ch = character.charCodeAt(0);
+	for (let i = value.length - 1; i >= 0; i--) {
+		if (value.charCodeAt(i) === ch) result++;
+	}
+	return result;
+}
+
+
+
+
+
+
+
+export function countWordInstances(text: string, word: string): number {
+	return text.split(word).length - 1;
+  }
+
+
+
+
+export function stripWildcards(pattern: string): string {
+	return pattern.replace(/\*/g, '');
+}
+
+
+
+
+
+
+/**
+ * Returns first index of the string that is not whitespace.
+ * If string is empty or contains only whitespaces, returns -1
+ */
+ export function firstNonWhitespaceIndex(str: string): number {
+	for (let i = 0, len = str.length; i < len; i++) {
+		const chCode = str.charCodeAt(i);
+		if (chCode !== CharCode.Space && chCode !== CharCode.Tab) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+
+
+/**
+ * Returns last index of the string that is not whitespace.
+ * If string is empty or contains only whitespaces, returns -1
+ */
+ export function lastNonWhitespaceIndex(str: string, startIndex: number = str.length - 1): number {
+	for (let i = startIndex; i >= 0; i--) {
+		const chCode = str.charCodeAt(i);
+		if (chCode !== CharCode.Space && chCode !== CharCode.Tab) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+
+
+
+
+
+
+const IS_BASIC_ASCII = /^[\t\n\r\x20-\x7E]*$/;
+/**
+ * Returns true if `str` contains only basic ASCII characters in the range 32 - 126 (including 32 and 126) or \n, \r, \t
+ */
+export function isBasicASCII(str: string): boolean {
+	return IS_BASIC_ASCII.test(str);
+}
+
+
+
+
+export const UNUSUAL_LINE_TERMINATORS = /[\u2028\u2029]/; // LINE SEPARATOR (LS) or PARAGRAPH SEPARATOR (PS)
+/**
+ * Returns true if `str` contains unusual line terminators, like LS or PS
+ */
+ export function containsUnusualLineTerminators(str: string): boolean {
+	return UNUSUAL_LINE_TERMINATORS.test(str);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ellipsis the text.
+ * @param str string to cut
+ */
+export function ellipsis(str: string, maxCharacters: number): string {
+	return str.length > maxCharacters ? `${str.substring(0, maxCharacters)}...` : str;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const _formatRegexp = /{(\d+)}/g;
+/**
+ * Helper to produce a string with a variable number of arguments. Insert variable segments
+ * into the string using the {n} notation where N is the index of the argument following the string.
+ * @param value string to which formatting is applied
+ * @param args replacements for {n}-entries
+ */
+export function format(value: string, ...args: any[]): string {
+	if (args.length === 0) {
+		return value;
+	}
+	return value.replace(_formatRegexp, function (match, group) {
+		const idx = parseInt(group, 10);
+		return isNaN(idx) || idx < 0 || idx >= args.length ?
+			match :
+			args[idx];
+	});
+}
+
+const _format2Regexp = /{([^}]+)}/g;
+
+/**
+ * Helper to create a string from a template and a string record.
+ * Similar to `format` but with objects instead of positional arguments.
+ */
+export function format2(template: string, values: Record<string, unknown>): string {
+	return template.replace(_format2Regexp, (match, group) => (values[group] ?? match) as string);
+}
+
+
+
+

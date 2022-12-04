@@ -1,7 +1,9 @@
 # <img src="images/icon_large.png" width="30" height="30"> Even Better Comments
 
-The Even Better Comments extension is based on the Better Comments extension which will help you create more human-friendly comments in your code.
-Even Better Comments seeks to improve upon this framework by adding in aliases, documentation, default values, and other various improvements.
+The Even Better Comments extension is based on the [Better Comments extension](https://marketplace.visualstudio.com/items?itemName=aaron-bond.better-comments) which will help you create more human-friendly comments in your code.
+
+**Even Better Comments** seeks to improve upon this framework by adding in aliases, documentation, default values, token parsing, commands, and other various improvements.
+
 With this extension, you will be able to categorise your annotations into:
 * Issues
 * Ideas

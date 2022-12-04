@@ -10,6 +10,9 @@ export type MappedObject<V> = {[index:string]: V};
 
 declare global {
     interface Array<T> {
+		/** Returns if the array contains no items */
+		readonly IsEmpty : bool;
+
 		/** 
 		 * Null safe version of a map, its the same as mapping then filtering with a truth check. 
 		**/
@@ -62,6 +65,9 @@ declare global {
     }
 
     interface ReadonlyArray<T> {
+		/** Returns if the array contains no items */
+		readonly IsEmpty : bool;
+
 		/** Null safe version of a map, its the same as mapping then filtering with a truth check. */
 		condensedMap<TR>(this : ReadonlyArray<T>, map:Func<[T], TR>) : Array<TR>;
 		/** Null safe version of a flatMap, its the same as flatMapping then filtering with a truth check. */
@@ -102,6 +108,28 @@ declare global {
 		mapObject<TK extends keyof any, TV>(this: ReadonlyArray<T>, map:Func<[T], [TK,TV]>): MappedObject<TV>;
     }
 }
+
+
+
+
+
+
+
+Object.defineProperty(Array.prototype, "IsEmpty", {
+    get (this: Array<any>) {return this.length === 0;},
+    enumerable: false,
+    configurable: true
+}); 
+
+
+
+
+
+
+
+
+
+
 
 /** Null safe version of a map, its the same as mapping then filtering with a truth check. */
 Array.prototype.condensedMap = function <T,TR>(this : Array<T>, map:Func<[T], TR|nulldefined>) : Array<TR> {
@@ -260,7 +288,8 @@ Array.prototype.collect = function <C,T>(this:Array<T>, initialValue:C, callback
 Array.prototype.chunkArray = function sliceArray<T>(this: Array<T>, chunkSize: number): Array<T[]> {
 	if(chunkSize == 0) return [];
 
-	let slices = Array<T[]>(Math.ceil(this.length/chunkSize));
+	// let slices = Array<T[]>(Math.ceil(this.length/chunkSize));
+	let slices = Array<T[]>();
 	for (let i = 0; i < this.length; i += chunkSize) {
 		slices.push(this.slice(i, i+chunkSize));
 	}
@@ -546,3 +575,24 @@ export function del<T>(array: T[], e: T): void {
 		array.splice(idx, 1);
 	}
 }
+
+
+
+
+
+
+
+
+export function groupBy<T>(
+	array: T[],
+	keyGetter: (...args: any[]) => string
+  ): Map<string, T[]> {
+	const map = new Map<string, T[]>();
+	array.forEach((item: T) => {
+	  const key = keyGetter(item);
+	  const collection = map.get(key);
+	  !collection ? map.set(key, [item]) : collection.push(item);
+	});
+	return map;
+  }
+  

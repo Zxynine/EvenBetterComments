@@ -24,6 +24,12 @@ const CLEAN_LINK = /(\[|\])/g;
 //TODO incorporate finding links into parser
 const commentRegex = /^\*|^\/\/|^\/\*|^\#|^<!--/;
 // const URLRegex = /[a-zA-z0-9.-_~+#,%&=*;:@]/
+const lineMatchRegex = /\[\[.*?[./].*?\]\]/g;
+const indexedLineMatchRegex = /\[(\[.*?[./].*?\])\]/g;
+
+type LinkMatch = {
+	lN:number, str:string
+}
 
 //TODO: use sementic tokens/parser to find comments.
 const isComment = (line: string) => Boolean(line.replace(/\s/g, "").match(commentRegex));
@@ -34,7 +40,6 @@ export const findLinksInLine = (line: string) => {
 
 	const cleanLine = line.split(SPLIT_LINES)[0];
 	if (isComment(cleanLine)) {
-		const lineMatchRegex = /\[\[.*?[./].*?\]\]/g;
 		line.match(lineMatchRegex)?.forEach((match) => 
 			result.push(match.replace(CLEAN_LINK, ""))
 		);
@@ -42,10 +47,9 @@ export const findLinksInLine = (line: string) => {
 	return result;
 }
 export const findLinksInString = (str: string) => {
-	const result: {lN:number, str:string}[] = [];
+	const result: LinkMatch[] = [];
 
 	const splitDoc = str.split(SPLIT_LINES);
-	const lineMatchRegex = /\[\[.*?[./].*?\]\]/g;
 	splitDoc.filter(isComment).forEach((line, lineNumber) => {
 		line.match(lineMatchRegex)?.forEach((match) => 
 			result.push({ lN: lineNumber, str: match.replace(CLEAN_LINK, "") })
@@ -55,9 +59,8 @@ export const findLinksInString = (str: string) => {
 };
 
 const findLinksInDoc = (doc: TextDocument) => {
-	const result: {lN:number, str:string}[] = [];
+	const result: LinkMatch[] = [];
 
-	const lineMatchRegex = /\[\[.*?[./].*?\]\]/g;
 	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
 		const line = doc.lineAt(lineNumber).text;
 		if (!isComment(line)) continue;
@@ -73,9 +76,8 @@ export const getLinksRangesString = (str:string) => {
 	const result: Range[] = [];
 	
 	const splitDoc = str.split(SPLIT_LINES);
-	const indexedMatch = /\[(\[.*?[./].*?\])\]/g;
 	splitDoc.filter(isComment).forEach((line, lineNumber) => {
-		for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
+		for (let match: RegExpExecArray|null; (match = indexedLineMatchRegex.exec(line));) {
 			result.push(new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length));
 		}
 	});
@@ -89,13 +91,11 @@ export const getLinksRangesDoc = (doc:TextDocument) => {
 	const workspacePath = DocumentTools.GetWorkspacePath(doc);
 	const basePath = DocumentTools.GetBasePath(doc);
 	
-	const indexedMatch = /\[(\[.*?[./].*?\])\]/g;
 	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
 		const line = doc.lineAt(lineNumber).text;
 		if (!isComment(line)) continue;
-		for (let match: RegExpExecArray|null; (match = indexedMatch.exec(line));) {
+		for (let match: RegExpExecArray|null; (match = indexedLineMatchRegex.exec(line));) {
 			const fullPath = CreateFullPath(basePath,workspacePath, match[0].replace(CLEAN_LINK, ""));
-			// Don't show the codelens if the file doesn't exist
 			if (!fullPath || !DocumentTools.FileExists(fullPath)) continue;
 
 			result.push(new Range(lineNumber, match.index+1, lineNumber, match.index-1 + match[0].length));
@@ -108,23 +108,36 @@ export const getLinksRangesDoc = (doc:TextDocument) => {
 export function getLinkMatchesDoc(doc:TextDocument) {
 	const result: {lN:number, array:RegExpMatchArray}[] = [];
 
-	const indexedMatch = /\[(\[.*?[./].*?\])\]/g;
 	for (let lineNumber = 0; lineNumber < doc.lineCount; lineNumber++) {
 		const line = doc.lineAt(lineNumber).text;
 		if (!isComment(line)) continue;
-		for (const match of line.matchAll(indexedMatch)) {
+		for (const match of line.matchAll(indexedLineMatchRegex)) {
 			result.push({lN:lineNumber, array:match});
 		}
 	}
 	return result;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //?....................................................................\\
 //TODO: implement caching for document links/paths
 
 function CreateFullPath(basePath:string, workspacePath:string, currentPath:string) {
 	const components = LINK_REGEX.exec(currentPath);
-	if (!components || !components[2]) return null;
+	if (!components?.[2]) return null;
 	const filePath = components[2];
 	const relativeFolder = components[1];
 	return (relativeFolder
@@ -132,6 +145,19 @@ function CreateFullPath(basePath:string, workspacePath:string, currentPath:strin
 		: resolve(workspacePath, filePath)
 	);
 }
+
+//?....................................................................\\
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -184,7 +210,6 @@ export class DocumentCommentLinkProvider implements DocumentLinkProvider {
 		
 		const matches = getLinkMatchesDoc(document);
 		matches.forEach((match) => {
-			// console.log("Match found on line " + (match.lN+1) + "!", match);
 			const cleanedLine = match.array[0]?.replace(CLEAN_LINK, "");
 			if (!cleanedLine) return;
 			const fullPath = CreateFullPath(basePath,workspacePath,cleanedLine);
@@ -202,6 +227,24 @@ export class DocumentCommentLinkProvider implements DocumentLinkProvider {
 }
 
 				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -302,6 +302,22 @@ export namespace TokenMetadata {
 		});
 	}
 
+	export function toString(encodedTokenAttributes: TokenMetadata): string {
+		const languageId = TokenMetadata.getLanguageId(encodedTokenAttributes);
+		const tokenType = TokenMetadata.getTokenType(encodedTokenAttributes);
+		const fontStyle = TokenMetadata.getFontStyle(encodedTokenAttributes);
+		const foreground = TokenMetadata.getForeground(encodedTokenAttributes);
+		const background = TokenMetadata.getBackground(encodedTokenAttributes);
+
+		return String({
+			languageId: languageId,
+			tokenType: tokenType,
+			fontStyle: fontStyle,
+			foreground: foreground,
+			background: background,
+		});
+	}
+
 
 
 	/**
@@ -644,6 +660,10 @@ export abstract class AbstractTokenArray {
 			endOffset: (index<this._tokensCount)? this._tokens[index<<1] : this._tokensEndOffset,
 			metaData: (index<this._tokensCount)? this._tokens[(index<<1)+1] : this._tokens[(this._tokensCount<<1)-1]
 		};
+	}
+
+	public toString(): string {
+		return [...this.Metadatas()].map(TokenMetadata.toString).join(", ");
 	}
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

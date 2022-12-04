@@ -15,7 +15,9 @@
 	},
 	"bugs": "https://github.com/Zxynine/EvenBetterComments/issues",
 	"categories": [
-		"Formatters"
+		"Formatters",
+		"Other",
+		"Visualization"
 	],
 	"engines": {
 		"vscode": "^1.68.0"
@@ -108,7 +110,7 @@
 				},
 				"evenbettercomments.tags": {
 					"type": "array",
-					"description": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect",
+					"markdownDescription": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect.",
 					"items": {
 						"type": "object",
 						"required": ["tag"],
@@ -124,9 +126,11 @@
 								"default": []
 							},
 							"color": {
-								"markdownDescription": "the color of comment. must be set either css color name or hex style like `\"color\": \"#3498DB\"`. See https://code.visualstudio.com/api/references/theme-color#color-formats .",
+								"$id": "#ColorReference",
+								"markdownDescription": "The color of comment. Must be set either css color name or hex style like `\"color\": \"#3498DB\"`. See https://code.visualstudio.com/api/references/theme-color#color-formats .",
 								"anyOf": [
 									{
+										"$id": "#CSSNamesLower",
 										"enum": [
 											"aliceblue",
 											"antiquewhite",
@@ -271,6 +275,7 @@
 										]
 									},
 									{
+										"$id": "#CSSNamesUpper",
 										"enum": [
 											"AliceBlue",
 											"AntiqueWhite",
@@ -415,6 +420,7 @@
 										]
 									},
 									{
+										"$id": "#HexFormat",
 										"type": "string",
 										"format": "color",
 										"pattern": "#([0-9a-fA-F]{6}([0-9a-fA-F]{2})*|[0-9a-fA-F]{3}[0-9a-fA-F]*)$"
@@ -422,305 +428,23 @@
 								]
 							},
 							"backgroundColor": {
-								"markdownDescription": "the background color of comment line. must be set either css color name or hex style like `\"color\": \"transparent\"`. See https://code.visualstudio.com/api/references/theme-color#color-formats .",
+								"$id": "#BackgroundColorReference",
+								"markdownDescription": "The background color of comment line. Must be set either css color name or hex style like `\"color\": \"transparent\"`. See https://code.visualstudio.com/api/references/theme-color#color-formats .",
 								"anyOf": [
 									{
+										"$id": "#Transparent",
 										"enum": [
 											"transparent"
 										]
 									},
 									{
-										"enum": [
-											"aliceblue",
-											"antiquewhite",
-											"aqua",
-											"aquamarine",
-											"azure",
-											"beige",
-											"bisque",
-											"black",
-											"blanchedalmond",
-											"blue",
-											"blueviolet",
-											"brown",
-											"burlywood",
-											"cadetblue",
-											"chartreuse",
-											"chocolate",
-											"coral",
-											"cornflowerblue",
-											"cornsilk",
-											"crimson",
-											"cyan",
-											"darkblue",
-											"darkcyan",
-											"darkgoldenrod",
-											"darkgray",
-											"darkgreen",
-											"darkkhaki",
-											"darkmagenta",
-											"darkolivegreen",
-											"darkorange",
-											"darkorchid",
-											"darkred",
-											"darksalmon",
-											"darkseagreen",
-											"darkslateblue",
-											"darkslategray",
-											"darkturquoise",
-											"darkviolet",
-											"deeppink",
-											"deepskyblue",
-											"dimgray",
-											"dodgerblue",
-											"firebrick",
-											"floralwhite",
-											"forestgreen",
-											"fuchsia",
-											"gainsboro",
-											"ghostwhite",
-											"gold",
-											"goldenrod",
-											"gray",
-											"green",
-											"greenyellow",
-											"honeydew",
-											"hotpink",
-											"indianred",
-											"indigo",
-											"ivory",
-											"khaki",
-											"lavender",
-											"lavenderblush",
-											"lawngreen",
-											"lemonchiffon",
-											"lightblue",
-											"lightcoral",
-											"lightcyan",
-											"lightgoldenrodyellow",
-											"lightgrey",
-											"lightgreen",
-											"lightpink",
-											"lightsalmon",
-											"lightseagreen",
-											"lightskyblue",
-											"lightslategray",
-											"lightsteelblue",
-											"lightyellow",
-											"lime",
-											"limegreen",
-											"linen",
-											"magenta",
-											"maroon",
-											"mediumaquamarine",
-											"mediumblue",
-											"mediumorchid",
-											"mediumpurple",
-											"mediumseagreen",
-											"mediumslateblue",
-											"mediumspringgreen",
-											"mediumturquoise",
-											"mediumvioletred",
-											"midnightblue",
-											"mintcream",
-											"mistyrose",
-											"moccasin",
-											"navajowhite",
-											"navy",
-											"oldlace",
-											"olive",
-											"olivedrab",
-											"orange",
-											"orangered",
-											"orchid",
-											"palegoldenrod",
-											"palegreen",
-											"paleturquoise",
-											"palevioletred",
-											"papayawhip",
-											"peachpuff",
-											"peru",
-											"pink",
-											"plum",
-											"powderblue",
-											"purple",
-											"red",
-											"rosybrown",
-											"royalblue",
-											"saddlebrown",
-											"salmon",
-											"sandybrown",
-											"seagreen",
-											"seashell",
-											"sienna",
-											"silver",
-											"skyblue",
-											"slateblue",
-											"slategray",
-											"snow",
-											"springgreen",
-											"steelblue",
-											"tan",
-											"teal",
-											"thistle",
-											"tomato",
-											"turquoise",
-											"violet",
-											"wheat",
-											"white",
-											"whitesmoke",
-											"yellow",
-											"yellowgreen"
-										]
+										"$ref": "#CSSNamesLower"
 									},
 									{
-										"enum": [
-											"AliceBlue",
-											"AntiqueWhite",
-											"Aqua",
-											"Aquamarine",
-											"Azure",
-											"Beige",
-											"Bisque",
-											"Black",
-											"BlanchedAlmond",
-											"Blue",
-											"BlueViolet",
-											"Brown",
-											"BurlyWood",
-											"CadetBlue",
-											"Chartreuse",
-											"Chocolate",
-											"Coral",
-											"CornflowerBlue",
-											"Cornsilk",
-											"Crimson",
-											"Cyan",
-											"DarkBlue",
-											"DarkCyan",
-											"DarkGoldenRod",
-											"DarkGray",
-											"DarkGreen",
-											"DarkKhaki",
-											"DarkMagenta",
-											"DarkOliveGreen",
-											"Darkorange",
-											"DarkOrchid",
-											"DarkRed",
-											"DarkSalmon",
-											"DarkSeaGreen",
-											"DarkSlateBlue",
-											"DarkSlateGray",
-											"DarkTurquoise",
-											"DarkViolet",
-											"DeepPink",
-											"DeepSkyBlue",
-											"DimGray",
-											"DodgerBlue",
-											"FireBrick",
-											"FloralWhite",
-											"ForestGreen",
-											"Fuchsia",
-											"Gainsboro",
-											"GhostWhite",
-											"Gold",
-											"GoldenRod",
-											"Gray",
-											"Green",
-											"GreenYellow",
-											"HoneyDew",
-											"HotPink",
-											"IndianRed",
-											"Indigo",
-											"Ivory",
-											"Khaki",
-											"Lavender",
-											"LavenderBlush",
-											"LawnGreen",
-											"LemonChiffon",
-											"LightBlue",
-											"LightCoral",
-											"LightCyan",
-											"LightGoldenRodYellow",
-											"LightGrey",
-											"LightGreen",
-											"LightPink",
-											"LightSalmon",
-											"LightSeaGreen",
-											"LightSkyBlue",
-											"LightSlateGray",
-											"LightSteelBlue",
-											"LightYellow",
-											"Lime",
-											"LimeGreen",
-											"Linen",
-											"Magenta",
-											"Maroon",
-											"MediumAquaMarine",
-											"MediumBlue",
-											"MediumOrchid",
-											"MediumPurple",
-											"MediumSeaGreen",
-											"MediumSlateBlue",
-											"MediumSpringGreen",
-											"MediumTurquoise",
-											"MediumVioletRed",
-											"MidnightBlue",
-											"MintCream",
-											"MistyRose",
-											"Moccasin",
-											"NavajoWhite",
-											"Navy",
-											"OldLace",
-											"Olive",
-											"OliveDrab",
-											"Orange",
-											"OrangeRed",
-											"Orchid",
-											"PaleGoldenRod",
-											"PaleGreen",
-											"PaleTurquoise",
-											"PaleVioletRed",
-											"PapayaWhip",
-											"PeachPuff",
-											"Peru",
-											"Pink",
-											"Plum",
-											"PowderBlue",
-											"Purple",
-											"Red",
-											"RosyBrown",
-											"RoyalBlue",
-											"SaddleBrown",
-											"Salmon",
-											"SandyBrown",
-											"SeaGreen",
-											"SeaShell",
-											"Sienna",
-											"Silver",
-											"SkyBlue",
-											"SlateBlue",
-											"SlateGray",
-											"Snow",
-											"SpringGreen",
-											"SteelBlue",
-											"Tan",
-											"Teal",
-											"Thistle",
-											"Tomato",
-											"Turquoise",
-											"Violet",
-											"Wheat",
-											"White",
-											"WhiteSmoke",
-											"Yellow",
-											"YellowGreen"
-										]
+										"$ref": "#CSSNamesUpper"
 									},
 									{
-										"type": "string",
-										"format": "color",
-										"pattern": "#([0-9a-fA-F]{6}([0-9a-fA-F]{2})*|[0-9a-fA-F]{3}[0-9a-fA-F]*)$"
+										"$ref": "#HexFormat"
 									}
 								]
 							},
@@ -744,17 +468,162 @@
 								"type": "boolean",
 								"default": false
 							},
-							"CSSTextDecoration": {
-								"type": "string",
-								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
-							},
-							"CSSOutlineDecoration": {
-								"type": "string",
-								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
-							},
-							"CSSBorderDecoration": {
-								"type": "string",
-								"description": "PREVIEW FEATURE! This is a placeholder for advanced users. Be aware that it cam be removed or changed at any time!"
+							"CustomDecoration": {
+								"type": "object",
+								"markdownDescription": "PREVIEW FEATURE! This is for advanced users. Be aware that it may be removed or changed at any time!\n If this setting is specified, no other formatting option for the tag will apply!\n Represents theme specific rendering styles for vscode.DecorationRenderOptions used to reder the tag.  See https://code.visualstudio.com/api/references/vscode-api#DecorationRenderOptions",
+								"$id": "#ThemableDecorationRenderOptions",
+								"properties": {
+									"isWholeLine": {
+										"type": "boolean",
+										"description": "Should the decoration be rendered also on the whitespace after the line text. (Defaults to false)"
+									},
+									"backgroundColor": {
+										"markdownDescription": "The background color of comment line. Must be set either css color name or hex style like `\"color\": \"transparent\"`. See https://code.visualstudio.com/api/references/theme-color#color-formats.\n Define transparent background colors to play well with other decorations. Alternatively a color from the ThemeColor registry can be referenced",
+										"anyOf": [
+											{
+												"$ref": "#Transparent"
+											},
+											{
+												"$ref": "#CSSNamesLower"
+											},
+											{
+												"$ref": "#CSSNamesUpper"
+											},
+											{
+												"$ref": "#HexFormat"
+											}
+										]
+									},
+									"outline": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"outlineColor": {
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'outline' for setting one or more of the individual outline properties.",
+										"anyOf": [
+											{
+												"$ref": "#Transparent"
+											},
+											{
+												"$ref": "#CSSNamesLower"
+											},
+											{
+												"$ref": "#CSSNamesUpper"
+											},
+											{
+												"$ref": "#HexFormat"
+											}
+										]
+									},
+									"outlineStyle": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'outline' for setting one or more of the individual outline properties."
+									},
+									"outlineWidth": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'outline' for setting one or more of the individual outline properties."
+									},
+									"border": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"borderColor": {
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties.",
+										"anyOf": [
+											{
+												"$ref": "#Transparent"
+											},
+											{
+												"$ref": "#CSSNamesLower"
+											},
+											{
+												"$ref": "#CSSNamesUpper"
+											},
+											{
+												"$ref": "#HexFormat"
+											}
+										]
+									},
+									"borderRadius": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties."
+									},
+									"borderSpacing": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties."
+									},
+									"borderStyle": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties."
+									},
+									"borderWidth": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties."
+									},
+									"fontStyle": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"fontWeight": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"textDecoration": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"cursor": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"color": {
+										"description": "CSS styling property that will be applied to text enclosed by a decoration.",
+										"anyOf": [
+											{
+												"$ref": "#CSSNamesLower"
+											},
+											{
+												"$ref": "#CSSNamesUpper"
+											},
+											{
+												"$ref": "#HexFormat"
+											}
+										]
+									},
+									"opacity": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"letterSpacing": {
+										"type": "string",
+										"description": "CSS styling property that will be applied to text enclosed by a decoration."
+									},
+									"gutterIconPath": {
+										"type": "string",
+										"description": "An **absolute path** to an image to be rendered in the gutter."
+									},
+									"gutterIconSize": {
+										"type": "string",
+										"description": "Specifies the size of the gutter icon. Available values are 'auto', 'contain', 'cover' and any percentage value. For further information: https://msdn.microsoft.com/en-us/library/jj127316(v=vs.85).aspx"
+									},
+									"overviewRulerColor": {
+										"markdownDescription": "The color of the decoration in the overview ruler. Use rgba() and define transparent colors to play well with other decorations.",
+										"anyOf": [
+											{
+												"$ref": "#Transparent"
+											},
+											{
+												"$ref": "#CSSNamesLower"
+											},
+											{
+												"$ref": "#CSSNamesUpper"
+											},
+											{
+												"$ref": "#HexFormat"
+											}
+										]
+									}
+								}
 							}
 						}
 					},
