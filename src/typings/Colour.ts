@@ -174,6 +174,95 @@ namespace Colour {
 
 
 
+// const colorRegExp = /^#?([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})?$/;
+
+// export class ColorMap {
+
+// 	private _lastColorId: number;
+// 	private readonly _id2color: Color[];
+// 	private readonly _color2id: Map<string, ColorId>;
+
+// 	constructor() {
+// 		this._lastColorId = 0;
+// 		this._id2color = [];
+// 		this._color2id = new Map<string, ColorId>();
+// 	}
+
+// 	public getId(color: string | null): ColorId {
+// 		if (color === null) return 0;
+
+// 		const match = color.match(colorRegExp);
+// 		if (!match) throw new Error('Illegal value for token color: ' + color);
+
+// 		color = match[1].toUpperCase();
+// 		let value = this._color2id.get(color);
+// 		if (value) return value;
+
+// 		value = ++this._lastColorId;
+// 		this._color2id.set(color, value);
+// 		this._id2color[value] = ColorMap.fromHex('#' + color);
+// 		return value;
+// 	}
+
+// 	public getColorMap(): Color[] { return this._id2color.slice(0); }
+// 	static fromHex(hex: string): Color { return ColorMap.parseHex(hex) || new Color(255, 0, 255, 1); }
+
+
+// 	static parseHex(hex : string) {
+// 		const length = hex.length;
+		
+// 		if (length === 0) return null; // Invalid color
+// 		else if (hex.charCodeAt(0) !== 35) return null; // Does not begin with a #
+// 		switch (length) {
+// 			case 4: {
+// 				// #RGB format
+// 				const r = ColorMap.parseHexDigitSingle(hex.charCodeAt(1));
+// 				const g = ColorMap.parseHexDigitSingle(hex.charCodeAt(2));
+// 				const b = ColorMap.parseHexDigitSingle(hex.charCodeAt(3));
+// 				return new Color(r, g, b, 1);
+// 			}
+// 			case 5: {
+// 				// #RGBA format
+// 				const r = ColorMap.parseHexDigitSingle(hex.charCodeAt(1));
+// 				const g = ColorMap.parseHexDigitSingle(hex.charCodeAt(2));
+// 				const b = ColorMap.parseHexDigitSingle(hex.charCodeAt(3));
+// 				const a = ColorMap.parseHexDigitSingle(hex.charCodeAt(4));
+// 				return new Color(r, g, b, a / 255);
+// 			}
+// 			case 7: {
+// 				// #RRGGBB format
+// 				const r = ColorMap.parseHexDigitDouble(hex.charCodeAt(1), hex.charCodeAt(2));
+// 				const g = ColorMap.parseHexDigitDouble(hex.charCodeAt(3), hex.charCodeAt(4));
+// 				const b = ColorMap.parseHexDigitDouble(hex.charCodeAt(5), hex.charCodeAt(6));
+// 				return new Color(r, g, b, 1);
+// 			}
+// 			case 9: {
+// 				// #RRGGBBAA format
+// 				const r = ColorMap.parseHexDigitDouble(hex.charCodeAt(1), hex.charCodeAt(2));
+// 				const g = ColorMap.parseHexDigitDouble(hex.charCodeAt(3), hex.charCodeAt(4));
+// 				const b = ColorMap.parseHexDigitDouble(hex.charCodeAt(5), hex.charCodeAt(6));
+// 				const a = ColorMap.parseHexDigitDouble(hex.charCodeAt(7), hex.charCodeAt(8));
+// 				return new Color(r, g, b, a / 255);
+
+// 			// Invalid color
+// 			} default : return null;
+// 		}
+// 	}
+
+// 	static parseHexDigitSingle(code : number) {
+// 		const x = CharCodes.ParseHexDigit(code);
+// 		return (x << 4) + x;
+// 	}
+
+	
+// 	static parseHexDigitDouble(codeA : number, codeB : number) {
+// 		return (CharCodes.ParseHexDigit(codeA) << 4) + CharCodes.ParseHexDigit(codeB);
+// 	}
+
+// }
+
+
+
 
 
 

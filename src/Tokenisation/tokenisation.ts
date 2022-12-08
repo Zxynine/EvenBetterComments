@@ -1083,6 +1083,32 @@ export class ScopedLineTokens {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const EMPTY_LINE_TOKENS = new Uint32Array(0).buffer;
 
 
@@ -1220,15 +1246,14 @@ export class ContiguousMultilineTokens {
 		const lineIndex = (position.line+1) - this._startLineNumber;
 
 		// this insertion occurs before this block, so we only need to adjust line numbers
-		if (lineIndex < 0) {
-			this._startLineNumber += eolCount;
+		if (lineIndex < 0) this._startLineNumber += eolCount;
 		// this insertion occurs after this block, so there is nothing to do
-		} else if (lineIndex >= this._tokens.length) return;
+		else if (lineIndex >= this._tokens.length) return;
 		// Inserting text on one line
-		else if (eolCount === 0) {
+		else if (eolCount === 0)
 			this._tokens[lineIndex] = ContiguousTokensEditing.insert(this._tokens[lineIndex], position.character, firstLineLength);
 		// Inserting text on multiple lines
-		} else {
+		else {
 			this._tokens[lineIndex] = ContiguousTokensEditing.deleteEnding(this._tokens[lineIndex], position.character);
 			this._tokens[lineIndex] = ContiguousTokensEditing.insert(this._tokens[lineIndex], position.character, firstLineLength);
 
@@ -1243,12 +1268,6 @@ export class ContiguousMultilineTokens {
 		for (let i = 0; i < insertCount; i++) lineTokens[i] = null;
 		this._tokens = this._tokens.insertArray(insertIndex, lineTokens);
 	}
-
-
-
-
-
-
 }
 
 
@@ -2159,10 +2178,8 @@ export class ContiguousTokensStore {
 				insertPosition ??= { index: i };
 				continue;
 			}
-			if (b.isEmpty()) {
-				// this piece is actually before the range
-				continue;
-			}
+			// this piece is actually before the range
+			if (b.isEmpty()) continue;
 
 			this._pieces.splice(i, 1, a, b);
 			i++;

@@ -62,6 +62,7 @@ declare global {
 
 		mapObject<TK extends keyof any, TV>(this: Array<T>, map:Func<[T], [TK,TV]>): MappedObject<TV>;
 
+		toDefault<T>(this: Array<T>, defaultValue: T): void;
     }
 
     interface ReadonlyArray<T> {
@@ -123,7 +124,7 @@ Object.defineProperty(Array.prototype, "IsEmpty", {
 
 
 
-
+Array
 
 
 
@@ -339,6 +340,9 @@ Array.prototype.mapObject = function <T, K extends keyof any, V>(this : Array<T>
 
 
 
+Array.prototype.toDefault = function <T>(this: Array<T>, defaultValue: T) {
+	for (let i = this.length; i >= 0; --i) this[i] = defaultValue;
+}
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

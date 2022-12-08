@@ -9,11 +9,23 @@ import { FlagsArray } from './typings/BitFlags';
 //Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
 
 export class Parser {
+	private readonly regextags: RegexCommentTag[] = [];
 	private readonly tags: CommentTag[] = [];
 	private readonly tagsMap: Map<string,CommentTag> = new Map<string,CommentTag>();
 	private PushTag(Tag : CommentTag) {
 		this.tags.push(Tag);
 		this.tagsMap.set(Tag.lowerTag, Tag);
+	}
+
+	protected PushRegexTag(Tag: RegexCommentTag) {
+		this.regextags.push(Tag);
+	}
+
+	protected GetRegexTag(testString: string) {
+		if (this.regextags.length === 0) return undefined;
+		for (const RegexTag of this.regextags)
+			if (RegexTag.regex.test(testString)) return RegexTag;
+		return undefined;
 	}
 
 	//Stores all searching patterns for the tags.
@@ -90,7 +102,7 @@ export class Parser {
 	/** Build up regex matcher for custom delimiter tags */
 	private static JoinDelimiterArray = (tags : Array<CommentTag>) => `(?:${tags.map(Tag => Tag.escapedTag).join('|')})`;
 
-	private static CreateRange(document: vscode.TextDocument, startIndex : number, endIndex : number) : vscode.Range {
+	private static CreateRange(document: vscode.TextDocument, startIndex: int, endIndex: int): vscode.Range {
 		return new vscode.Range(document.positionAt(startIndex), document.positionAt(endIndex));
 	}
 
@@ -100,7 +112,7 @@ export class Parser {
 	 * @param itemTag The string that repesents the tag.
 	 * @returns {CommentTag} The created CommentTag object.
 	 */
-	private static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
+	protected static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
 		const escapedSequence = itemTag.replace(/([.*+?^${()|[\\])/g, '\\$1'); //?   /([()[{*+.$^\\|?])/g
 		return <CommentTag>{
 			tag: itemTag,
@@ -111,9 +123,25 @@ export class Parser {
 		};
 	}
 
+
+	/**
+	 * Static method used to create CommentTag objects.
+	 * @param itemTag The string that repesents the tag.
+	 * @returns {CommentTag} The created CommentTag object.
+	 */
+	 protected static CreateRegexTag(itemTag : string, options : vscode.DecorationRenderOptions) : RegexCommentTag {
+		return <RegexCommentTag>{
+			tag: itemTag,
+			regex: new RegExp(itemTag),
+			ranges: [],
+			decoration: vscode.window.createTextEditorDecorationType(options)
+		};
+	}
+
+
 	private static TagDefinitionToDecorationOptions(tag : TagDefinition) {
 		if (tag.CustomDecoration !== undefined) return tag.CustomDecoration;
-		// ? the textDecoration is initialised to empty so we can concat a preceeding space on it
+		// ? the textDecoration is initialised to empty so we can concat to it
 		const options = <vscode.DecorationRenderOptions>{ color: tag.color, backgroundColor: tag.backgroundColor, textDecoration: "" };
 
 		//TODO: add line styles like dotted wavy etc... - https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
@@ -146,6 +174,7 @@ export class Parser {
 	private static *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
 		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
 	}
+
 
 	//===============================================================================================================================================
 
@@ -266,7 +295,7 @@ export class Parser {
 			this.tagsMap.get(matchString)?.ranges.push(
 				((!this.highlightTagOnly)
 					? new vscode.Range(startPos, endPos)
-					: new vscode.Range(startPos.line, startPos.character, endPos.line, startPos.character + match[3].length + match[4].length + match[5].length + (match[6].trim().length))
+					: new vscode.Range(startPos.line, startPos.character + match[3].length, endPos.line, startPos.character + match[3].length + match[4].length + match[5].length + (match[6].trim().length))
 				)
 			);
 		}
@@ -309,7 +338,7 @@ export class Parser {
 					if (this.tagsMap.has(matchString)) {
 						const range = ((!this.highlightTagOnly)
 							? new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length)
-							: new vscode.Range(startPos.line, offset, endPos.line, offset + matchResult[2].length + matchResult[3].length + matchResult[4].length + matchResult[5].trim().length)
+							: new vscode.Range(startPos.line, offset + matchResult[2].length, endPos.line, offset + matchResult[2].length + matchResult[3].length + matchResult[4].length + matchResult[5].trim().length)
 						);
 						this.tagsMap.get(matchString)!.ranges.push(range);
 					}
@@ -666,7 +695,8 @@ export class Parser {
 			
 			//TODO: allow item.tag to be an array? Avoid the need for alias field to begin with.
 			//Create CommentTag for primary tag
-			this.PushTag(Parser.CreateTag(item.tag, options));
+			if (!item.isRegex) this.PushTag(Parser.CreateTag(item.tag, options));
+			else this.PushRegexTag(Parser.CreateRegexTag(item.tag, options))
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
 			item.aliases?.forEach(aliasTag => this.PushTag(Parser.CreateTag(aliasTag, options)));
 		}

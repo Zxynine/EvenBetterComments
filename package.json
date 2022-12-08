@@ -73,6 +73,16 @@
 				"title": "BetterHyperScopes: Show Line Comments",
 				"command": "evenbettercomments.hscopes.show-line-comments",
 				"when": "editorTextFocus"
+			},
+			{
+				"title": "EvenBetterComments: Remove All Comments In Current Document",
+				"command": "evenbettercomments.hscopes.remove-all-comments-document",
+				"when": "editorTextFocus"
+			},
+			{
+				"title": "EvenBetterComments: Remove All Comments In Current Selection",
+				"command": "evenbettercomments.hscopes.remove-all-comments-selection",
+				"when": "editorTextFocus"
 			}
 		],
 		"configuration": {
@@ -116,9 +126,11 @@
 						"required": ["tag"],
 						"properties": {
 							"tag": {
-								"type": "string"
+								"type": "string",
+								"description": "This is the part of the comment the parser will look for at the start to identify how to style the comment."
 							},
 							"aliases": {
+								"description": "This is an optional array of different names for this same style. (Used along with the tag)",
 								"type": "array",
 								"items": {
 									"type": "string"
@@ -465,6 +477,10 @@
 								"default": false
 							},
 							"italic": {
+								"type": "boolean",
+								"default": false
+							},
+							"isRegex": {
 								"type": "boolean",
 								"default": false
 							},

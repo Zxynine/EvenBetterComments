@@ -26,6 +26,8 @@ export const ExtentionID = "evenbettercomments";
 	ShowLineScopes = 'evenbettercomments.hscopes.show-line-scopes',
 	ShowScopeInspector = 'evenbettercomments.hscopes.show-scope-inspector',
 	ShowLineComments = 'evenbettercomments.hscopes.show-line-comments',
+	RemoveAllCommentsDocument = 'evenbettercomments.hscopes.remove-all-comments-document',
+	RemoveAllCommentsSelection = 'evenbettercomments.hscopes.remove-all-comments-selection',
 }
 
 const AllLanguages : vscode.DocumentSelector = { language: "*" };
@@ -105,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
 	//............................................................................
 	
 	// * This section deals with displaying scopes in editor
-	const extensionOutputChannel = vscode.window.createOutputChannel('HyperScopes', 'yaml');
+	const OutputChannel = vscode.window.createOutputChannel('HyperScopes', 'yaml');
 
 	async function HyperscopesDisplayScopes() {
 		console.log("HyperScopes: show scope command run!");
@@ -113,8 +115,8 @@ export function activate(context: vscode.ExtensionContext) {
 		if (activeTextEditor) {
 			const token = API.getScopeAt(activeTextEditor.document, activeTextEditor.selection.active);
 			if (token) {
-				extensionOutputChannel.show(true);
-				extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
+				OutputChannel.show(true);
+				OutputChannel.appendLine(token.GetTokenDisplayInfo());
 				PulseRange(activeTextEditor, [token.range]);
 			} else console.log("HyperScopes: Token not found.");
 		}
@@ -127,8 +129,8 @@ export function activate(context: vscode.ExtensionContext) {
 			if (tokenArray) {
 				const highlightRange = tokenArray.mappedFilter(token => Boolean(token), token => activeEditor.document.lineAt(token.range.start).range);
 				if (highlightRange.length) {
-					extensionOutputChannel.show(true);
-					for (const token of tokenArray) if (token) extensionOutputChannel.appendLine(token.GetTokenDisplayInfo());
+					OutputChannel.show(true);
+					for (const token of tokenArray) if (token) OutputChannel.appendLine(token.GetTokenDisplayInfo());
 					PulseRange(activeTextEditor, highlightRange);
 				}
 			} else console.log("HyperScopes: Token Array not found.");
@@ -147,8 +149,8 @@ export function activate(context: vscode.ExtensionContext) {
 			if (!ActiveDocument) return;
 
 			
-			extensionOutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
-			extensionOutputChannel.appendLine("Ranges of comments in selection (goes by char not col!): ");
+			OutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
+			OutputChannel.appendLine("Ranges of comments in selection (goes by char not col!): ");
 			function RangeToString(range:vscode.Range){ return `[Ln ${range.start.line}, Col ${range.start.character}-${range.end.character}]` }
 
 			const CollectedRanges:vscode.Range[] = [];
@@ -157,11 +159,11 @@ export function activate(context: vscode.ExtensionContext) {
 			for (const TokenArray of TokensArrays) {
 				const Ranges = TokenArray.FindRangesOf(StandardTokenType.Comment, i++);
 				CollectedRanges.push(...Ranges);
-				extensionOutputChannel.appendLine(Ranges.map(RangeToString).join(', '));
+				OutputChannel.appendLine(Ranges.map(RangeToString).join(', '));
 			}
 			PulseRange(activeTextEditor, CollectedRanges);
 
-			extensionOutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
+			OutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
 		}
 	}
 
@@ -169,6 +171,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineScopes, HyperscopesDisplayScopesLine));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineComments, HyperscopesDisplayLineComments));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
+	
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.RemoveAllCommentsDocument, RemoveAllCommentsInDocument));
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.RemoveAllCommentsSelection, RemoveAllCommentsInSelection));
 	//............................................................................
 	/** EXPORT API */
 	return API;

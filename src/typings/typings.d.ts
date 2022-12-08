@@ -2,8 +2,15 @@
 
 interface CommentTag {
 	tag: string;
-	escapedTag: string;
-	lowerTag: string;
+	escapedTag: string; //Used to search for matches.
+	lowerTag: string; //Used as a key for dict lookup
+	decoration: import('vscode').TextEditorDecorationType;
+	ranges: Array<import('vscode').Range>;
+}
+
+interface RegexCommentTag {
+	tag: string;
+	regex: RegExp; //Used to test for the comment.
 	decoration: import('vscode').TextEditorDecorationType;
 	ranges: Array<import('vscode').Range>;
 }
@@ -25,12 +32,13 @@ interface TagDefinition {
 	tag: string;
 	aliases: Array<string>;
 	color: string;
+	backgroundColor: string;
 	overline: boolean;
 	strikethrough: boolean;
 	underline: boolean;
 	bold: boolean;
 	italic: boolean;
-	backgroundColor: string;
+	isRegex: boolean;
 	CustomDecoration?: import('vscode').DecorationRenderOptions;
 }
 
