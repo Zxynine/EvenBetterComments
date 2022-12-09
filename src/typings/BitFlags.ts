@@ -195,8 +195,7 @@ export class FlagsArray {
 	public GetFlag(index: int): BitFlag { return this.CheckFlag(index)? 1:0; }
 	public QuickCheck(index: int): bool { 
 		if (index >= this.Flags.length<<5) return false;
-		const PrimeIndex = FlagsArray.GetPrimeIndex(index);
-		return (this.Flags[PrimeIndex] !== 0);
+		return (this.Flags[FlagsArray.GetPrimeIndex(index)] !== 0);
 	}
 
 	//TODO: implement try set flag which returns a bool if it was sucessful in setting (not already the value when setting)
@@ -429,14 +428,12 @@ export class FlagsArray {
     }
 
 	/** Warning: This will not modify the size of the array, any bits that exceed the bounds are lost. */
-	protected ShiftChunksLeft(start:int, end:int, shift:int) {
-		//Iterate all the chunks in reverse of shift direction to keep access to needed indices
-		for (let i = start; i < end; ++i) this.Flags[i] = (i+shift < end)? this.Flags[i+shift] : 0;
+	protected ShiftChunksLeft(start:int, end:int, shift:int) { //Iterate all the chunks in reverse of shift direction to keep access to needed indices
+		for (let i = start; i < end; ++i) this.Flags[i] = (i+shift < end)? this.Flags[i+shift] : 0; //Fill in now empty bits with 0;
 	}
 
 	/** Warning: This will not modify the size of the array, any bits that exceed the bounds are lost. */
-	protected ShiftChunksRight(start:int, end:int, shift:int) {
-		//Iterate all the chunks in reverse of shift direction to keep access to needed indices
+	protected ShiftChunksRight(start:int, end:int, shift:int) { //Iterate all the chunks in reverse of shift direction to keep access to needed indices
 		for (let i = start; i > end; --i) this.Flags[i] = (i-shift > end)?  this.Flags[i-shift] : 0; //Fill in new bits with 0;
 	}
 	//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

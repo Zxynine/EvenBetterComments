@@ -15,6 +15,8 @@ With this extension, you will be able to categorise your annotations into:
 
 ![Annotated code](images/better-comments.png)
 
+
+
 ## Configuration
 
 This extension can be configured in User Settings or Workspace settings.

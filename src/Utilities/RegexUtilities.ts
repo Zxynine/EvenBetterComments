@@ -791,3 +791,9 @@ export function OffsetFromRegex(array:RegExpExecArray|RegExpMatchArray, index:nu
 	for (let i=1; i<numberStop; i++) returnValue += array[i].length;
 	return returnValue;
 }
+
+
+
+export function *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
+	for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
+}
