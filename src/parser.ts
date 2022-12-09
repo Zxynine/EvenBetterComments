@@ -9,29 +9,13 @@ import { FlagsArray } from './typings/BitFlags';
 //Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
 
 export class Parser {
-	private readonly regextags: RegexCommentTag[] = [];
 	private readonly tags: CommentTag[] = [];
 	private readonly tagsMap: Map<string,CommentTag> = new Map<string,CommentTag>();
 	private PushTag(Tag : CommentTag) {
 		this.tags.push(Tag);
 		this.tagsMap.set(Tag.lowerTag, Tag);
 	}
-
-	protected PushRegexTag(Tag: RegexCommentTag) {
-		this.regextags.push(Tag);
-	}
-
-	protected GetRegexTag(testString: string) {
-		if (this.regextags.length === 0) return undefined;
-		for (const RegexTag of this.regextags)
-			if (RegexTag.regex.test(testString)) return RegexTag;
-		return undefined;
-	}
-
-	protected GetTag(key: string) {
-		return this.tagsMap.get(key);
-	}
-
+	
 	//Stores all searching patterns for the tags.
 	private readonly Expressions = {
 
@@ -46,14 +30,6 @@ export class Parser {
 		
 		MonoLineBlockSimple: / /,
 		MonoLineBlockMixed: / /,
-
-
-
-		// MonoLineMatch: / /,
-		// MultiLineMatch: / /,
-		// MultiLineJSMatch: / /,
-		// MultiLineMatchFull: / /,
-		// MultiLineJSMatchFull: / /,
 	}
 
 
@@ -689,8 +665,7 @@ export class Parser {
 			
 			//Idea: allow item.tag to be an array? Avoid the need for alias field to begin with.
 			//Create CommentTag for primary tag
-			if (!item.isRegex) this.PushTag(Parser.CreateTag(item.tag, options));
-			else this.PushRegexTag(Parser.CreateRegexTag(item.tag, options))
+			this.PushTag(Parser.CreateTag(item.tag, options));
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
 			item.aliases?.forEach(aliasTag => this.PushTag(Parser.CreateTag(aliasTag, options)));
 		}
