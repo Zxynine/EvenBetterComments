@@ -10,7 +10,7 @@ import { LoadDocumentsAndGrammer, DocumentLoader, GetGetScopeAtAPI } from "./doc
 import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { PulseRange } from './providers/DecorationProvider';
 
-
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/context.ts
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** The id used for this command. */
@@ -31,6 +31,12 @@ export const ExtentionID = "evenbettercomments";
 }
 
 const AllLanguages : vscode.DocumentSelector = { language: "*" };
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//TODO: Create output channel here
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/terminal.ts
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * MAIN ACTIVATE FUNCTION

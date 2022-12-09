@@ -485,6 +485,13 @@ export class TokenTools {
 
 	
 	public static IsNullOrEmpty(lineTokens: Uint32Array|ArrayBuffer|null) : lineTokens is null { return (lineTokens === null || lineTokens === EMPTY_LINE_TOKENS);}
+
+	public static FlattenMetadata(tokens: IToken2Array): TokenMetadata {
+		const count = (tokens.length >>> 1);
+		let FlatMetadata: TokenMetadata = 0;
+		for (let i = 0; i<count; i++) FlatMetadata |= tokens[(i<<1)+1];
+		return FlatMetadata;
+	}
 }
 
 
@@ -519,12 +526,12 @@ export function matchScope(scope: string, scopes: readonly string[]) : boolean {
 
 	let idx = 0;
 	for(const part of scope.split(/\s+/)) {
-	  while(idx < scopes.length && !scopes[idx].startsWith(part)) ++idx;
-	  if(idx >= scopes.length) return false;
-	  else ++idx;
+		while(idx < scopes.length && !scopes[idx].startsWith(part)) ++idx;
+		if(idx >= scopes.length) return false;
+		else ++idx;
 	}
 	return true;
-  }
+}
 
 
 
@@ -2395,9 +2402,50 @@ export function toUint32Array(arr: Uint32Array | ArrayBuffer): Uint32Array {
 
 
 
+export function base64(s: string): string;
+export function base64(bytes: Uint8Array): string;
+export function base64(data: string | Uint8Array): string {
+	return Buffer.from(data).toString('base64');
+}
+
+export function fromBase64(s: string): Uint8Array {
+	return Buffer.from(s, 'base64');
+}
+
+// const textEncoder = new TextEncoder();
+
+// export function base64(s: string): string;
+// export function base64(bytes: Uint8Array): string;
+// export function base64(data: string | Uint8Array): string {
+// 	let bytes = typeof data === 'string' ? textEncoder.encode(data) : data;
+
+// 	let output = '';
+// 	for (let i = 0, { length } = bytes; i < length; i++) {
+// 		output += String.fromCharCode(bytes[i]);
+// 	}
+// 	return globalThis.btoa(output);
+// }
+
+// export function fromBase64(s: string): Uint8Array {
+// 	const decoded = globalThis.atob(s);
+
+// 	const len = decoded.length;
+// 	const bytes = new Uint8Array(len);
+// 	for (let i = 0; i < len; i++) {
+// 		bytes[i] = decoded.charCodeAt(i);
+// 	}
+// 	return bytes;
+// }
 
 
 
+export function encodeUtf8Hex(s: string): string {
+	return Buffer.from(s, 'utf8').toString('hex');
+}
+
+export function decodeUtf8Hex(hex: string): string {
+	return Buffer.from(hex, 'hex').toString('utf8');
+}
 
 
 

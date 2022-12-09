@@ -217,3 +217,20 @@ function disposeStatusBarItems() {
 // 	commands.registerCommand(CommandId.RevealFileInOS, revealFileInOSCommand);
 // 	commands.registerCommand(CommandId.Open, openCommand);
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

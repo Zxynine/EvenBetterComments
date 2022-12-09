@@ -407,7 +407,16 @@ export function replaceConfigurationVariable(configName: string): string {
 
 
 
+export function getCommandUri(uri?: vscode.Uri, editor?: vscode.TextEditor): vscode.Uri | undefined {
+	return editor?.document?.uri ?? uri; // Always use the editor.uri (if we have one), so we are correct for a split diff
+}
 
+
+export interface CommandBaseContext {
+	command: string;
+	editor?: vscode.TextEditor;
+	uri?: vscode.Uri;
+}
 
 
 

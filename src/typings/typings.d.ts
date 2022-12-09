@@ -233,6 +233,61 @@ interface IPosition {
 
 
 
+type IconPath = (
+	| string
+	| import("vscode").Uri
+	| import("vscode").ThemeIcon
+	| {
+		light: string | import("vscode").Uri;
+		dark: string | import("vscode").Uri;
+	}
+);
+
+
+
+
+type SubPath<T, Key extends keyof T> = (Key extends string
+	? T[Key] extends Record<string, any>
+		?
+			| `${Key}:${SubPath<T[Key], Exclude<keyof T[Key], keyof any[]>>}`
+			| `${Key}:${Exclude<keyof T[Key], keyof any[]> & string}`
+		: never
+	: never
+);
+
+type Path<T> = SubPath<T, keyof T> | keyof T;
+
+type PathValue<T, P extends Path<T>> = (P extends `${infer Key}:${infer Rest}`
+	? Key extends keyof T
+		? Rest extends Path<T[Key]>
+			? PathValue<T[Key], Rest>
+			: never
+		: never
+	: P extends keyof T
+	? T[P]
+	: never
+);
+
+// type GlobalStoragePath = Path<GlobalStorage>;
+// type GlobalStoragePathValue<P extends GlobalStoragePath> = PathValue<GlobalStorage, P>;
+
+// type WorkspaceStoragePath = Path<WorkspaceStorage>;
+// type WorkspaceStoragePathValue<P extends WorkspaceStoragePath> = PathValue<WorkspaceStorage, P>;
+
+
+
+
+
+//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
 
 
 
@@ -325,7 +380,7 @@ type ArrayOrTuple<T = any> = readonly [...T[]]
 
 
 
-
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/%40types/global.d.ts
 
 // Removes 'optional' attributes from a type's properties
 type Concrete<Type> = {
@@ -342,7 +397,7 @@ type Optional<Type> = {
 	[Property in keyof Type]+?: Type[Property];
 };
 
-
+type PickMutable<T, K extends keyof T> = Omit<T, K> & { -readonly [P in K]: T[P] };
 
 
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

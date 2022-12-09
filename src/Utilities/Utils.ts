@@ -10,7 +10,7 @@ import { showQuickPick } from './Input';
 import * as process from 'process';
 // import { Color } from 'vscode';
 import { sleep } from './Async';
-
+import * as https from 'https';
 
 //: Idea- insert key should align multiselect cursors.
 
@@ -43,6 +43,490 @@ export function setsAreEqual(aS: Set<any>, bS: Set<any>) {
 	// Sets are equal
 	return true;
 }
+
+
+
+
+export const ImageMimetypes: Record<string, string> = {
+	'.png': 'image/png',
+	'.gif': 'image/gif',
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.jpe': 'image/jpeg',
+	'.webp': 'image/webp',
+	'.tif': 'image/tiff',
+	'.tiff': 'image/tiff',
+	'.bmp': 'image/bmp',
+};
+
+export const enum CoreCommands {
+	CloseActiveEditor = 'workbench.action.closeActiveEditor',
+	CloseAllEditors = 'workbench.action.closeAllEditors',
+	CursorMove = 'cursorMove',
+	CustomEditorShowFindWidget = 'editor.action.webvieweditor.showFind',
+	Diff = 'vscode.diff',
+	EditorScroll = 'editorScroll',
+	EditorShowHover = 'editor.action.showHover',
+	ExecuteDocumentSymbolProvider = 'vscode.executeDocumentSymbolProvider',
+	ExecuteCodeLensProvider = 'vscode.executeCodeLensProvider',
+	FocusFilesExplorer = 'workbench.files.action.focusFilesExplorer',
+	InstallExtension = 'workbench.extensions.installExtension',
+	MoveViews = 'vscode.moveViews',
+	Open = 'vscode.open',
+	OpenFolder = 'vscode.openFolder',
+	OpenInTerminal = 'openInTerminal',
+	OpenWalkthrough = 'workbench.action.openWalkthrough',
+	OpenWith = 'vscode.openWith',
+	NextEditor = 'workbench.action.nextEditor',
+	PreviewHtml = 'vscode.previewHtml',
+	RevealLine = 'revealLine',
+	RevealInExplorer = 'revealInExplorer',
+	RevealInFileExplorer = 'revealFileInOS',
+	SetContext = 'setContext',
+	ShowExplorer = 'workbench.view.explorer',
+	ShowReferences = 'editor.action.showReferences',
+	ShowSCM = 'workbench.view.scm',
+	UninstallExtension = 'workbench.extensions.uninstallExtension',
+}
+
+export const enum Schemes {
+	DebugConsole = 'debug',
+	File = 'file',
+	Git = 'git',
+	GitHub = 'github',
+	GitLens = 'gitlens',
+	Output = 'output',
+	PRs = 'pr',
+	Vsls = 'vsls',
+	VslsScc = 'vsls-scc',
+	Virtual = 'vscode-vfs',
+}
+
+export function findTextDocument(uri: vscode.Uri): vscode.TextDocument | undefined {
+	const normalizedUri = uri.toString();
+	return vscode.workspace.textDocuments.find(d => d.uri.toString() === normalizedUri);
+}
+
+
+export function findEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
+	const active = vscode.window.activeTextEditor;
+	const normalizedUri = uri.toString();
+
+	for (const e of [...(active != null ? [active] : []), ...vscode.window.visibleTextEditors]) {
+		// Don't include diff editors
+		if (e.document.uri.toString() === normalizedUri && e?.viewColumn != null) {
+			return e;
+		}
+	}
+
+	return undefined;
+}
+
+
+// export async function findOrOpenEditor(
+// 	uri: vscode.Uri,
+// 	options?: vscode.TextDocumentShowOptions & { throwOnError?: boolean },
+// ): Promise<vscode.TextEditor | undefined> {
+// 	const e = findEditor(uri);
+// 	if (e != null) {
+// 		if (!options?.preserveFocus) {
+// 			await vscode.window.showTextDocument(e.document, { ...options, viewColumn: e.viewColumn });
+// 		}
+
+// 		return e;
+// 	}
+
+// 	return openEditor(uri, { viewColumn: vscode.window.activeTextEditor?.viewColumn, ...options });
+// }
+
+// export function findOrOpenEditors(uris: vscode.Uri[]): void {
+// 	const normalizedUris = new Map(uris.map(uri => [uri.toString(), uri]));
+
+// 	for (const e of vscode.window.visibleTextEditors) {
+// 		// Don't include diff editors
+// 		if (e?.viewColumn != null) {
+// 			normalizedUris.delete(e.document.uri.toString());
+// 		}
+// 	}
+
+// 	for (const uri of normalizedUris.values()) {
+// 		void executeCoreCommand(CoreCommands.Open, uri, { background: true, preview: false });
+// 	}
+// }
+
+
+
+export function getEditorIfActive(document: vscode.TextDocument): vscode.TextEditor | undefined {
+	const editor = vscode.window.activeTextEditor;
+	return editor != null && editor.document === document ? editor : undefined;
+}
+
+
+export function hasVisibleTextEditor(): boolean {
+	if (vscode.window.visibleTextEditors.length === 0) return false;
+
+	return vscode.window.visibleTextEditors.some(e => isTextEditor(e));
+}
+
+export function isVisibleDocument(document: vscode.TextDocument): boolean {
+	if (vscode.window.visibleTextEditors.length === 0) return false;
+	return vscode.window.visibleTextEditors.some(e => e.document === document);
+}
+
+export function isTextEditor(editor: vscode.TextEditor): boolean {
+	const scheme = editor.document.uri.scheme;
+	return scheme !== Schemes.Output && scheme !== Schemes.DebugConsole;
+}
+
+export function isActiveDocument(document: vscode.TextDocument): boolean {
+	const editor = vscode.window.activeTextEditor;
+	return editor != null && editor.document === document;
+}
+
+
+
+export function isVirtualUri(uri: vscode.Uri): boolean {
+	return uri.scheme === Schemes.Virtual || uri.scheme === Schemes.GitHub;
+}
+
+// export async function openEditor(
+// 	uri: vscode.Uri,
+// 	options: vscode.TextDocumentShowOptions & { rethrow?: boolean } = {},
+// ): Promise<vscode.TextEditor | undefined> {
+// 	const { rethrow, ...opts } = options;
+// 	try {
+// 		if (isGitUri(uri)) {
+// 			uri = uri.documentUri();
+// 		}
+
+// 		if (uri.scheme === Schemes.GitLens && ImageMimetypes[path.extname(uri.fsPath)]) {
+// 			await executeCoreCommand(CoreCommands.Open, uri);
+
+// 			return undefined;
+// 		}
+
+// 		const document = await vscode.workspace.openTextDocument(uri);
+// 		return vscode.window.showTextDocument(document, {
+// 			preserveFocus: false,
+// 			preview: true,
+// 			viewColumn: vscode.ViewColumn.Active,
+// 			...opts,
+// 		});
+// 	} catch (ex) {
+// 		const msg: string = ex?.toString() ?? '';
+// 		if (msg.includes('File seems to be binary and cannot be opened as text')) {
+// 			await executeCoreCommand(CoreCommands.Open, uri);
+
+// 			return undefined;
+// 		}
+
+// 		if (rethrow) throw ex;
+
+// 		// Logger.error(ex, 'openEditor');
+// 		return undefined;
+// 	}
+// }
+
+
+// export const enum OpenWorkspaceLocation {
+// 	CurrentWindow = 'currentWindow',
+// 	NewWindow = 'newWindow',
+// 	AddToWorkspace = 'addToWorkspace',
+// }
+
+// export function openWorkspace(
+// 	uri: vscode.Uri,
+// 	options: { location?: OpenWorkspaceLocation; name?: string } = { location: OpenWorkspaceLocation.CurrentWindow },
+// ): void {
+// 	if (options?.location === OpenWorkspaceLocation.AddToWorkspace) {
+// 		const count = vscode.workspace.workspaceFolders?.length ?? 0;
+// 		return void vscode.workspace.updateWorkspaceFolders(count, 0, { uri: uri, name: options?.name });
+// 	}
+
+// 	return void executeCoreCommand(CoreCommands.OpenFolder, uri, {
+// 		forceNewWindow: options?.location === OpenWorkspaceLocation.NewWindow,
+// 	});
+// }
+
+
+
+// export async function openWalkthrough(
+// 	extensionId: string,
+// 	walkthroughId: string,
+// 	stepId?: string,
+// 	openToSide: boolean = true,
+// ): Promise<void> {
+// 	// Only open to side if there is an active tab
+// 	if (openToSide && vscode.window.tabGroups.activeTabGroup.activeTab == null) {
+// 		openToSide = false;
+// 	}
+
+// 	// Takes the following params: walkthroughID: string | { category: string, step: string } | undefined, toSide: boolean | undefined
+// 	void (await executeCoreCommand(
+// 		CoreCommands.OpenWalkthrough,
+// 		{
+// 			category: `${extensionId}#${walkthroughId}`,
+// 			step: stepId ? `${extensionId}#${walkthroughId}#${stepId}` : undefined,
+// 		},
+// 		openToSide,
+// 	));
+// }
+
+export function getEditorCommand() {
+	switch (vscode.env.appName) {
+		case 'Visual Studio Code - Insiders': return 'code-insiders --wait --reuse-window';
+		case 'Visual Studio Code - Exploration': return 'code-exploration --wait --reuse-window';
+		case 'VSCodium': return 'codium --wait --reuse-window';
+		default: return 'code --wait --reuse-window';
+	}
+}
+
+
+
+
+
+
+
+
+
+
+// type CoreCommand = vscode.Command;
+
+
+// interface CommandConstructor {
+// 	new (container: Container): Command;
+// }
+
+// const registrableCommands: CommandConstructor[] = [];
+
+// export function command(): ClassDecorator {
+// 	return (target: any) => { registrableCommands.push(target); };
+// }
+
+// export function registerCommand(command: string, callback: (...args: any[]) => any, thisArg?: any): Disposable {
+// 	return vscode.commands.registerCommand(
+// 		command,
+// 		function (this: any, ...args) {
+// 			Container.instance.telemetry.sendEvent('command', { command: command });
+// 			callback.call(this, ...args);
+// 		},
+// 		thisArg,
+// 	);
+// }
+
+// export function registerCommands(container: Container): Disposable[] {
+// 	return registrableCommands.map(c => new c(container));
+// }
+
+// export function asCommand<T extends unknown[]>(
+// 	command: Omit<CoreCommand, 'arguments'> & { arguments: [...T] },
+// ): CoreCommand {
+// 	return command;
+// }
+
+// export function executeActionCommand<T extends ActionContext>(action: Action<T>, args: Omit<T, 'type'>) {
+// 	return vscode.commands.executeCommand(`${Commands.ActionPrefix}${action}`, { ...args, type: action });
+// }
+
+// type SupportedCommands = Commands | `gitlens.views.${string}.focus` | `gitlens.views.${string}.resetViewLocation`;
+
+// export function executeCommand<U = any>(command: SupportedCommands): Thenable<U>;
+// export function executeCommand<T = unknown, U = any>(command: SupportedCommands, arg: T): Thenable<U>;
+// export function executeCommand<T extends [...unknown[]] = [], U = any>(
+// 	command: SupportedCommands,
+// 	...args: T
+// ): Thenable<U>;
+// export function executeCommand<T extends [...unknown[]] = [], U = any>(
+// 	command: SupportedCommands,
+// 	...args: T
+// ): Thenable<U> {
+// 	return vscode.commands.executeCommand<U>(command, ...args);
+// }
+
+// export function executeCoreCommand<T = unknown, U = any>(command: CoreCommands, arg: T): Thenable<U>;
+// export function executeCoreCommand<T extends [...unknown[]] = [], U = any>(
+// 	command: CoreCommands,
+// 	...args: T
+// ): Thenable<U>;
+// export function executeCoreCommand<T extends [...unknown[]] = [], U = any>(
+// 	command: CoreCommands,
+// 	...args: T
+// ): Thenable<U> {
+// 	if (command !== CoreCommands.ExecuteDocumentSymbolProvider) {
+// 		Container.instance.telemetry.sendEvent('command/core', { command: command });
+// 	}
+// 	return vscode.commands.executeCommand<U>(command, ...args);
+// }
+
+// // export function executeCoreGitCommand<U = any>(command: CoreGitCommands): Thenable<U>;
+// // export function executeCoreGitCommand<T = unknown, U = any>(command: CoreGitCommands, arg: T): Thenable<U>;
+// // export function executeCoreGitCommand<T extends [...unknown[]] = [], U = any>(
+// // 	command: CoreGitCommands,
+// // 	...args: T
+// // ): Thenable<U>;
+// // export function executeCoreGitCommand<T extends [...unknown[]] = [], U = any>(
+// // 	command: CoreGitCommands,
+// // 	...args: T
+// // ): Thenable<U> {
+// // 	Container.instance.telemetry.sendEvent('command/core', { command: command });
+// // 	return commands.executeCommand<U>(command, ...args);
+// // }
+
+// export function executeEditorCommand<T>(command: Commands, uri: vscode.Uri | undefined, args: T) {
+// 	return vscode.commands.executeCommand(command, uri, args);
+// }
+
+
+
+
+
+
+
+
+
+
+/**
+ * Szudzik elegant pairing function
+ * http://szudzik.com/ElegantPairing.pdf
+ */
+ export function szudzikPairing(x: number, y: number): number {
+	return x >= y ? x * x + x + y : x + y * y;
+}
+
+
+export async function sequentialize<T extends (...args: any[]) => unknown>(
+	fn: T,
+	argArray: Parameters<T>[],
+	thisArg?: unknown,
+): Promise<any> {
+	for (const args of argArray) {
+		try {
+			void (await fn.apply(thisArg, args));
+		} catch {}
+	}
+}
+
+
+
+
+
+
+export function is<T extends object>(o: T | null | undefined): o is T;
+export function is<T extends object>(o: object, prop: keyof T, value?: any): o is T;
+export function is<T extends object>(o: object, matcher: (o: object) => boolean): o is T;
+export function is<T extends object>(o: object, propOrMatcher?: keyof T | ((o: any) => boolean), value?: any): o is T {
+	if (propOrMatcher == null) return o != null;
+	if (typeof propOrMatcher === 'function') return propOrMatcher(o);
+
+	return value === undefined ? (o as any)[propOrMatcher] !== undefined : (o as any)[propOrMatcher] === value;
+}
+
+
+
+const comma = ',';
+const emptyStr = '';
+const equals = '=';
+const openBrace = '{';
+const openParen = '(';
+const closeParen = ')';
+
+const fnBodyRegex = /\(([\s\S]*)\)/;
+const fnBodyStripCommentsRegex = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/gm;
+const fnBodyStripParamDefaultValueRegex = /\s?=.*$/;
+
+export function getParameters(fn: Function): string[] {
+	if (typeof fn !== 'function') throw new Error('Not supported');
+
+	if (fn.length === 0) return [];
+
+	let fnBody: string = Function.prototype.toString.call(fn);
+	fnBody = fnBody.replace(fnBodyStripCommentsRegex, emptyStr) || fnBody;
+	fnBody = fnBody.slice(0, fnBody.indexOf(openBrace));
+
+	let open = fnBody.indexOf(openParen);
+	let close = fnBody.indexOf(closeParen);
+
+	open = open >= 0 ? open + 1 : 0;
+	close = close > 0 ? close : fnBody.indexOf(equals);
+
+	fnBody = fnBody.slice(open, close);
+	fnBody = `(${fnBody})`;
+
+	const match = fnBodyRegex.exec(fnBody);
+	return match != null
+		? match[1].split(comma).map(param => param.trim().replace(fnBodyStripParamDefaultValueRegex, emptyStr))
+		: [];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+abstract class Comparer<T> {
+	abstract equals(lhs: T, rhs: T): boolean;
+}
+
+class UriComparer extends Comparer<vscode.Uri> {
+	equals(lhs: vscode.Uri | undefined, rhs: vscode.Uri | undefined, options: { exact?: boolean } = { exact: false }) {
+		if (lhs === rhs) return true;
+		if (lhs == null || rhs == null) return false;
+		return ((options.exact)
+			? lhs.toString() === rhs.toString() 
+			: lhs.scheme === rhs.scheme && lhs.fsPath === rhs.fsPath
+		);
+	}
+}
+
+class TextEditorComparer extends Comparer<vscode.TextEditor> {
+	equals(
+		lhs: vscode.TextEditor | undefined,
+		rhs: vscode.TextEditor | undefined,
+		options: { usePosition: boolean } = { usePosition: false },
+	) {
+		if (lhs === rhs) return true;
+		if (lhs == null || rhs == null) return false;
+
+		if (options.usePosition && lhs.viewColumn !== rhs.viewColumn) return false;
+
+		return lhs.document === rhs.document;
+	}
+}
+
+const textEditorComparer = new TextEditorComparer();
+const uriComparer = new UriComparer();
+export { textEditorComparer as TextEditorComparer, uriComparer as UriComparer };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -263,6 +747,92 @@ export function deepFreeze<T>(obj: T): T {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+export function asResourceUrl(uri: vscode.Uri, range: vscode.Range): vscode.Uri {
+	return uri.with({ fragment: `L${1 + range.start.line},${1 + range.start.character}-${1 + range.end.line},${1 + range.end.character}` });
+}
+
+
+
+
+
+
+
+
+
+
+
+export async function isValidRequestPosition(uri: vscode.Uri, position: vscode.Position) {
+	const doc = await vscode.workspace.openTextDocument(uri);
+	return Boolean(doc.getWordRangeAtPosition(position) ?? doc.getWordRangeAtPosition(position, /[^\s]+/));
+}
+
+
+
+
+export class ContextKey<V> {
+	constructor(readonly name: string) { }
+	async set(value: V) { await vscode.commands.executeCommand('setContext', this.name, value); }
+	async reset() { await vscode.commands.executeCommand('setContext', this.name, undefined); }
+}
+
+
+
+
+export function uniqueFilter<T>(keyFn: (t: T) => string): (t: T) => boolean {
+	const seen: Record<string,bool> = Object.create(null);
+
+	return (element) => {
+		const key = keyFn(element);
+		return (seen[key])? false : (seen[key] = true);
+	};
+}
+
+
+export function once(fn: (...args: any[]) => any): (...args: any[]) => any {
+	let didRun = false;
+	return (...args) => (didRun)? undefined : fn(...args);
+}
+
+
+
+export function httpGet<T = any>(url: string): Promise<T> {
+	return new Promise((resolve, reject) => {
+		https.get(url, (res) => {
+			res.setEncoding('utf8');
+			let rawData = '';
+			res.on('data', (chunk) => rawData += chunk);
+			res.on('end', () => {
+				try { resolve(JSON.parse(rawData)); } 
+				catch (e) { reject(e); }
+			});
+		}).on('error', reject);
+	});
+}
+
+
+
+// public static read_all_lines(file: string): string[] {
+// 	let text = fs.readFileSync(file, 'utf8');
+// 	return text.split(/\r?\n/g);
+// }
+
+// public static write_all_lines(file: string, lines: string[]): void {
+// 	fs.writeFileSync(file, lines.join('\n'), { encoding: 'utf8' });
+// }
+
+
+
 export const MarkdownFormat = {
 	MARKDOWN_SPACE: "&nbsp;",
 	/** Returns a bolded markdown text. */
@@ -304,12 +874,6 @@ export function withUndefinedAsNull<T>(x: T | undefined): T | null {
 	return typeof x === 'undefined' ? null : x;
 }
 
-/**
- * @returns whether the provided parameter is an Iterable, casting to the given generic
- */
- export function isIterable<T>(obj: unknown): obj is Iterable<T> {
-	return !!obj && typeof (obj as any)[Symbol.iterator] === 'function';
-}
 
 /**
  * Checks whether the input value is the type 'string'
@@ -380,7 +944,7 @@ export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUn
 /**
  * @returns whether the provided parameter is a JavaScript Function or not.
  */
-export function IsFunction(obj: unknown): obj is Function {return (typeof obj === 'function');}
+export function IsFunction(obj: unknown): obj is Function { return (typeof obj === 'function'); }
 
 
 /**
@@ -483,7 +1047,7 @@ export function getIconPath(type: string, theme: 'light' | 'dark') {
 
 
 
-export const doubleWidthCharsReg =/[\uAC00-\uD7A3\u2010\u2012-\u2016\u2020-\u2022\u2025-\u2027\u2030\u2035\u203B\u203C\u2042\u2047-\u2049\u2051\u20DD\u20DE\u2100\u210A\u210F\u2121\u2135\u213B\u2160-\u216B\u2170-\u217B\u2215\u221F\u22DA\u22DB\u22EF\u2305-\u2307\u2312\u2318\u23B0\u23B1\u23BF-\u23CC\u23CE\u23DA\u23DB\u2423\u2460-\u24FF\u2600-\u2603\u2609\u260E\u260F\u2616\u2617\u261C-\u261F\u262F\u2668\u2672-\u267D\u26A0\u26BD\u26BE\u2702\u273D\u273F\u2740\u2756\u2776-\u277F\u2934\u2935\u29BF\u29FA\u29FB\u2B1A\u2E3A\u2E3B\u2E80-\u9FFF\uF900-\uFAFF\uFB00-\uFB04\uFE10-\uFE19\uFE30-\uFE6B\uFF01-\uFF60\uFFE0-\uFFE6\u{1F100}-\u{1F10A}\u{1F110}-\u{1F12E}\u{1F130}-\u{1F16B}\u{1F170}-\u{1F19A}\u{1F200}-\u{1F251}\u{2000B}-\u{2F9F4}]/gu;
+// export const doubleWidthCharsReg =/[\uAC00-\uD7A3\u2010\u2012-\u2016\u2020-\u2022\u2025-\u2027\u2030\u2035\u203B\u203C\u2042\u2047-\u2049\u2051\u20DD\u20DE\u2100\u210A\u210F\u2121\u2135\u213B\u2160-\u216B\u2170-\u217B\u2215\u221F\u22DA\u22DB\u22EF\u2305-\u2307\u2312\u2318\u23B0\u23B1\u23BF-\u23CC\u23CE\u23DA\u23DB\u2423\u2460-\u24FF\u2600-\u2603\u2609\u260E\u260F\u2616\u2617\u261C-\u261F\u262F\u2668\u2672-\u267D\u26A0\u26BD\u26BE\u2702\u273D\u273F\u2740\u2756\u2776-\u277F\u2934\u2935\u29BF\u29FA\u29FB\u2B1A\u2E3A\u2E3B\u2E80-\u9FFF\uF900-\uFAFF\uFB00-\uFB04\uFE10-\uFE19\uFE30-\uFE6B\uFF01-\uFF60\uFFE0-\uFFE6\u{1F100}-\u{1F10A}\u{1F110}-\u{1F12E}\u{1F130}-\u{1F16B}\u{1F170}-\u{1F19A}\u{1F200}-\u{1F251}\u{2000B}-\u{2F9F4}]/gu;
 
 
 export const calculateColumnFromCharIndex = (
@@ -612,7 +1176,7 @@ export function getCurrentThemeLightness(): 'light' | 'dark' {
 
 
 
-
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/logger.ts
 
 export namespace Debug {
 	export const ExtentionTitle = 'EvenBetterComments: ';
@@ -1943,5 +2507,196 @@ export function forEachSymbol(f: (symbol: vscode.DocumentSymbol)=> void, symbols
 
 
 
+
+
+// // #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// export type View = string;
+
+// export interface ViewNode {
+// 	readonly id?: string;
+// }
+
+// export abstract class ViewNode<TView extends View = View, State extends object = any> {
+// 	protected splatted = false;
+
+// 	constructor(uri: GitUri, public readonly view: TView, protected parent?: ViewNode) {
+// 		this._uri = uri;
+// 	}
+
+// 	toClipboard?(): string;
+
+// 	toString(): string {
+// 		const id = this.id;
+// 		return `${Logger.toLoggableName(this)}${id != null ? `(${id})` : ''}`;
+// 	}
+
+// 	protected _uri: GitUri;
+// 	get uri(): GitUri {
+// 		return this._uri;
+// 	}
+
+// 	abstract getChildren(): ViewNode[] | Promise<ViewNode[]>;
+
+// 	getParent(): ViewNode | undefined {
+// 		// If this node's parent has been splatted (e.g. not shown itself, but its children are), then return its grandparent
+// 		return this.parent?.splatted ? this.parent?.getParent() : this.parent;
+// 	}
+
+// 	abstract getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem>;
+
+// 	resolveTreeItem?(item: vscode.TreeItem): vscode.TreeItem | Promise<vscode.TreeItem>;
+
+// 	getCommand(): Command | undefined {
+// 		return undefined;
+// 	}
+
+// 	refresh?(reset?: boolean): boolean | void | Promise<void> | Promise<boolean>;
+
+// 	triggerChange(reset: boolean = false, force: boolean = false, avoidSelf?: ViewNode): Promise<void> {
+// 		// If this node has been splatted (e.g. not shown itself, but its children are), then delegate the change to its parent
+// 		if (this.splatted && this.parent != null && this.parent !== avoidSelf) {
+// 			return this.parent.triggerChange(reset, force);
+// 		}
+
+// 		return this.view.refreshNode(this, reset, force);
+// 	}
+
+// 	getSplattedChild?(): Promise<ViewNode | undefined>;
+
+// 	deleteState<T extends StateKey<State> = StateKey<State>>(key?: T): void {
+// 		if (this.id == null) {
+// 			debugger;
+// 			throw new Error('Id is required to delete state');
+// 		}
+// 		return this.view.nodeState.deleteState(this.id, key as string);
+// 	}
+
+// 	getState<T extends StateKey<State> = StateKey<State>>(key: T): StateValue<State, T> | undefined {
+// 		if (this.id == null) {
+// 			debugger;
+// 			throw new Error('Id is required to get state');
+// 		}
+// 		return this.view.nodeState.getState(this.id, key as string);
+// 	}
+
+// 	storeState<T extends StateKey<State> = StateKey<State>>(key: T, value: StateValue<State, T>): void {
+// 		if (this.id == null) {
+// 			debugger;
+// 			throw new Error('Id is required to store state');
+// 		}
+// 		this.view.nodeState.storeState(this.id, key as string, value);
+// 	}
+// }
+
+// export function isViewNode(node: any): node is ViewNode {
+// 	return node instanceof ViewNode;
+// }
+
+
+// export class MessageNode extends ViewNode {
+// 	constructor(
+// 		view: View,
+// 		parent: ViewNode,
+// 		private readonly _message: string,
+// 		private readonly _description?: string,
+// 		private readonly _tooltip?: string,
+// 		private readonly _iconPath?: IconPath,
+// 		private readonly _contextValue?: string,
+// 	) {
+// 		super(unknownGitUri, view, parent);
+// 	}
+
+// 	getChildren(): ViewNode[] | Promise<ViewNode[]> {
+// 		return [];
+// 	}
+
+// 	getTreeItem(): vscode.TreeItem | Promise<vscode.TreeItem> {
+// 		const item = new vscode.TreeItem(this._message, vscode.TreeItemCollapsibleState.None);
+// 		item.contextValue = this._contextValue;
+// 		item.description = this._description;
+// 		item.tooltip = this._tooltip;
+// 		item.iconPath = this._iconPath;
+// 		return item;
+// 	}
+// }
+
+
+
+
+
+
+
+
+
+// export interface TreeViewNodeCollapsibleStateChangeEvent<T> extends vscode.TreeViewExpansionEvent<T> {
+// 	state: vscode.TreeItemCollapsibleState;
+// }
+
+
+
+// //https://github.com/gitkraken/vscode-gitlens/blob/main/src/views/viewBase.ts
+
+
+// export abstract class ViewBase<RootNode extends ViewNode<View>, ViewConfig extends any> implements vscode.TreeDataProvider<ViewNode>, vscode.Disposable {
+
+// 	protected _onDidChangeTreeData = new vscode.EventEmitter<ViewNode | undefined>();
+// 	get onDidChangeTreeData(): vscode.Event<ViewNode | undefined> {
+// 		return this._onDidChangeTreeData.event;
+// 	}
+
+// 	private _onDidChangeSelection = new vscode.EventEmitter<vscode.TreeViewSelectionChangeEvent<ViewNode>>();
+// 	get onDidChangeSelection(): vscode.Event<vscode.TreeViewSelectionChangeEvent<ViewNode>> {
+// 		return this._onDidChangeSelection.event;
+// 	}
+
+// 	private _onDidChangeVisibility = new vscode.EventEmitter<vscode.TreeViewVisibilityChangeEvent>();
+// 	get onDidChangeVisibility(): vscode.Event<vscode.TreeViewVisibilityChangeEvent> {
+// 		return this._onDidChangeVisibility.event;
+// 	}
+
+// 	private _onDidChangeNodeCollapsibleState = new vscode.EventEmitter<TreeViewNodeCollapsibleStateChangeEvent<ViewNode>>();
+// 	get onDidChangeNodeCollapsibleState(): vscode.Event<TreeViewNodeCollapsibleStateChangeEvent<ViewNode>> {
+// 		return this._onDidChangeNodeCollapsibleState.event;
+// 	}
+
+
+// 	protected disposables: vscode.Disposable[] = [];
+// 	protected root: RootNode | undefined;
+// 	protected tree: vscode.TreeView<ViewNode> | undefined;
+
+// 	private readonly _lastKnownLimits = new Map<string, number | undefined>();
+
+// 	dispose() {
+// 		this._nodeState?.dispose();
+// 		this._nodeState = undefined;
+// 		vscode.Disposable.from(...this.disposables).dispose();
+// 	}
+
+// 	private _nodeState: ViewNodeState | undefined;
+// 	get nodeState(): ViewNodeState {
+// 		if (this._nodeState == null) {
+// 			this._nodeState = new ViewNodeState();
+// 		}
+
+// 		return this._nodeState;
+// 	}
+
+// 	private onReady() {
+// 		this.initialize({ canSelectMany: this.canSelectMany, showCollapseAll: this.showCollapseAll });
+// 		queueMicrotask(() => this.onConfigurationChanged());
+// 	}
+
+// 	get canReveal(): boolean {
+// 		return true;
+// 	}
+
+// 	get canSelectMany(): boolean {
+// 		return (
+// 			this.container.prereleaseOrDebugging &&
+// 			configuration.get('views.experimental.multiSelect.enabled', undefined, false)
+// 		);
+// 	}
+
+// }
 
 

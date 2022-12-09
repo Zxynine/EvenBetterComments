@@ -62,6 +62,20 @@ export async function delay(ms: number) {
 }
 
 
+export function disposableInterval(fn: (...args: any[]) => void, ms: number): vscode.Disposable {
+	let timer: ReturnType<typeof setInterval> | undefined;
+	const disposable = {
+		dispose: () => {
+			if (timer != null) {
+				clearInterval(timer);
+				timer = undefined;
+			}
+		},
+	};
+	timer = setInterval(fn, ms);
+
+	return disposable;
+}
 
 
 	// // IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
@@ -173,3 +187,60 @@ export const AwaitController = function() {
 
 
 
+
+export function asPromise<T>(thenable: Thenable<T>): Promise<T> {
+	return new Promise<T>(thenable.then);	
+}
+
+
+
+
+
+
+
+/**
+ * When an change event is fired, prevent mutual event triggering (infinite loop)
+ */
+ export class ExclusiveHandle {
+	private running: Promise<any> | undefined = undefined;
+
+	run<T = void>(listener: () => Promise<T> | T): Promise<T> {
+		this.running ??= Promise.resolve(listener()).finally(() => this.running = undefined);		
+		return this.running;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * This class will call the provided callback after the specified number of calls and then resets its counter to be reused. (2 means after every 2 calls it will be invoked)
+ */
+export class Periodically {
+	private readonly LAMBDA: Event;
+	public readonly Frequency: int;
+	private calls: int = 0;
+
+	public constructor(callcount:int, action:Event) {
+		this.Frequency = callcount;
+		this.LAMBDA = action;
+	}
+
+	public Invoke() {
+		if (++this.calls >= this.Frequency) this.LAMBDA();
+	}
+
+	public ForceInvoke() {
+		this.LAMBDA();
+		this.calls = 0;
+	}
+
+	public Reset() { this.calls = 0; }
+}

@@ -87,8 +87,20 @@ export const GetGetScopeAtAPI = {
 
 
 //.........................................................................................................................
+// //https://github.com/gitkraken/vscode-gitlens/blob/main/src/trackers/documentTracker.ts
+// //https://github.com/gitkraken/vscode-gitlens/blob/main/src/trackers/lineTracker.ts
+// export interface LineSelection {
+// 	anchor: int;
+// 	active: int;
+// }
 
+// export interface LinesChangeEvent {
+// 	readonly editor: vscode.TextEditor | undefined;
+// 	readonly selections: LineSelection[] | undefined;
 
+// 	readonly reason: 'editor' | 'selection';
+// 	readonly pending?: boolean;
+// }
 
 //.........................................................................................................................
 
@@ -443,7 +455,31 @@ export class DocumentController extends DisposableContext {
 
 
 
+
+
+
+
+
 //.........................................................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

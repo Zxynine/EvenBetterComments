@@ -124,11 +124,6 @@ Object.defineProperty(Array.prototype, "IsEmpty", {
 
 
 
-Array
-
-
-
-
 
 
 
@@ -326,8 +321,7 @@ Array.prototype.insertArray = function arrayInsert<T>(this: T[], insertIndex: nu
 
 Array.prototype.safeRemove = function safeRemove<T>(this: Array<T>, item: T): void {
 	const index = this.indexOf(item);
-	if (index === -1) return;
-	this.splice(index, 1);
+	if (index !== -1) this.splice(index, 1);
 }
 
 
@@ -355,9 +349,7 @@ Array.prototype.toDefault = function <T>(this: Array<T>, defaultValue: T) {
  export function mapFind<T, R>(array: Iterable<T>, mapFn: (value: T) => R | undefined): R | undefined {
 	for (const value of array) {
 		const mapped = mapFn(value);
-		if (mapped !== undefined) {
-			return mapped;
-		}
+		if (mapped !== undefined) return mapped;
 	}
 
 	return undefined;
@@ -399,9 +391,7 @@ export function append<T>(arr: T[], value: T): void {
 }
 
 export function pushRange<T>(arr: T[], items: ReadonlyArray<T>): void {
-	for (const item of items) {
-		arr.push(item);
-	}
+	for (const item of items) arr.push(item);
 }
 
 
@@ -417,15 +407,12 @@ export function pushRange<T>(arr: T[], items: ReadonlyArray<T>): void {
 
 	if (typeof _seed === 'number') {
 		let seed = _seed;
-		// Seeded random number generator in JS. Modified from:
-		// https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
+		// Seeded random number generator in JS. Modified from: https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
 		rand = () => {
 			const x = Math.sin(seed++) * 179426549; // throw away most significant digits and reduce any potential bias
 			return x - Math.floor(x);
 		};
-	} else {
-		rand = Math.random;
-	}
+	} else rand = Math.random;
 
 	for (let i = array.length - 1; i > 0; i -= 1) {
 		const j = Math.floor(rand() * (i + 1));
@@ -440,24 +427,15 @@ export function range(to: number): number[];
 export function range(from: number, to: number): number[];
 export function range(arg: number, to?: number): number[] {
 	let from = (typeof to === 'number') ? arg : 0;
-
-	if (typeof to === 'number') {
-		from = arg;
-	} else {
-		from = 0;
-		to = arg;
-	}
+	if ((typeof to !== 'number')) to = arg;
 
 	const result: number[] = [];
 
+
 	if (from <= to) {
-		for (let i = from; i < to; i++) {
-			result.push(i);
-		}
+		for (let i = from; i < to; i++) result.push(i);
 	} else {
-		for (let i = from; i > to; i--) {
-			result.push(i);
-		}
+		for (let i = from; i > to; i--) result.push(i);
 	}
 
 	return result;
@@ -503,9 +481,7 @@ export function range(arg: number, to?: number): number[] {
  */
  export function removeFastWithoutKeepingOrder<T>(array: T[], index: number) {
 	const last = array.length - 1;
-	if (index < last) {
-		array[index] = array[last];
-	}
+	if (index < last) array[index] = array[last];
 	array.pop();
 }
 
@@ -551,11 +527,10 @@ export function binarySearch2(length: number, compareToKey: (index: number) => n
 	while (low <= high) {
 		const mid = ((low + high) / 2) | 0;
 		const comp = compareToKey(mid);
-		if (comp < 0) {
-			low = mid + 1;
-		} else if (0 < comp) {
-			high = mid - 1;
-		} else return mid;
+		if (comp === 0) return mid;
+		else if (comp < 0) low = mid + 1;
+		else if (0 < comp) high = mid - 1;
+		else return mid;
 	}
 	return -(low + 1);
 }
@@ -575,9 +550,7 @@ export function binarySearch2(length: number, compareToKey: (index: number) => n
 
 export function del<T>(array: T[], e: T): void {
 	const idx = array.indexOf(e);
-	if (idx >= 0) {
-		array.splice(idx, 1);
-	}
+	if (idx >= 0) array.splice(idx, 1);
 }
 
 
@@ -587,16 +560,66 @@ export function del<T>(array: T[], e: T): void {
 
 
 
-export function groupBy<T>(
-	array: T[],
-	keyGetter: (...args: any[]) => string
-  ): Map<string, T[]> {
+export function groupBy<T>(array: T[], keyGetter: (...args: any[]) => string): Map<string, T[]> {
 	const map = new Map<string, T[]>();
 	array.forEach((item: T) => {
-	  const key = keyGetter(item);
-	  const collection = map.get(key);
-	  !collection ? map.set(key, [item]) : collection.push(item);
+		const key = keyGetter(item);
+		const collection = map.get(key);
+		(!collection)? map.set(key, [item]) : collection.push(item);
 	});
 	return map;
   }
   
+
+
+
+
+
+
+
+
+
+  export function find<T>(array: T[], fn: (t: T) => boolean): T | undefined {
+	let result: T | undefined = undefined;
+
+	array.some(e => {
+		if (fn(e)) {
+			result = e;
+			return true;
+		} else return false;
+	});
+
+	return result;
+}
+
+// export function groupBy<T>(arr: T[], fn: (el: T) => string): { [key: string]: T[] } {
+// 	return arr.reduce((result, el) => {
+// 		const key = fn(el);
+// 		result[key] = [...(result[key] || []), el];
+// 		return result;
+// 	}, Object.create(null));
+// }
+
+
+export function uniqBy<T>(arr: T[], fn: (el: T) => string): T[] {
+	const seen : Record<string, bool> = Object.create(null);
+
+	return arr.filter(el => {
+		const key = fn(el);
+		if (seen[key]) return false;
+		else return seen[key] = true;
+	});
+}
+
+
+
+
+
+
+
+
+
+
+
+
+  //https://github.com/gitkraken/vscode-gitlens/blob/main/src/system/array.ts

@@ -1098,3 +1098,519 @@ export function removeCodiconIconFromLabel(str: string): string {
 export function removeCodiconFromLabel(str: string): string {
 	return str.replace(/\s\(\$\([a-z-]+\)\sargs\)/i, '');
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/gitkraken/vscode-gitlens/tree/main/src/quickpicks/items
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/quickpicks/items/gitCommands.ts
+
+
+
+
+
+// declare module 'vscode' {
+// 	interface QuickPickItem {
+// 		onDidSelect?(): void;
+// 		onDidPressKey?(key: Keys): Promise<void>;
+// 	}
+// }
+
+
+
+
+
+// export interface QuickPickSeparator extends QuickPickItem {
+// 	kind: QuickPickItemKind.Separator;
+// }
+
+// export namespace QuickPickSeparator {
+// 	export function create(label?: string): QuickPickSeparator {
+// 		return { kind: QuickPickItemKind.Separator, label: label ?? '' };
+// 	}
+// }
+
+
+export interface QuickPickItemOfT<T = any> extends vscode.QuickPickItem {
+	readonly item: T;
+}
+
+
+
+export type FlagsQuickPickItem<T, Context = void> = Context extends void
+	? QuickPickItemOfT<T[]>
+	: QuickPickItemOfT<T[]> & { context: Context };
+export namespace FlagsQuickPickItem {
+	export function create<T>(flags: T[], item: T[], options: vscode.QuickPickItem): FlagsQuickPickItem<T>;
+	export function create<T, Context>(flags: T[], item: T[], options: vscode.QuickPickItem, context: Context): FlagsQuickPickItem<T, Context>;
+	export function create<T, Context = void>(flags: T[], item: T[], options: vscode.QuickPickItem, context?: Context): any {
+		return { ...options, item: item, picked: hasFlags(flags, item), context: context };
+	}
+}
+function hasFlags<T>(flags: T[], has?: T | T[]): boolean {
+	if (has === undefined) {
+		return flags.length === 0;
+	}
+	if (!Array.isArray(has)) {
+		return flags.includes(has);
+	}
+
+	return has.length === 0 ? flags.length === 0 : has.every(f => flags.includes(f));
+}
+
+
+
+
+
+
+
+// export class CommandQuickPickItem<Arguments extends any[] = any[]> implements vscode.QuickPickItem {
+// 	static fromCommand<T>(label: string, command: Commands, args?: T): CommandQuickPickItem;
+// 	static fromCommand<T>(item: vscode.QuickPickItem, command: Commands, args?: T): CommandQuickPickItem;
+// 	static fromCommand<T>(labelOrItem: string | vscode.QuickPickItem, command: Commands, args?: T): CommandQuickPickItem {
+// 		return new CommandQuickPickItem(
+// 			typeof labelOrItem === 'string' ? { label: labelOrItem } : labelOrItem,
+// 			command,
+// 			args == null ? [] : [args],
+// 		);
+// 	}
+
+// 	static is(item: vscode.QuickPickItem): item is CommandQuickPickItem {
+// 		return item instanceof CommandQuickPickItem;
+// 	}
+
+// 	label!: string;
+// 	description?: string;
+// 	detail?: string | undefined;
+
+// 	constructor(
+// 		label: string,
+// 		command?: Commands,
+// 		args?: Arguments,
+// 		options?: {
+// 			onDidPressKey?: (key: Keys, result: Thenable<unknown>) => void;
+// 			suppressKeyPress?: boolean;
+// 		},
+// 	);
+// 	constructor(
+// 		item: vscode.QuickPickItem,
+// 		command?: Commands,
+// 		args?: Arguments,
+// 		options?: {
+// 			onDidPressKey?: (key: Keys, result: Thenable<unknown>) => void;
+// 			suppressKeyPress?: boolean;
+// 		},
+// 	);
+// 	constructor(
+// 		labelOrItem: string | vscode.QuickPickItem,
+// 		command?: Commands,
+// 		args?: Arguments,
+// 		options?: {
+// 			onDidPressKey?: (key: Keys, result: Thenable<unknown>) => void;
+// 			suppressKeyPress?: boolean;
+// 		},
+// 	);
+// 	constructor(
+// 		labelOrItem: string | vscode.QuickPickItem,
+// 		protected readonly command?: Commands,
+// 		protected readonly args?: Arguments,
+// 		protected readonly options?: {
+// 			// onDidExecute?: (
+// 			// 	options: { preserveFocus?: boolean; preview?: boolean } | undefined,
+// 			// 	result: Thenable<unknown>,
+// 			// ) => void;
+// 			onDidPressKey?: (key: Keys, result: Thenable<unknown>) => void;
+// 			suppressKeyPress?: boolean;
+// 		},
+// 	) {
+// 		this.command = command;
+// 		this.args = args;
+
+// 		if (typeof labelOrItem === 'string') {
+// 			this.label = labelOrItem;
+// 		} else {
+// 			Object.assign(this, labelOrItem);
+// 		}
+// 	}
+
+// 	execute(_options?: { preserveFocus?: boolean; preview?: boolean }): Promise<unknown | undefined> {
+// 		if (this.command === undefined) return Promise.resolve(undefined);
+
+// 		const result = vscode.commands.executeCommand(this.command, ...(this.args ?? [])) as Promise<unknown | undefined>;
+// 		// this.options?.onDidExecute?.(options, result);
+// 		return result;
+// 	}
+
+// 	async onDidPressKey(key: Keys): Promise<void> {
+// 		if (this.options?.suppressKeyPress) return;
+
+// 		const result = this.execute({ preserveFocus: true, preview: false });
+// 		this.options?.onDidPressKey?.(key, result);
+// 		void (await result);
+// 	}
+// }
+
+// export class ActionQuickPickItem extends CommandQuickPickItem {
+// 	constructor(
+// 		labelOrItem: string | vscode.QuickPickItem,
+// 		private readonly action: (options?: { preserveFocus?: boolean; preview?: boolean }) => void | Promise<void>,
+// 	) {
+// 		super(labelOrItem, undefined, undefined);
+// 	}
+
+// 	override async execute(options?: { preserveFocus?: boolean; preview?: boolean }): Promise<void> {
+// 		return this.action(options);
+// 	}
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export enum Directive {
+	Back,
+	Cancel,
+	LoadMore,
+	Noop,
+	RequiresVerification,
+
+	ExtendTrial,
+	RequiresPaidSubscription,
+	StartPreviewTrial,
+}
+
+
+export namespace Directive {
+	export function is<T>(value: Directive | T): value is Directive {
+		return typeof value === 'number' && Directive[value] != null;
+	}
+}
+
+export interface DirectiveQuickPickItem extends vscode.QuickPickItem {
+	directive: Directive;
+}
+
+
+export namespace DirectiveQuickPickItem {
+	export function create(
+		directive: Directive,
+		picked?: boolean,
+		options?: { label?: string; description?: string; detail?: string; subscription?: any },
+	) {
+		let label = options?.label;
+		let detail = options?.detail;
+		if (label == null) {
+			switch (directive) {
+				case Directive.Back:
+					label = 'Back';
+					break;
+				case Directive.Cancel:
+					label = 'Cancel';
+					break;
+				case Directive.LoadMore:
+					label = 'Load more';
+					break;
+				case Directive.Noop:
+					label = 'Try again';
+					break;
+				case Directive.StartPreviewTrial:
+					label = 'Start a GitLens Pro Trial';
+					detail = 'Try GitLens+ features on private repos, free for 3 days, without an account';
+					break;
+				case Directive.ExtendTrial:
+					label = 'Extend Your GitLens Pro Trial';
+					detail = 'To continue to use GitLens+ features on private repos, free for an additional 7-days';
+					break;
+				case Directive.RequiresVerification:
+					label = 'Resend Verification Email';
+					detail = 'You must verify your email address before you can continue';
+					break;
+				case Directive.RequiresPaidSubscription:
+					label = 'Upgrade to Pro';
+					detail = 'To use GitLens+ features on private repos';
+					break;
+			}
+		}
+
+		const item: DirectiveQuickPickItem = {
+			label: label,
+			description: options?.description,
+			detail: detail,
+			alwaysShow: true,
+			picked: picked,
+			directive: directive,
+		};
+
+		return item;
+	}
+
+	export function is(item: vscode.QuickPickItem): item is DirectiveQuickPickItem {
+		return item != null && 'directive' in item;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/keyboard.ts
+
+
+export declare interface KeyCommand {
+	onDidPressKey?(key: Keys): void | Promise<void>;
+}
+
+export type Keys = typeof keys[number];
+export const keys = [
+	'left',
+	'alt+left',
+	'ctrl+left',
+	'right',
+	'alt+right',
+	'ctrl+right',
+	'alt+,',
+	'alt+.',
+	'escape',
+] as const;
+
+export type KeyMapping = { [K in Keys]?: KeyCommand | (() => Promise<KeyCommand>) };
+// type IndexableKeyMapping = KeyMapping & {
+// 	[index: string]: KeyCommand | (() => Promise<KeyCommand>) | undefined;
+// };
+
+// const mappings: KeyMapping[] = [];
+
+
+
+// export class KeyboardScope implements Disposable {
+// 	private readonly _mapping: IndexableKeyMapping;
+// 	constructor(mapping: KeyMapping) {
+// 		this._mapping = mapping;
+// 		for (const key in this._mapping) {
+// 			this._mapping[key] = this._mapping[key] ?? keyNoopCommand;
+// 		}
+
+// 		mappings.push(this._mapping);
+// 	}
+
+// 	@log({
+// 		args: false,
+// 		prefix: context => `${context.prefix}[${mappings.length}]`,
+// 	})
+// 	async dispose() {
+// 		const index = mappings.indexOf(this._mapping);
+
+// 		const scope = getLogScope();
+// 		if (scope != null) {
+// 			scope.exitDetails = ` \u2022 index=${index}`;
+// 		}
+
+// 		if (index === mappings.length - 1) {
+// 			mappings.pop();
+// 			await this.updateKeyCommandsContext(mappings[mappings.length - 1]);
+// 		} else {
+// 			mappings.splice(index, 1);
+// 		}
+// 	}
+
+// 	private _paused = true;
+// 	get paused() {
+// 		return this._paused;
+// 	}
+
+// 	@log<KeyboardScope['clearKeyCommand']>({
+// 		args: false,
+// 		prefix: (context, key) => `${context.prefix}[${mappings.length}](${key})`,
+// 	})
+// 	async clearKeyCommand(key: Keys) {
+// 		const scope = getLogScope();
+
+// 		const mapping = mappings[mappings.length - 1];
+// 		if (mapping !== this._mapping || mapping[key] == null) {
+// 			if (scope != null) {
+// 				scope.exitDetails = ' \u2022 skipped';
+// 			}
+
+// 			return;
+// 		}
+
+// 		mapping[key] = undefined;
+// 		await setContext(`${ContextKeys.KeyPrefix}${key}`, false);
+// 	}
+
+// 	@log({
+// 		args: false,
+// 		prefix: context => `${context.prefix}(paused=${context.instance._paused})`,
+// 	})
+// 	async pause(keys?: Keys[]) {
+// 		if (this._paused) return;
+
+// 		this._paused = true;
+// 		const mapping = (Object.keys(this._mapping) as Keys[]).reduce<KeyMapping>((accumulator, key) => {
+// 			accumulator[key] = keys == null || keys.includes(key) ? undefined : this._mapping[key];
+// 			return accumulator;
+// 		}, Object.create(null));
+
+// 		await this.updateKeyCommandsContext(mapping);
+// 	}
+
+// 	@log({
+// 		args: false,
+// 		prefix: context => `${context.prefix}(paused=${context.instance._paused})`,
+// 	})
+// 	async resume() {
+// 		if (!this._paused) return;
+
+// 		this._paused = false;
+// 		await this.updateKeyCommandsContext(this._mapping);
+// 	}
+
+// 	async start() {
+// 		await this.resume();
+// 	}
+
+// 	@log<KeyboardScope['setKeyCommand']>({
+// 		args: false,
+// 		prefix: (context, key) => `${context.prefix}[${mappings.length}](${key})`,
+// 	})
+// 	async setKeyCommand(key: Keys, command: KeyCommand | (() => Promise<KeyCommand>)) {
+// 		const scope = getLogScope();
+
+// 		const mapping = mappings[mappings.length - 1];
+// 		if (mapping !== this._mapping) {
+// 			if (scope != null) {
+// 				scope.exitDetails = ' \u2022 skipped';
+// 			}
+
+// 			return;
+// 		}
+
+// 		const set = Boolean(mapping[key]);
+
+// 		mapping[key] = command;
+// 		if (!set) {
+// 			await setContext(`${ContextKeys.KeyPrefix}${key}`, true);
+// 		}
+// 	}
+
+// 	private async updateKeyCommandsContext(mapping: KeyMapping) {
+// 		await Promise.all(keys.map(key => setContext(`${ContextKeys.KeyPrefix}${key}`, Boolean(mapping?.[key]))));
+// 	}
+// }
+
+// export class Keyboard implements Disposable {
+// 	private readonly _disposable: Disposable;
+
+// 	constructor() {
+// 		const subscriptions = keys.map(key => registerCommand(`gitlens.key.${key}`, () => this.execute(key), this));
+// 		this._disposable = Disposable.from(...subscriptions);
+// 	}
+
+// 	dispose() {
+// 		this._disposable.dispose();
+// 	}
+
+// 	@log<Keyboard['createScope']>({
+// 		args: false,
+// 		prefix: (context, mapping) =>
+// 			`${context.prefix}[${mappings.length}](${mapping === undefined ? '' : Object.keys(mapping).join(',')})`,
+// 	})
+// 	createScope(mapping?: KeyMapping): KeyboardScope {
+// 		return new KeyboardScope({ ...mapping });
+// 	}
+
+// 	@log<Keyboard['beginScope']>({
+// 		args: false,
+// 		prefix: (context, mapping) =>
+// 			`${context.prefix}[${mappings.length}](${mapping === undefined ? '' : Object.keys(mapping).join(',')})`,
+// 	})
+// 	async beginScope(mapping?: KeyMapping): Promise<KeyboardScope> {
+// 		const scope = this.createScope(mapping);
+// 		await scope.start();
+// 		return scope;
+// 	}
+
+// 	@log()
+// 	async execute(key: Keys): Promise<void> {
+// 		const scope = getLogScope();
+
+// 		if (!mappings.length) {
+// 			if (scope != null) {
+// 				scope.exitDetails = ' \u2022 skipped, no mappings';
+// 			}
+
+// 			return;
+// 		}
+
+// 		try {
+// 			const mapping = mappings[mappings.length - 1];
+
+// 			let command = mapping[key] as KeyCommand | (() => Promise<KeyCommand>);
+// 			if (typeof command === 'function') {
+// 				command = await command();
+// 			}
+// 			if (typeof command?.onDidPressKey !== 'function') {
+// 				if (scope != null) {
+// 					scope.exitDetails = ' \u2022 skipped, no callback';
+// 				}
+
+// 				return;
+// 			}
+
+// 			await command.onDidPressKey(key);
+// 		} catch (ex) {
+// 			Logger.error(ex, scope);
+// 		}
+// 	}
+// }

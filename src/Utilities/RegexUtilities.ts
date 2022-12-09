@@ -754,3 +754,40 @@ export function _applyCaseModifier(namedGroups: any, groups: any, resolvedPathVa
 	
 // 	else return resolved;
 //   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export default function execAll(srcRegex: RegExp, text: string) : RegExpExecArray[] {
+	let regex = new RegExp(srcRegex, 'g');
+	let matches : RegExpExecArray[] = [];
+	for (let match: RegExpExecArray|null; ((match = regex.exec(text)) !== null);) {
+		matches.push(match);
+	}
+	return matches;
+}
+
+
+
+
+
+
+
+
+
+export function OffsetFromRegex(array:RegExpExecArray|RegExpMatchArray, index:number) {
+	let returnValue = 0;
+	const numberStop = (index < array.length)? index+1 : array.length;
+	for (let i=1; i<numberStop; i++) returnValue += array[i].length;
+	return returnValue;
+}

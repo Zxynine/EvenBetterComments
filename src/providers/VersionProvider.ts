@@ -77,10 +77,30 @@ export namespace Version {
 }
 
 
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/system/version.ts
+
+// export interface Version {
+// 	major: number;
+// 	minor: number;
+// 	patch: number;
+// 	pre?: string;
+// }
 
 
+// export function from(major: string | number, minor: string | number, patch?: string | number, pre?: string): Version {
+// 	return {
+// 		Major: typeof major === 'string' ? parseInt(major, 10) : major,
+// 		Minor: typeof minor === 'string' ? parseInt(minor, 10) : minor,
+// 		Patch: patch == null ? 0 : typeof patch === 'string' ? parseInt(patch, 10) : patch,
+// 		pre: pre,
+// 	};
+// }
 
-
+// export function fromString(version: string): Version {
+// 	const [ver, pre] = version.split('-');
+// 	const [major, minor, patch] = ver.split('.');
+// 	return from(major, minor, patch, pre);
+// }
 
 
 

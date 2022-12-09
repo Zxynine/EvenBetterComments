@@ -47,3 +47,6 @@ Object.prototype.mergeInto = function (this : any, ...objs: Record<string, unkno
 	objs.forEach(source => { for (const key in source) this[key] = source[key]; });
 	return this;
 };
+
+
+//https://github.com/gitkraken/vscode-gitlens/blob/main/src/system/object.ts

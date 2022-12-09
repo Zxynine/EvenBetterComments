@@ -199,6 +199,18 @@ export class FlagsArray {
 		return (this.Flags[PrimeIndex] !== 0);
 	}
 
+	//TODO: implement try set flag which returns a bool if it was sucessful in setting (not already the value when setting)
+	public TrySetFlag(index: int, value:bool): bool {
+		const [PrimeIndex, SubIndex] = FlagsArray.GetIndices(index);
+		if (PrimeIndex >= this.Flags.length) return false;
+		const BitMask = 1<<(31-SubIndex);
+		if ((this.Flags[PrimeIndex] & BitMask) === (value? 1:0)) return false;
+
+		this.Flags[PrimeIndex] &= ~BitMask;
+		if (value) this.Flags[PrimeIndex] |= BitMask;
+		return true;
+	}
+
 	public CheckFlag(index : int): bool {
 		const [PrimeIndex, SubIndex] = FlagsArray.GetIndices(index);
 		return (PrimeIndex < this.Flags.length) && ((this.Flags[PrimeIndex] & (1<<(31-SubIndex))) !== 0);
