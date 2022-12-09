@@ -3,7 +3,7 @@
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
 	"icon": "icon.png",
-	"version": "5.0.2",
+	"version": "5.0.3",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
@@ -123,7 +123,9 @@
 					"markdownDescription": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect.",
 					"items": {
 						"type": "object",
-						"required": ["tag"],
+						"required": [
+							"tag"
+						],
 						"properties": {
 							"tag": {
 								"type": "string",
