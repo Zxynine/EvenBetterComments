@@ -230,6 +230,17 @@ interface IPosition {
 }
 
 
+interface LineRange {
+	/** The zero-based line value. */
+	readonly line: int;
+	/** The zero-based start character value. */
+	readonly startCharacter: int;
+	/** The zero-based end character value. */
+	readonly endCharacter: int;
+}
+
+
+
 
 
 

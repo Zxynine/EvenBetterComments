@@ -3,7 +3,7 @@
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
 	"icon": "icon.png",
-	"version": "5.0.2",
+	"version": "5.0.3",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
@@ -562,7 +562,7 @@
 									},
 									"borderRadius": {
 										"type": "string",
-										"description": "CSS styling property that will be applied to text enclosed by a decoration. Better use 'border' for setting one or more of the individual border properties."
+										"description": "CSS styling property that will set the border radius of the hilights background. Better use 'border' for setting one or more of the individual border properties."
 									},
 									"borderSpacing": {
 										"type": "string",

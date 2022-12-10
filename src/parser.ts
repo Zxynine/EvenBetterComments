@@ -219,11 +219,13 @@ export class Parser {
 		if (!this.supportedLanguage) return;
 
 		const TagArray = this.tagArray = Parser.JoinDelimiters(this.tags);
+		// const CaptureSeparator = "([ \\t]+|:|$)";
+
 
 		//..............................................
 		if (this.isPlainText) this.delimiter = '';
 
-		const MonoLineCommon = "("+this.delimiter+")+([ \\t]*)("+TagArray+")([ \\t]+|[:$])(.*$)";
+		const MonoLineCommon = "("+this.delimiter+")+([ \\t]*)("+TagArray+")([ \\t]+|:|$)(.*$)";
 		this.Expressions.MonoLineSimple = new RegExp("(^)([ \\t]*)"+MonoLineCommon, "igm");
 		this.Expressions.MonoLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+")\\S*.*?)"+MonoLineCommon, "igm");
 
@@ -308,7 +310,7 @@ export class Parser {
 
 		// This is used to isolate the comment and delimeter form the rest of the text so that it can be parsed.
 		// ? [0: Full match] [1: LineStart To MixedData End] [2: Delimiter] [3: Space/Indent] [4: Tag] [5: Space/Colon] [6: Comment Text]
-		const commentMatchString = "(^.*?)("+this.delimiter+")([ \\t]*)("+Parser.JoinDelimiters(this.tags)+")([ \\t]+|[:$])(.*$)";
+		const commentMatchString = "(^.*?)("+this.delimiter+")([ \\t]*)("+Parser.JoinDelimiters(this.tags)+")([ \\t]+|:|$)(.*$)";
 		const commentRegEx = new RegExp(commentMatchString, "i");
 
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MonoLineMixed)) {
@@ -386,12 +388,12 @@ export class Parser {
 	 public FindBlockCommentsSimple(activeEditor: vscode.TextEditor): void {
 		// Combine custom delimiters and the rest of the comment block matcher
 		// ? [0: Full Match] [1: lineStart + Space/Indent/BlockStart] [3: Tag] [4: BlockEnd/Space/Colon] [4: BlockEnd/LineEnd]
-		const commentMatchString = "(^[ \\t]*(?:"+this.blockCommentStart+")?[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|[:$]))(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
+		const commentMatchString = "(^[ \\t]*(?:"+this.blockCommentStart+")?[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|:|$))(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
 		//Finds if the block starts with the tag, highlight entire block
 		// ? [0: Full Match] [1: lineStart+ Space/Indent] [2: BlockStart+Space] [3: Tag] [4: BlockEnd/Space/Colon]
-		const fullBlockMatchString = "(^[ \\t]*)("+this.blockCommentStart+"[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|[:$]))";
+		const fullBlockMatchString = "(^[ \\t]*)("+this.blockCommentStart+"[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|:|$))";
 		const fullBlockRegEx = new RegExp(fullBlockMatchString, "i");
 
 
@@ -452,7 +454,7 @@ export class Parser {
 	 public FindBlockCommentsMixed(activeEditor: vscode.TextEditor): void {
 		// Combine custom delimiters and the rest of the comment block matcher
 		// ? [0: Full Match] [1: lineStart + Space/Indent/BlockStart] [2: Tag] [3: BlockEnd/Space/Colon] [4: BlockEnd/LineEnd]
-		const commentMatchString = "(^[ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|[:$]))(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
+		const commentMatchString = "(^[ \\t]*(?:"+ this.blockCommentStart +")?[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?"+this.blockCommentEnd+")|(?:[ \\t]+|:|$))(?<!\\*)(.*?(?=\\*?"+this.blockCommentEnd+"|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
 		// Find the multiline comment block
@@ -507,10 +509,10 @@ export class Parser {
 		if (!this.highlightMultilineComments || !this.highlightJSDoc) return;
 
 		// Highlight after leading /** or *
-		const commentMatchString = "(^[ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?\\*/|$)|(?:[ \\t]+|:))(?<!\\*)(.*?(?=\\*?\\*/|$))";
+		const commentMatchString = "(^[ \\t]*(?:/\\*\\*|\\*)[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?\\*/|$)|(?:[ \\t]+|:|$))(?<!\\*)(.*?(?=\\*?\\*/|$))";
 		const commentRegEx = new RegExp(commentMatchString, "igm");
 
-		const fullBlockMatchString = "(^[ \\t]*)(/\\*\\*[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?\\*/|$)|(?:[ \\t]+|:))";
+		const fullBlockMatchString = "(^[ \\t]*)(/\\*\\*[ \\t]*)("+Parser.JoinDelimiters(this.tags)+")((?=\\*?\\*/|$)|(?:[ \\t]+|:|$))";
 		const fullBlockRegEx = new RegExp(fullBlockMatchString, "i");
 
 
@@ -1045,8 +1047,9 @@ export function MakeTitleMatcher(regexString:string) {
 
 
 
+//[[./extension.ts]]
 
-
+//[[icon.png]]
 
 
 	/**
@@ -1056,7 +1059,7 @@ export function MakeTitleMatcher(regexString:string) {
 	 * ISSUE: When you put "//*" inside a string, it will detect that line as a string from that point onwards.
 	 * Example: ^"//*" this text gets highlighted;
 	 *
-	 * [[Hello ]] dadw [[    ]]
+	 * [[Hello ]] dadw [[    ]] [[icon.png]]
 	**/
 
 

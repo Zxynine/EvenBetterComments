@@ -47,6 +47,28 @@ export function setsAreEqual(aS: Set<any>, bS: Set<any>) {
 
 
 
+
+
+
+export class UnreachableCaseError extends Error {constructor(val: never) {super(`Unreachable case: ${val}`)}}
+
+interface HookError extends Error { errors: any }
+
+export function isHookError(e: Error): e is HookError { return !!(e as any).errors }
+
+
+
+
+
+
+
+
+
+// a 1x1 pixel transparent gif, from http://png-pixel.com/
+export const EMPTY_IMAGE_URI = vscode.Uri.parse(
+	`data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==`,
+);
+
 export const ImageMimetypes: Record<string, string> = {
 	'.png': 'image/png',
 	'.gif': 'image/gif',

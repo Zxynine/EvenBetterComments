@@ -244,3 +244,65 @@ export class Periodically {
 
 	public Reset() { this.calls = 0; }
 }
+
+
+
+
+
+
+
+
+
+export const passthrough = (value: any, resolve: (value?: any) => void) => resolve(value);
+
+export interface PromiseAdapter<T, U> {
+	(value: T, resolve: (value?: U | PromiseLike<U>) => void, reject: (reason: any) => void): any;
+}
+
+
+
+export function done<T>(promise: Promise<T>): Promise<void> {
+	return promise.then<void>(() => undefined);
+}
+
+
+
+
+
+
+
+export function debounce(fn: () => any, delay: number): () => void {
+	let timer: any;
+	return () => {
+		clearTimeout(timer);
+		timer = setTimeout(() => fn(), delay);
+	};
+}
+
+
+export function throttle<T>(fn: () => Promise<T>): () => Promise<T> {
+	let current: Promise<T> | undefined;
+	let next: Promise<T> | undefined;
+
+	const trigger = (): Promise<T> => {
+		if (next) return next;
+
+		if (current) {
+			next = done(current).then(() => {
+				next = undefined;
+				return trigger();
+			});
+
+			return next;
+		}
+
+		current = fn();
+
+		const clear = () => (current = undefined);
+		done(current).then(clear, clear);
+
+		return current;
+	};
+
+	return trigger;
+}

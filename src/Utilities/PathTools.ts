@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as minimatch from 'minimatch';
 import * as process from 'process';
-
-
+import * as fs from 'fs';
+import * as os from 'os'
+// import * as find from "find"
 
 
 
@@ -532,4 +533,207 @@ export function normalizePath(p: string) {
 	}
 
 	return p;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+function isWindowsPath(path: string): boolean {
+	return /^[a-zA-Z]:\\/.test(path);
+}
+
+export function isDescendant(parent: string, descendant: string): boolean {
+	if (parent === descendant) {
+		return true;
+	}
+
+	if (parent.charAt(parent.length - 1) !== path.sep) {
+		parent += path.sep;
+	}
+
+	// Windows is case insensitive
+	if (isWindowsPath(parent)) {
+		parent = parent.toLowerCase();
+		descendant = descendant.toLowerCase();
+	}
+
+	return descendant.startsWith(parent);
+}
+
+
+
+
+
+
+
+
+
+
+export interface CheckFile {
+	isFile: boolean;
+	isFolder: boolean;
+  }
+  
+  export const checkFile = (file: string): CheckFile => {
+	try {
+	  const isFolder = fs.lstatSync(file).isDirectory();
+	  return { isFile: !isFolder, isFolder };
+	} catch (error) {
+	  return { isFile: false, isFolder: false };
+	}
+  };
+
+
+//   const foldersToIgnore = ['node_modules', 'out', 'dist', 'build', 'public']; // Folders that slow down collection or won't have workspace files in
+// const foldersToAllow = ['.vscode']; // Some users store workspaces files here
+
+// export const collectFilesFromFolder = async (
+//   folder: string,
+//   fileType: string,
+//   maxDepth: number,
+//   curDepth: number
+// ): Promise<WsFiles> => {
+//   if (curDepth <= maxDepth) {
+//     try {
+//       const filenames = await fs.promises.readdir(folder).then((files) => {
+//         return files.reduce((allFiles: string[], curFile) => {
+//           if (
+//             foldersToAllow.includes(curFile) ||
+//             (!isHiddenFile(curFile) && !foldersToIgnore.includes(curFile))
+//           ) {
+//             return [...allFiles, curFile];
+//           }
+
+//           return allFiles;
+//         }, []);
+//       });
+
+//       const folders = getFilenamesOfType('folders', filenames, folder, fileType);
+//       let files = getFilenamesOfType('files', filenames, folder, fileType);
+
+//       if (folders.length > 0) {
+//         for (let index = 0; index < folders.length; index++) {
+//           const subFiles = await collectFilesFromFolder(
+//             folders[index],
+//             fileType,
+//             maxDepth,
+//             curDepth + 1
+//           );
+//           files = [...files, ...subFiles];
+//         }
+//       }
+
+//       return files;
+//     } catch (err) {
+//       return [];
+//     }
+//   }
+
+//   return [];
+// };
+
+
+export const isHiddenFile = (fileName: string): boolean => fileName.substring(0, 1) === '.';
+export const isSelected = (file: string, selected: string, platform: string) => {
+	if (platform === 'win32') {
+	  return file.toLowerCase() === selected.toLowerCase();
+	}
+  
+	return file === selected;
+  };
+
+  
+export const isWorkspaceFile = (path: string, scheme: string) => {
+	if (scheme === 'file') {
+	  const fileName = getLastPathSegment(path);
+	  const ext = fileName.substring(fileName.lastIndexOf('.') + 1);
+  
+	  if (ext && ext === FS_WS_FILETYPE) {
+		return true;
+	  }
+	}
+  
+	return false;
+  };
+
+
+  
+export const getLastPathSegment = (_path: string): string => {
+	const lastSlashIndex = _path.lastIndexOf(path.sep);
+	return _path.substring(lastSlashIndex + 1);
+  };
+
+
+// export const FS_FOLDER_CSS = 'css';
+// export const FS_FOLDER_IMAGES = 'images';
+// export const FS_FOLDER_IMAGES_DARK = 'dark';
+// export const FS_FOLDER_IMAGES_LIGHT = 'light';
+// export const FS_FOLDER_JS = 'js';
+// export const FS_FOLDER_RESOURCES = 'resources';
+export const FS_WS_FILETYPE = 'code-workspace';
+// export const FS_WS_EXT = `.${FS_WS_FILETYPE}`;
+// export const FS_WEBVIEW_CODICONS_CSS = 'codicon.css';
+// export const FS_WEBVIEW_UI_TOOLKIT_JS = 'toolkit.js';
+// export const FS_WEBVIEW_WORKSPACE_CSS = 'webview-workspace.css';
+// export const FS_WEBVIEW_WORKSPACE_JS = 'webview-workspace.js';
+
+
+
+
+
+
+
+
+
+
+
+export function createFolderGlob( folderPath:string, rootPath:string, filter:string ) {
+    if( process.platform === 'win32' ) {
+        var fp = folderPath.replace( /\\/g, '/' );
+        var rp = rootPath.replace( /\\/g, '/' );
+
+        if( fp.indexOf( rp ) === 0 ) {
+            fp = fp.substring( path.dirname( rp ).length );
+        }
+
+        return ( "**/" + fp + filter ).replace( /\/\//g, '/' );
+    }
+
+    return ( folderPath + filter ).replace( /\/\//g, '/' );
+}
+
+// function getSubmoduleExcludeGlobs( rootPath:string ) {
+//     var submodules = find.fileSync( '.git', rootPath );
+//     submodules = submodules.map( function( submodule )
+//     {
+//         return path.dirname( submodule );
+//     } );
+//     submodules = submodules.filter( function( submodule )
+//     {
+//         return submodule != rootPath;
+//     } );
+//     return submodules;
+// }
+
+
+
+export function isHidden( filename:string) {
+	return path.basename( filename ).indexOf( '.' ) !== -1 && path.extname( filename ) === "";
+}
+
+
+export function expandTilde( filePath:string ) {
+	if( filePath && filePath[ 0 ] === '~' ) {
+		filePath = path.join( os.homedir(), filePath.slice( 1 ) );
+	}
+
+	return filePath;
 }

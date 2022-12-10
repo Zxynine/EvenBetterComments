@@ -1,5 +1,20 @@
 # Change Log
 
+## [5.0.3] (2022-12-09)
+### Development
+This is a patch to work on some issues posted recently as well as set up the extension for a soon to come minor update.
+
+### Features
+* Removed preview features `tag.CSSBorderDecoration`, `tag.CSSOutlineDecoration`, `tag.CSSTextDecoration` in favour of new style method. (I did warn you it was temporary)
+* Added more permanent and fleshed out preview feature `tag.CustomDecoration` for advanced users to have full control over their decorations style. See [this page](https://code.visualstudio.com/api/references/vscode-api#DecorationRenderOptions). Closes[#8](https://github.com/Zxynine/EvenBetterComments/issues/8)
+* Added new command `BetterHyperScopes: Show Line Comments` which will highlight and log the ranges of all comments in the current selection.
+* Added new command `EvenBetterComments: Remove All Comments In Current Document` which will let you remove every comment in the currently opened file.
+* Added new command `EvenBetterComments: Remove All Comments In Current Selection` which will let you remove every comment in the current selection.
+
+### Bug Fixes
+* Fixed issue of space after a tag being included in the highlighting. Closes[#7](https://github.com/Zxynine/EvenBetterComments/issues/7)
+* Fixed issue of monoline comment symbol being styled despite `highlightTagOnly` being enabled. Closes[#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
+
 ## [5.0.2] (2022-11-28)
 ### Development
 This is a hotfix to solve a number of small bugs either created during the last major update, or have always been present but never addressed.
