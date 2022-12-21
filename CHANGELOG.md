@@ -1,7 +1,18 @@
 # Change Log
-## [5.0.4] (2022-12-20)
+
+## [5.0.6] (2022-12-21)
 ### Development
-This is a patch to work on more issues, performance problems, and implementing link comment highlighting.
+This is a hotfix for a recent set of problems introduced by and or while fixing other problems.
+
+### Bug Fixes
+* Fixed JSON5 module missing. Re-Re-Closes [#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
+* Fixed rubbish performance on large files introduced by fixing uncaught errors. Closes [#13](https://github.com/Zxynine/EvenBetterComments/issues/13)
+* Fixed Weird version limbo caused by error during publishing. Version 5.0.4 is not nor will be a thing now, we are now in Version 5.0.6.
+
+
+## [5.0.4/5] (2022-12-20)
+### Development
+This is a patch to work on more issues, performance problems, and implementing link comment highlighting. (I apparently screwed up pushing this update, so it skipped a patch version.)
 
 ### Features
 * Link comment highlights support added, just need to document and provide options for it in future update.
