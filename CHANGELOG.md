@@ -14,6 +14,9 @@ This is a patch to work on more issues, performance problems, and implementing l
 * Fixed issue of regex incorrectly looking for the end of a line. Closes [#11](https://github.com/Zxynine/EvenBetterComments/issues/11)
 * Potentially fixed issue of mixed line comments not loading until the document is edited. Possibly Closes [#12](https://github.com/Zxynine/EvenBetterComments/issues/12)
 
+### HouseKeeping
+* Cleared old dependencies and updated all to the latest versions.
+
 ## [5.0.3] (2022-12-09)
 ### Development
 This is a patch to work on some issues posted recently as well as set up the extension for a soon to come minor update.
