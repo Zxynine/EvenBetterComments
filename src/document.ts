@@ -1,15 +1,11 @@
 import * as vscode from 'vscode';
-// import * as vsctm from 'vscode-textmate';
 
 import "./extensions/ArrayExtensions";
-// import { ExtentionProvider } from './providers/ExtentionProvider';
-// import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
 import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { LanguageLoader } from './providers/LanguageProvider';
 import { StandardLineTokens } from './Tokenisation/tokenisation';
 import { Configuration } from './configuration';
 import { Console } from './Utilities/Debug';
-// import { FlagsArray } from './typings/BitFlags';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
 	console.error("HyperScopes: "+message, ...optionalParams, err);
@@ -223,41 +219,7 @@ export class DocumentController extends DisposableContext {
 		this.grammar = textMateGrammar;
 		this.document = doc;
 		this.parseEntireDocument();
-		/* Store content changes. Will be clear when calling `getScopeAt()`. */
-		// this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange, this));
 	}
-
-	// private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
-	// 	if (this.document && event.document.uri === this.document.uri && event.contentChanges.length) { //Validates changes
-	// 		//Sorts changes to apply so that line changes can just reparse the rest of the doc.
-	// 		this.applyChanges([...event.contentChanges].sort(DocumentController.ChangeSorter));
-	// 	}
-	// }
-
-
-	// private applyDirty(sortedChanges: readonly vscode.TextDocumentContentChangeEvent[]) {
-	// 	this.dirtyLines.Expand(this.document.lineCount);
-	// 	for(let change of sortedChanges){
-	// 		this.dirtyLines.SetRange(change.range.start.line, change.range.end.line, true);
-	// 	}
-	// }
-		
-
-	// private applyChanges(sortedChanges: readonly vscode.TextDocumentContentChangeEvent[]) {
-	// 	// this.SortedChangeEvent.fire(sortedChanges);
-	// 	for(let change of sortedChanges){
-	// 		const changeEndLine = change.range.end.line;
-	// 		// compare ruleStack
-	// 		const initState = this.tokensArray[changeEndLine]?.ruleStack;
-	// 		this.parseRange(change.range);
-	// 		const lastState = this.tokensArray[changeEndLine]?.ruleStack;
-	// 		// if (insert line count !== replaced content line count || ruleStack !== init ruleStack) then: parse the rest of document and return;
-	// 		if((change.range.lineCount !== change.text.lineCount) || (initState !== lastState)){
-	// 			this.parseLines(changeEndLine+1, this.document.lineCount);
-	// 			break;
-	// 		}
-	// 	}
-	// }
 		
 	//...............................................................................
 	

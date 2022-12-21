@@ -154,15 +154,6 @@ type Func<TArgs = [], TResult = void> = ([TArgs] extends [any[]]
 type Action<TArgs = []> = [TArgs] extends [any[]] ? Func<TArgs, void> :  Func<[TArgs], void>; 
 
 
-
-// type TestFunc1 = Func<[number, bool], int>;
-// type TestFunc2 = Func<number, int>;
-// type TestFunc3 = Func<number>;
-
-// type TestAction1 = Action<[number, bool]>;
-// type TestAction2 = Action<[number]>;
-// type TestAction3 = Action<number>;
-
 type Event<T = []> = Func<T, void>;
 /** A function used to subscribe to an EventEmitter. */
 type EventSubscribe<T> = Func<[listener: EventListener<T>], IDisposable>;
@@ -213,10 +204,6 @@ type BuiltIn = Primitive | Date | RegExp;
 
 
 
-
-
-
-
 type IList<T=any> = ArrayLike<T>;
 
 
@@ -238,40 +225,6 @@ declare const enum CompareResult {
 
 
 
-
-
-
-interface IRange {        
-	/** The start position. It is before or equal to {@link IRange.end end}. */
-	readonly start: IPosition;
-
-	/** The end position. It is after or equal to {@link IRange.start start}. */
-	readonly end:IPosition;
-}
-
-interface IPosition {
-	/** The zero-based line value. */
-	readonly line: int;
-
-	/** The zero-based character value. */
-	readonly character: int;
-}
-
-
-interface LineRange {
-	/** The zero-based line value. */
-	readonly line: int;
-	/** The zero-based start character value. */
-	readonly startCharacter: int;
-	/** The zero-based end character value. */
-	readonly endCharacter: int;
-}
-
-
-
-
-
-
 type IconPath = (
 	| string
 	| import("vscode").Uri
@@ -282,14 +235,6 @@ type IconPath = (
 	}
 );
 
-
-
-
-// type GlobalStoragePath = Path<GlobalStorage>;
-// type GlobalStoragePathValue<P extends GlobalStoragePath> = PathValue<GlobalStorage, P>;
-
-// type WorkspaceStoragePath = Path<WorkspaceStorage>;
-// type WorkspaceStoragePathValue<P extends WorkspaceStoragePath> = PathValue<WorkspaceStorage, P>;
 
 type OrUndefined<T> = { [P in keyof T]: T[P] | undefined };
 

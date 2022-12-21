@@ -1,20 +1,7 @@
 import * as vscode from 'vscode';
-
 import * as json5 from 'json5';
 import { LanguageLoader } from './providers/LanguageProvider';
 import { TextDecoder } from 'util';
-
-
-// export type Target = 'global' | 'workspace';
-
-// /**
-//  * Type for {@link CommandId.ToggleSetting} command.
-//  */
-//  export interface ToggleSettingType {
-// 	setting: string;
-// 	value?: unknown[] | string;
-// 	target?: Target;
-// }
 
 
 // The configuration necessary to find supported languages on startup
@@ -49,12 +36,7 @@ export class Configuration {
             const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
 			// use json5, because the config can contain comments
 			return json5.parse(new TextDecoder().decode(rawContent));
-
-			// return LanguageLoader.ReadLanguageFileAsync(languageCode).then(content => (content !== undefined)? json5.parse(content) : undefined);
-
-			// const content = LanguageLoader.ReadLanguageFileSync(languageCode);
-			// return (content)? json5.parse(content) : undefined;
-		} catch (error) { return undefined; }
+		} catch { return undefined; }
 	}
 
 

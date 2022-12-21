@@ -1,16 +1,4 @@
 
-
-import * as vscode from 'vscode';
-
-
-
-
-
-
-
-
-
-
 export function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -60,43 +48,6 @@ export async function PulseWithCountCancelable(delay: float, count: int, callbac
 export async function delay(ms: number) {
 	return (ms <= 0)? Promise.resolve() : new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-
-export function disposableInterval(fn: (...args: any[]) => void, ms: number): vscode.Disposable {
-	let timer: ReturnType<typeof setInterval> | undefined;
-	const disposable = {
-		dispose: () => {
-			if (timer != null) {
-				clearInterval(timer);
-				timer = undefined;
-			}
-		},
-	};
-	timer = setInterval(fn, ms);
-
-	return disposable;
-}
-
-
-	// // IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
-	// var timeout: NodeJS.Timer;
-	// // Called to handle events above
-	// function triggerUpdateDecorations() {
-	// 	if (timeout) clearTimeout(timeout);
-	// 	timeout = setTimeout(updateDecorations, 100);
-	// }
-
-// export function Get
-
-
-// 	// IMPORTANT: To avoid calling update too often, set a timer for 100ms to wait before updating decorations
-// 	var timeout: NodeJS.Timer;
-// 	// Called to handle events above
-// 	function triggerUpdateDecorations() {
-// 		if (timeout) clearTimeout(timeout);
-// 		timeout = setTimeout(updateDecorations, 100);
-// 	}
-
 
 
 

@@ -244,26 +244,6 @@ export namespace TokenMetadata {
 	}
 
 
-	// public static decodeMetadata(metadata: number): IDecodedMetadata {
-	// 	const colorMap = this._themeService.getColorTheme().tokenColorMap;
-	// 	const languageId = TokenMetadata.getLanguageId(metadata);
-	// 	const tokenType = TokenMetadata.getTokenType(metadata);
-	// 	const fontStyle = TokenMetadata.getFontStyle(metadata);
-	// 	const foreground = TokenMetadata.getForeground(metadata);
-	// 	const background = TokenMetadata.getBackground(metadata);
-	// 	return {
-	// 		languageId: this._languageService.languageIdCodec.decodeLanguageId(languageId),
-	// 		tokenType: tokenType,
-	// 		bold: (fontStyle & FontStyle.Bold) ? true : undefined,
-	// 		italic: (fontStyle & FontStyle.Italic) ? true : undefined,
-	// 		underline: (fontStyle & FontStyle.Underline) ? true : undefined,
-	// 		strikethrough: (fontStyle & FontStyle.Strikethrough) ? true : undefined,
-	// 		foreground: colorMap[foreground],
-	// 		background: colorMap[background]
-	// 	};
-	// }
-
-
 	//Utilities...
 
 
@@ -468,101 +448,6 @@ export class TokenTools {
 
 
 
-
-
-
-export class Token {
-	public readonly offset: number;
-	public readonly type: string;
-	public readonly language: string;
-
-	constructor(offset: number, type: string, language: string) {
-		this.offset = offset;
-		this.type = type;
-		this.language = language;
-	}
-
-	public toString(): string {
-		return '('+this.offset+', '+this.type+')';
-	}
-}
-
-
-
-export function matchScope(scope: string, scopes: readonly string[]) : boolean {
-	if(!scope) return true;
-
-	let idx = 0;
-	for(const part of scope.split(/\s+/)) {
-		while(idx < scopes.length && !scopes[idx].startsWith(part)) ++idx;
-		if(idx >= scopes.length) return false;
-		else ++idx;
-	}
-	return true;
-}
-
-
-
-
-
-
-
-
-export interface ITokenData {
-	readonly ForeOffset: 0|int;
-	readonly AftOffset: -1|int;
-	readonly MetaData: TokenMetadata;
-}
-
-export interface ITokenLineData {
-	readonly Count : int;
-	readonly Line? : int;
-	readonly Text? : string;
-	Metadata(index:int): TokenMetadata;
-	ForeOffset(index:int): 0|int;
-	AftOffset(index:int): -1|int;
-	GetRaw(index:int): int;
-	Equals(other:ITokenLineData): bool;
-	ToString(): string;
-
-	// AllMetaData(): Generator<TokenMetadata>;
-	// AllForeOffsets(): Generator<TokenMetadata>;
-	// AllAftOffsets(): Generator<TokenMetadata>;
-}
-
-
-export abstract class AbstactTokenLineData implements ITokenLineData {
-	protected readonly _tokens: IToken2Array;
-	protected readonly _tokensEndOffset: number;
-
-	public readonly Text: string;
-	public readonly Count: int;
-	public readonly Line: int;
-
-	constructor(tokens: IToken2Array, line: int, text: string) {
-		this._tokensEndOffset = text.length;
-		this._tokens = tokens;
-
-		this.Count = (tokens.length >>> 1);
-		this.Text = text;
-		this.Line = line;
-	}
-
-	public Metadata(tokenIndex: int): TokenMetadata { return this._tokens[(tokenIndex << 1) + 1]; }
-	public ForeOffset(tokenIndex: int): 0|int { return (tokenIndex>=0)? this._tokens[(tokenIndex + 0) << 1] : 0; }
-	public AftOffset(tokenIndex: int): -1|int { return (tokenIndex<=(this.Count+1))? this._tokens[(tokenIndex + 1) << 1] : this._tokensEndOffset; }
-	public GetRaw(rawIndex: int): int { return this._tokens[rawIndex]; }
-
-	public Equals(other: ITokenLineData): bool {
-		return false;
-	}
-
-	public ToString(): string {
-		return '';
-	}
-
-
-}
 
 
 
