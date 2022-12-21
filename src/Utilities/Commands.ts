@@ -1999,166 +1999,166 @@ export class ReplaceRule {
 
 
 
-export default class ReplaceRulesEditProvider {
-	//https://github.com/bhughes339/vscode-replacerules
-    private textEditor: vscode.TextEditor;
-    private configRules: any;
-    private configRulesets: any;
+// export default class ReplaceRulesEditProvider {
+// 	//https://github.com/bhughes339/vscode-replacerules
+//     private textEditor: vscode.TextEditor;
+//     private configRules: any;
+//     private configRulesets: any;
 
-    constructor(textEditor: vscode.TextEditor) {
-        this.textEditor = textEditor;
-        let config = vscode.workspace.getConfiguration("replacerules");
-        this.configRules = config.get<any>("rules");
-        this.configRulesets = config.get<any>("rulesets");
-    }
+//     constructor(textEditor: vscode.TextEditor) {
+//         this.textEditor = textEditor;
+//         let config = vscode.workspace.getConfiguration("replacerules");
+//         this.configRules = config.get<any>("rules");
+//         this.configRulesets = config.get<any>("rulesets");
+//     }
 
-    public pickRuleAndRun() { vscode.window.showQuickPick(this.getQPRules()).then(qpItem => (qpItem)&& this.runSingleRule(qpItem.key)); }
-    public pickRulesetAndRun() { vscode.window.showQuickPick(this.getQPRulesets()).then(qpItem => (qpItem)&& this.runRuleset(qpItem.key)); }
-    public pickRuleAndPaste() { vscode.window.showQuickPick(this.getQPRules()).then(qpItem => (qpItem)&& this.pasteReplace(qpItem.key)); }
-    public pickRulesetAndPaste() { vscode.window.showQuickPick(this.getQPRulesets()).then(qpItem => (qpItem)&& this.pasteReplaceRuleset(qpItem.key)); }
+//     public pickRuleAndRun() { vscode.window.showQuickPick(this.getQPRules()).then(qpItem => (qpItem)&& this.runSingleRule(qpItem.key)); }
+//     public pickRulesetAndRun() { vscode.window.showQuickPick(this.getQPRulesets()).then(qpItem => (qpItem)&& this.runRuleset(qpItem.key)); }
+//     public pickRuleAndPaste() { vscode.window.showQuickPick(this.getQPRules()).then(qpItem => (qpItem)&& this.pasteReplace(qpItem.key)); }
+//     public pickRulesetAndPaste() { vscode.window.showQuickPick(this.getQPRulesets()).then(qpItem => (qpItem)&& this.pasteReplaceRuleset(qpItem.key)); }
 
-    private getQPRules(): any[] {
-        let language = this.textEditor.document.languageId;
-        let configRules = this.configRules;
-        let items = [];
-        for (const r in configRules) {
-            let rule = configRules[r];
-            if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) continue;
-            if (rule.find) {
-                try {
-                    items.push({
-                        label: "Replace Rule: " + r,
-                        description: "",
-                        key: r
-                    });
-                } catch (err: any) { ReplaceRulesEditProvider.FormatError('parsing rule', r, err); }
-            }
-        }
-        return items;
-    }
+//     private getQPRules(): any[] {
+//         let language = this.textEditor.document.languageId;
+//         let configRules = this.configRules;
+//         let items = [];
+//         for (const r in configRules) {
+//             let rule = configRules[r];
+//             if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) continue;
+//             if (rule.find) {
+//                 try {
+//                     items.push({
+//                         label: "Replace Rule: " + r,
+//                         description: "",
+//                         key: r
+//                     });
+//                 } catch (err: any) { ReplaceRulesEditProvider.FormatError('parsing rule', r, err); }
+//             }
+//         }
+//         return items;
+//     }
 
-    private getQPRulesets(): any[] {
-        let configRulesets = this.configRulesets;
-        let items = [];
-        for (const r in configRulesets) {
-            let ruleset = configRulesets[r];
-            if (Array.isArray(ruleset.rules)) {
-                try {
-                    items.push({
-                        label: "Ruleset: " + r,
-                        description: "",
-                        key: r
-                    });
-                } catch (err: any) { ReplaceRulesEditProvider.FormatError('parsing ruleset', r, err); }
-            }
-        }
-        return items;
-    }
+//     private getQPRulesets(): any[] {
+//         let configRulesets = this.configRulesets;
+//         let items = [];
+//         for (const r in configRulesets) {
+//             let ruleset = configRulesets[r];
+//             if (Array.isArray(ruleset.rules)) {
+//                 try {
+//                     items.push({
+//                         label: "Ruleset: " + r,
+//                         description: "",
+//                         key: r
+//                     });
+//                 } catch (err: any) { ReplaceRulesEditProvider.FormatError('parsing ruleset', r, err); }
+//             }
+//         }
+//         return items;
+//     }
 
-    public runSingleRule(ruleName: string) {
-        let rule = this.configRules[ruleName];
-        if (rule) {
-            let language = this.textEditor.document.languageId;
-            if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
-                return;
-            }
-            try {
-                this.doReplace(new ReplaceRule(rule));
-            } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing rule', ruleName, err); }
-        }
-    }
+//     public runSingleRule(ruleName: string) {
+//         let rule = this.configRules[ruleName];
+//         if (rule) {
+//             let language = this.textEditor.document.languageId;
+//             if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
+//                 return;
+//             }
+//             try {
+//                 this.doReplace(new ReplaceRule(rule));
+//             } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing rule', ruleName, err); }
+//         }
+//     }
 
-    public runRuleset(rulesetName: string) {
-        let language = this.textEditor.document.languageId;
-        let ruleset = this.configRulesets[rulesetName];
-        if (ruleset) {
-            let ruleObject = new ReplaceRule({ find: '' });
-            try {
-                ruleset.rules.forEach((r: string) => {
-                    let rule = this.configRules[r];
-                    if (rule) {
-                        if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
-                            return;
-                        }
-                        ruleObject.appendRule(this.configRules[r])
-                    }
-                });
-                if (ruleObject) this.doReplace(ruleObject);
-            } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing ruleset', rulesetName, err); }
-        }
-    }
+//     public runRuleset(rulesetName: string) {
+//         let language = this.textEditor.document.languageId;
+//         let ruleset = this.configRulesets[rulesetName];
+//         if (ruleset) {
+//             let ruleObject = new ReplaceRule({ find: '' });
+//             try {
+//                 ruleset.rules.forEach((r: string) => {
+//                     let rule = this.configRules[r];
+//                     if (rule) {
+//                         if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
+//                             return;
+//                         }
+//                         ruleObject.appendRule(this.configRules[r])
+//                     }
+//                 });
+//                 if (ruleObject) this.doReplace(ruleObject);
+//             } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing ruleset', rulesetName, err); }
+//         }
+//     }
 
-    public pasteReplace(ruleName: string) {
-        let rule = this.configRules[ruleName];
-        if (rule) {
-            let language = this.textEditor.document.languageId;
-            if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
-                return;
-            }
-            try {
-                this.doPasteReplace(new ReplaceRule(rule));
-            } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing rule', ruleName, err); }
-        }
-    }
+//     public pasteReplace(ruleName: string) {
+//         let rule = this.configRules[ruleName];
+//         if (rule) {
+//             let language = this.textEditor.document.languageId;
+//             if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) {
+//                 return;
+//             }
+//             try {
+//                 this.doPasteReplace(new ReplaceRule(rule));
+//             } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing rule', ruleName, err); }
+//         }
+//     }
 
-    private async doReplace(rule: ReplaceRule) {
-        let e = this.textEditor;
-        let d = e.document;
-        let editOptions = { undoStopBefore: false, undoStopAfter: false };
-        let numSelections = e.selections.length;
-        for (const x of Array(numSelections).keys()) {
-            let sel = e.selections[x];
-            let index = (numSelections === 1 && sel.isEmpty) ? -1 : x;
-            let range = ReplaceRulesEditProvider.rangeUpdate(e, d, index);
-            for (const r of rule.steps) {
-                let findText = ReplaceRulesEditProvider.stripCR(d.getText(range));
-                await e.edit((edit) => edit.replace(range, findText.replace(r.find, r.replace)), editOptions);
-                range = ReplaceRulesEditProvider.rangeUpdate(e, d, index);
-            }
-        }
-        return;
-    }
+//     private async doReplace(rule: ReplaceRule) {
+//         let e = this.textEditor;
+//         let d = e.document;
+//         let editOptions = { undoStopBefore: false, undoStopAfter: false };
+//         let numSelections = e.selections.length;
+//         for (const x of Array(numSelections).keys()) {
+//             let sel = e.selections[x];
+//             let index = (numSelections === 1 && sel.isEmpty) ? -1 : x;
+//             let range = ReplaceRulesEditProvider.rangeUpdate(e, d, index);
+//             for (const r of rule.steps) {
+//                 let findText = ReplaceRulesEditProvider.stripCR(d.getText(range));
+//                 await e.edit((edit) => edit.replace(range, findText.replace(r.find, r.replace)), editOptions);
+//                 range = ReplaceRulesEditProvider.rangeUpdate(e, d, index);
+//             }
+//         }
+//         return;
+//     }
 
-    private async doPasteReplace(rule: ReplaceRule) {
-        let e = this.textEditor;
-        let editOptions = { undoStopBefore: false, undoStopAfter: false };
-        let clip = ReplaceRulesEditProvider.stripCR(await vscode.env.clipboard.readText());
-        for (const r of rule.steps) clip = clip.replace(r.find, r.replace);
-        await e.edit((edit) => e.selections.forEach(X => edit.replace(new vscode.Range(X.start, X.end), clip)), editOptions);
-        return;
-    }
+//     private async doPasteReplace(rule: ReplaceRule) {
+//         let e = this.textEditor;
+//         let editOptions = { undoStopBefore: false, undoStopAfter: false };
+//         let clip = ReplaceRulesEditProvider.stripCR(await vscode.env.clipboard.readText());
+//         for (const r of rule.steps) clip = clip.replace(r.find, r.replace);
+//         await e.edit((edit) => e.selections.forEach(X => edit.replace(new vscode.Range(X.start, X.end), clip)), editOptions);
+//         return;
+//     }
 
-    public pasteReplaceRuleset(rulesetName: string) {
-        let language = this.textEditor.document.languageId;
-        let ruleset = this.configRulesets[rulesetName];
-        if (ruleset) {
-            let ruleObject = new ReplaceRule({ find: '' });
-            try {
-                ruleset.rules.forEach((r: string) => {
-                    let rule = this.configRules[r];
-                    if (rule) {
-                        if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) return;
-                        ruleObject.appendRule(this.configRules[r])
-                    }
-                });
-                if (ruleObject) this.doPasteReplace(ruleObject);
-            } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing ruleset', rulesetName, err); }
-        }
-    }
+//     public pasteReplaceRuleset(rulesetName: string) {
+//         let language = this.textEditor.document.languageId;
+//         let ruleset = this.configRulesets[rulesetName];
+//         if (ruleset) {
+//             let ruleObject = new ReplaceRule({ find: '' });
+//             try {
+//                 ruleset.rules.forEach((r: string) => {
+//                     let rule = this.configRules[r];
+//                     if (rule) {
+//                         if (Array.isArray(rule.languages) && rule.languages.indexOf(language) === -1) return;
+//                         ruleObject.appendRule(this.configRules[r])
+//                     }
+//                 });
+//                 if (ruleObject) this.doPasteReplace(ruleObject);
+//             } catch (err: any) { ReplaceRulesEditProvider.FormatError('executing ruleset', rulesetName, err); }
+//         }
+//     }
 
 
 
-	static readonly FormatError = ((CurrentAction: string, RulesetName: string, Error: Exception) => 
-		vscode.window.showErrorMessage(`Error ${CurrentAction} ${RulesetName}: ${Error.message}`)
-	);
+// 	static readonly FormatError = ((CurrentAction: string, RulesetName: string, Error: Exception) => 
+// 		vscode.window.showErrorMessage(`Error ${CurrentAction} ${RulesetName}: ${Error.message}`)
+// 	);
 
-	static readonly stripCR = (str: string) => str.replace(new RegExp(/\r\n/, 'g'), '\n');
+// 	static readonly stripCR = (str: string) => str.replace(new RegExp(/\r\n/, 'g'), '\n');
 		
-	static readonly rangeUpdate = (e: vscode.TextEditor, d: vscode.TextDocument, index: number) => {
-		if (index === -1) return new vscode.Range(d.positionAt(0), d.lineAt(d.lineCount - 1).range.end)
-		else return e.selections[index].ToRange();
-	}
-}
+// 	static readonly rangeUpdate = (e: vscode.TextEditor, d: vscode.TextDocument, index: number) => {
+// 		if (index === -1) return new vscode.Range(d.positionAt(0), d.lineAt(d.lineCount - 1).range.end)
+// 		else return e.selections[index].ToRange();
+// 	}
+// }
 
 
 

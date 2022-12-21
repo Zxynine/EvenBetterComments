@@ -745,7 +745,8 @@ export class Parser {
 			this.highlightFullBlockComments = this.contributions.allowFullBlockHighlights;
 		}
 
-		this.highlightTagOnly = this.contributions.highlightTagOnly;
+		// this.highlightTagOnly = this.contributions.highlightTagOnly;
+		this.highlightTagOnly = true;
 	}
 
 
@@ -1102,7 +1103,6 @@ export function MakeTitleMatcher(regexString:string) {
 /** ! */ /** //! Oh no 
  * ! hello? 
 */
-
 
 
 

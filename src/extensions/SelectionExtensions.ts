@@ -1,5 +1,5 @@
 import { Selection, Range } from "vscode";
-// import * as vscode from 'vscode';
+import * as vscode from 'vscode';
 
 
 export { };
@@ -14,7 +14,7 @@ declare module 'vscode' {
 		/** Returns the number of lines spanned by the range. (end.line - start.line)*/
 		readonly lineCount : number;
 
-		ToRange(this:Selection): Range;
+		ToRange(this:vscode.Selection): vscode.Range;
 		
     }
 
