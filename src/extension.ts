@@ -28,6 +28,8 @@ export const ExtentionID = "evenbettercomments";
 	ShowLineComments = 'evenbettercomments.hscopes.show-line-comments',
 	RemoveAllCommentsDocument = 'evenbettercomments.hscopes.remove-all-comments-document',
 	RemoveAllCommentsSelection = 'evenbettercomments.hscopes.remove-all-comments-selection',
+
+	ShowLineTokens = 'evenbettercomments.hscopes.show-line-tokens',
 }
 
 const AllLanguages : vscode.DocumentSelector = { language: "*" };
@@ -42,7 +44,7 @@ const AllLanguages : vscode.DocumentSelector = { language: "*" };
  * MAIN ACTIVATE FUNCTION
  * this method is called when vs code is activated
 **/
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	LoadDocumentsAndGrammer();
 	let activeEditor: vscode.TextEditor;
 	const parser: Parser = new Parser();
@@ -58,12 +60,12 @@ export function activate(context: vscode.ExtensionContext) {
 		timeout = setTimeout(updateDecorations, 100);
 	}
 
-	function CheckSetActiveEditor(editor? : vscode.TextEditor) {
+	async function CheckSetActiveEditor(editor? : vscode.TextEditor) {
 		if (editor === undefined) return;
 		// Set new editor
 		activeEditor = editor;
 		// Set regex for updated language
-		parser.SetRegex(editor.document.languageId);
+		await parser.SetRegex(editor.document.languageId);
 		// Trigger update to set decorations for newly active file
 		triggerUpdateDecorations();
 	}
@@ -76,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
 	
 
 	// Get the active editor for the first time and initialise the regex
-	CheckSetActiveEditor(vscode.window.activeTextEditor);
+	await CheckSetActiveEditor(vscode.window.activeTextEditor);
 
 
 
@@ -145,6 +147,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const StartScopeInspector = async () => (vscode.window.activeTextEditor)&& vscode.commands.executeCommand('editor.action.inspectTMScopes');
 
+	async function HyperscopesDisplayTokensLine() {
+		console.log("HyperScopes: show line scopes command run!");
+		const activeTextEditor = vscode.window.activeTextEditor;
+		if (activeTextEditor) {
+			const tokenArray = API.getTokenLine(activeTextEditor.document, activeTextEditor.selection.active);
+			if (tokenArray) {
+				const lineRange = activeEditor.document.lineAt(activeTextEditor.selection.active).range;
+				OutputChannel.show(true);
+				OutputChannel.appendLine(tokenArray.toString());
+				PulseRange(activeTextEditor, [lineRange]);
+			} else console.log("HyperScopes: Token Array not found.");
+		}
+		
+	}
+
 	async function HyperscopesDisplayLineComments() {
 		console.log("HyperScopes: show line comments command run!");
 		const activeTextEditor = vscode.window.activeTextEditor;
@@ -157,7 +174,7 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			OutputChannel.appendLine("\n~~~~~~~~~~~~~~~~~~~~~~~~\n");
 			OutputChannel.appendLine("Ranges of comments in selection (goes by char not col!): ");
-			function RangeToString(range:vscode.Range){ return `[Ln ${range.start.line}, Col ${range.start.character}-${range.end.character}]` }
+			function RangeToString(range:vscode.Range){ return `[Ln: ${range.start.line}, Chars: ${range.start.character}-${range.end.character}]` }
 
 			const CollectedRanges:vscode.Range[] = [];
 			const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
@@ -177,6 +194,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineScopes, HyperscopesDisplayScopesLine));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineComments, HyperscopesDisplayLineComments));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowScopeInspector, StartScopeInspector));
+
+	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.ShowLineTokens, HyperscopesDisplayTokensLine));
 	
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.RemoveAllCommentsDocument, RemoveAllCommentsInDocument));
 	context.subscriptions.push(vscode.commands.registerCommand(CommandIds.RemoveAllCommentsSelection, RemoveAllCommentsInSelection));
@@ -216,11 +235,7 @@ export function GetAllDocumentComments(ActiveEditor:vscode.TextEditor) {
 	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
 	if (!ActiveDocument) return [];
 
-	const TokensArrays = ActiveDocument.getDocumentTokenData();
-	let i = 0;
-	const CollectedRanges:vscode.Range[] = [];
-	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
-	return CollectedRanges;
+	return ActiveDocument.getDocumentTokenData().flatMap((TokenArray, index) => TokenArray.FindRangesOf(StandardTokenType.Comment, index));
 }
 
 export function GetAllSelectedComments(ActiveEditor:vscode.TextEditor) {
@@ -229,11 +244,8 @@ export function GetAllSelectedComments(ActiveEditor:vscode.TextEditor) {
 	const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
 	if (!ActiveDocument) return [];
 
-	const TokensArrays = ActiveDocument.getRangeTokenData(Selection);
-	let i = Selection.start.line;
-	const CollectedRanges:vscode.Range[] = [];
-	for (const TokenArray of TokensArrays) CollectedRanges.push(...TokenArray.FindRangesOf(StandardTokenType.Comment, i++));
-	return CollectedRanges;
+	const start = Selection.start.line;
+	return ActiveDocument.getRangeTokenData(Selection).flatMap((TokenArray, index) => TokenArray.FindRangesOf(StandardTokenType.Comment, start + index));
 }
 
 
@@ -250,11 +262,9 @@ export async function RemoveAllCommentsInDocument() {
 	PulseRange(ActiveEditor, CollectedRanges);
 	
 	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all comments?", "Yes", "No");
-	if (Confirmation === 'Yes') {
-		await ActiveEditor.edit(Builder => {
-			for (const Range of CollectedRanges) Builder.delete(Range);
-		});
-	}
+	if (Confirmation === 'Yes') await ActiveEditor.edit(Builder => {
+		for (const Range of CollectedRanges) Builder.delete(Range);
+	});
 }
 
 
@@ -265,9 +275,44 @@ export async function RemoveAllCommentsInSelection() {
 	PulseRange(ActiveEditor, CollectedRanges);
 
 	const Confirmation = await vscode.window.showInformationMessage("Are you sure you want to remove all selected comments?", "Yes", "No");
-	if (Confirmation === 'Yes') {
-		await ActiveEditor.edit(Builder => {
-			for (const Range of CollectedRanges) Builder.delete(Range);
-		});
-	}
+	if (Confirmation === 'Yes') await ActiveEditor.edit(Builder => {
+		for (const Range of CollectedRanges) Builder.delete(Range);
+	});
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 
+Baseline:
+
+Activate 3783
+Profile 1.34
+
+75516 errors
+
+
+
+
+New FS system
+
+Activate 2446
+
+299 errors
+
+
+
+10ms Profile 
+
+*/

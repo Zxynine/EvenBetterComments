@@ -1,11 +1,24 @@
+.vscode
 .vscode/**
 .vscode-test/**
-out/test/**
+
 test/**
+out/test/**
+
 src/**
+icon.png
 images/**
 **/*.map
 .gitignore
-tsconfig.json
 npm-debug.log
 .travis.yml
+node_modules
+
+tsconfig.json
+**/tsconfig.json
+tslint.json
+**/tslint.json
+webpack.config.js
+
+# All typescript files (not needed during runtime)
+**/*.ts

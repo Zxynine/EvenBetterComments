@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import * as fs from 'fs';
-
+import { Console } from "../Utilities/Debug";
 
 
 export interface IExtensionGrammar {
@@ -19,21 +19,17 @@ export interface IExtensionLanguage {
 }
 
 export interface IExtensionPackage {
-	contributes?: {
-		languages?: IExtensionLanguage[];
-		grammars?: IExtensionGrammar[];
-	};
+	contributes?: IExtensionContributes
+}
+
+export interface IExtensionContributes {
+	languages?: IExtensionLanguage[];
+	grammars?: IExtensionGrammar[];
 }
 
 
-// /**
-//  * Utility to read a file as a promise
-//  */
-// export function readFile(path:string) {
-//     return new Promise((resolve, reject) => fs.readFile(path, (error, data) => error ? reject(error) : resolve(data)))
-// }
 
-
+const Encoding = 'utf8';
 
 export class LanguageLoader {
 	public static readonly scopeNameToPath = new Map<string, string>();
@@ -46,7 +42,7 @@ export class LanguageLoader {
 	public static readonly scopeNameToDefinition = new Map<string, IExtensionGrammar>();
 
 	public static async LoadLanguages() {
-		console.log("EvenBetterComments: Language Definitions Updated!");
+		// Console.LogTime("EvenBetterComments: Language Definitions Update Started!");
 		LanguageLoader.scopeNameToPath.clear();
 		LanguageLoader.scopeNameToLanguage.clear();
 		LanguageLoader.scopeNameToInjections.clear();
@@ -83,44 +79,28 @@ export class LanguageLoader {
 
 			}
 		}
+		Console.LogTime("EvenBetterComments: Language Definitions Updated!");
+		// console.log("EvenBetterComments: Language Definitions Updated!");
 	}
 
 	public static HasLanguage(languageCode: string) : boolean { return LanguageLoader.languageToConfigPath.has(languageCode)}
 
-	// Get the filepath from the map
-	public static ReadLanguageFileSync(languageCode: string) : string|undefined {
-		const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
-		return (filePath)? fs.readFileSync(filePath, { encoding: 'utf8' }) : undefined;
-	}
-	// Get the filepath from the map
-	public static async ReadLanguageFileAsync(languageCode: string) : Promise<string|undefined> {
-		const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
-		return new Promise<string|undefined>((resolve, reject) => {
-			if (!filePath) resolve(undefined);
-			else fs.readFile(filePath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
-		});
-	}
+	public static ReadLanguageFileSync(languageCode: string) { return LanguageLoader.SafeReadFileSync(LanguageLoader.languageToConfigPath.get(languageCode)); }
+	public static async ReadLanguageFileAsync(languageCode: string) { return LanguageLoader.SafeReadFileAsync(LanguageLoader.languageToConfigPath.get(languageCode)); }
 
-	public static ReadGrammarFileSync(scopeName: string) : string|undefined {
-		const grammarPath = LanguageLoader.scopeNameToPath.get(scopeName);
-		return (grammarPath)? fs.readFileSync(grammarPath, { encoding: 'utf8' }) : undefined;
-	}
-
-	public static async ReadGrammarFileAsync(scopeName: string) : Promise<string|undefined> {
-		const grammarPath = LanguageLoader.scopeNameToPath.get(scopeName);
-		return new Promise<string|undefined>((resolve, reject) => {
-			if (!grammarPath) resolve(undefined);
-			else fs.readFile(grammarPath, 'utf-8', (error, content) => (error)? resolve(content) : reject(error));
-		});
-	}
+	public static ReadGrammarFileSync(scopeName: string) { return LanguageLoader.SafeReadFileSync(LanguageLoader.scopeNameToPath.get(scopeName)); }
+	public static async ReadGrammarFileAsync(scopeName: string) { return LanguageLoader.SafeReadFileAsync(LanguageLoader.scopeNameToPath.get(scopeName)); }
 
 
-	public static ReadFileSync(path : string) {
-		return fs.readFileSync(path, 'utf-8')
-	}
-	public static async ReadFileAsync(path : string) {
-		return new Promise<string>((resolve, reject) => fs.readFile(path, 'utf-8', (error, data) => error ? reject(error) : resolve(data)))
-	}
+
+
+
+	public static ReadFileSync(path : string) { return fs.readFileSync(path, Encoding) }
+	public static async ReadFileAsync(path : string) { return new Promise<string>((resolve, reject) => fs.readFile(path, Encoding, (error, data) => (!error)? resolve(data) : reject(error))) }
+
+	public static SafeReadFileSync(path: string|nulldefined) { return (path)? LanguageLoader.ReadFileSync(path) : undefined }
+	public static async SafeReadFileAsync(path: string|nulldefined) { return (path)? LanguageLoader.ReadFileAsync(path) : Promise.resolve(undefined) }
+
 
 
 	public static get AllLanguageDefinitions() { return LanguageLoader.languageToDefinition.values(); }

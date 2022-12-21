@@ -190,14 +190,9 @@ Range.GetRangeInArray = function(ranges: Range[], position:vscode.Position): Ran
 	}
 	
 	export function maxPosition(x: vscode.Position, y: vscode.Position) {
-	  if(x.line < y.line)
-		return x;
-	  if(x.line < x.line)
-		return y;
-	  if(x.character < y.character)
-		return x;
-	  else
-		return y;
+	  if(x.line < y.line) return x;
+	  if(x.line < x.line) return y;
+	  return (x.character < y.character)? x:y;
 	}
 
 
@@ -259,3 +254,13 @@ export function normalizeRangesGeneric<T extends vscode.Range>(selections: T[], 
 	})
 	return orderedRanges;
 }
+
+
+
+
+
+
+
+
+
+

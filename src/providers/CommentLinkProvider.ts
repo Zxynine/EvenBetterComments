@@ -10,7 +10,7 @@ import {
 	workspace,
 } from "vscode";
 import { resolve, join, dirname } from "path";
-import { existsSync } from "fs";
+import { existsSync, lstatSync, Stats } from "fs";
 import { homedir } from "os";
 	
 const LINK_REGEX = /^(\.{1,2}[\/\\])?(.+?)$/;
@@ -28,7 +28,7 @@ const lineMatchRegex = /\[\[.*?[./].*?\]\]/g;
 const indexedLineMatchRegex = /\[(\[.*?[./].*?\])\]/g;
 
 type LinkMatch = {
-	lN:number, str:string
+	lN:int, str:string
 }
 
 //TODO: use sementic tokens/parser to find comments.
@@ -124,12 +124,16 @@ export function getLinkMatchesDoc(doc:TextDocument) {
 
 
 
+export const LINK_REGEX2 = /^(\.{1,2}[/\\])?([^:#]+)?(:\d+|#[\w-]+)?$/;
+export function createTarget(uri: Uri, line: number): Uri {
+	return Uri.parse(`file://${uri.path}#${line}`);
+}
 
 
 
 
 
-
+//https://marketplace.visualstudio.com/items?itemName=Isotechnics.commentlinks&ssr=false#qna
 
 
 //?....................................................................\\
@@ -178,6 +182,8 @@ export class CommentLinkLensProvider implements CodeLensProvider {
 			const fullPath = CreateFullPath(basePath,workspacePath,match.str);
 			// Don't show the codelens if the file doesn't exist
 			if (!fullPath || !DocumentTools.FileExists(fullPath)) return;
+			// Dont show the codelens if the path is just for a folder;
+			if (DocumentTools.IsDirectory(fullPath)) return;
 			
 			lenses.push(new CodeLens(
 				new Range(match.lN,0, match.lN,0), 
@@ -215,6 +221,8 @@ export class DocumentCommentLinkProvider implements DocumentLinkProvider {
 			const fullPath = CreateFullPath(basePath,workspacePath,cleanedLine);
 			// Don't show the codelens if the file doesn't exist
 			if (!fullPath || !DocumentTools.FileExists(fullPath)) return;
+			// Dont show the codelens if the path is just for a folder;
+			if (DocumentTools.IsDirectory(fullPath)) return;
 		
 			links.push(new DocumentLink(
 				new Range(match.lN, match.array.index!+1, match.lN, match.array.index!-1 + match.array[0].length),
@@ -260,17 +268,21 @@ export class DocumentCommentLinkProvider implements DocumentLinkProvider {
 
 class DocumentTools {
 	static readonly newlineRegex = /\r?\n/;
-	static GetWorkspacePath = (document:TextDocument):string => workspace.getWorkspaceFolder(document.uri)?.uri?.fsPath ?? "";
-	static GetRelativeFolder = (filePath:string):string => workspace.asRelativePath(dirname(filePath)); //Get the relative path to the workspace folder  
-	static GetBasePath = (document:TextDocument):string => join(document.uri.fsPath, "..");
-	static SplitDocument = (document:TextDocument):Array<string> => document.getText().split(DocumentTools.newlineRegex);
-	static FileExists = (filePath:string):boolean => existsSync(filePath);
-	static GetFileUri = (filePath:string):Uri => Uri.file(filePath);
-	static GetFileFsPath = (filePath:string):string => Uri.parse(filePath).fsPath;
-	static GetFullRange = (document:TextDocument):Range => new Range(0, 0, document.lineCount, 0);
+	static readonly GetWorkspacePath = (document:TextDocument):string => workspace.getWorkspaceFolder(document.uri)?.uri?.fsPath ?? "";
+	static readonly GetRelativeFolder = (filePath:string):string => workspace.asRelativePath(dirname(filePath)); //Get the relative path to the workspace folder  
+	static readonly GetBasePath = (document:TextDocument):string => join(document.uri.fsPath, "..");
+	static readonly SplitDocument = (document:TextDocument):Array<string> => document.getText().split(DocumentTools.newlineRegex);
+	static readonly FileExists = (filePath:string):bool => existsSync(filePath);
+	static readonly GetFileUri = (filePath:string):Uri => Uri.file(filePath);
+	static readonly GetFileFsPath = (filePath:string):string => Uri.parse(filePath).fsPath;
+	static readonly GetFullRange = (document:TextDocument):Range => new Range(0, 0, document.lineCount, 0);
 
 	/** Exapnds ~ to homedir in non-Windows platform*/
-	static ResolveHomeDir = (inputPath:string):string => (inputPath.trim() && inputPath.startsWith('~')) ? join(homedir(),inputPath.substring(1)) : inputPath;
+	static readonly ResolveHomeDir = (inputPath:string):string => (inputPath.trim() && inputPath.startsWith('~')) ? join(homedir(),inputPath.substring(1)) : inputPath;
+
+	static readonly GetPathInfo = (filePath:string):Stats => lstatSync(filePath);
+	static readonly IsDirectory = (filePath:string):bool => lstatSync(filePath).isDirectory();
+	static readonly IsFile = (filePath:string):bool => lstatSync(filePath).isFile();
 }
 
 
