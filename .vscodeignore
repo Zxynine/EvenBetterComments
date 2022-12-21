@@ -6,7 +6,6 @@ test/**
 out/test/**
 
 src/**
-icon.png
 images/**
 **/*.map
 .gitignore
