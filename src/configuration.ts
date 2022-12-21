@@ -2,19 +2,19 @@ import * as vscode from 'vscode';
 
 import * as json5 from 'json5';
 import { LanguageLoader } from './providers/LanguageProvider';
+import { TextDecoder } from 'util';
 
 
+// export type Target = 'global' | 'workspace';
 
-export type Target = 'global' | 'workspace';
-
-/**
- * Type for {@link CommandId.ToggleSetting} command.
- */
- export interface ToggleSettingType {
-	setting: string;
-	value?: unknown[] | string;
-	target?: Target;
-}
+// /**
+//  * Type for {@link CommandId.ToggleSetting} command.
+//  */
+//  export interface ToggleSettingType {
+// 	setting: string;
+// 	value?: unknown[] | string;
+// 	target?: Target;
+// }
 
 
 // The configuration necessary to find supported languages on startup
@@ -31,22 +31,29 @@ export class Configuration {
 	 * External extensions can override default configurations of VSCode
 	 */
 	public static async UpdateLanguagesDefinitions() {
-		this.commentConfig.clear();
-		this.languageHasShebang.clear();
+		Configuration.commentConfig.clear();
+		Configuration.languageHasShebang.clear();
 		await LanguageLoader.LoadLanguages();
 		for (const language of LanguageLoader.AllLanguageDefinitions) {
-			this.languageHasShebang.set(language.id, Boolean(language.firstLine));
+			Configuration.languageHasShebang.set(language.id, Boolean(language.firstLine));
 		}
 	}
 
 
-	public static GetLanguageConfiguration(languageCode:string) {
+	public static async GetLanguageConfiguration(languageCode:string) {
 		// * if no config exists for this language, back out and leave the language unsupported
 		if (!LanguageLoader.HasLanguage(languageCode)) return undefined;
 		try {
-			const content = LanguageLoader.ReadLanguageFileSync(languageCode);
+			const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
+			if (filePath === undefined) return undefined;
+            const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
 			// use json5, because the config can contain comments
-			return (content)? json5.parse(content) : undefined;
+			return json5.parse(new TextDecoder().decode(rawContent));
+
+			// return LanguageLoader.ReadLanguageFileAsync(languageCode).then(content => (content !== undefined)? json5.parse(content) : undefined);
+
+			// const content = LanguageLoader.ReadLanguageFileSync(languageCode);
+			// return (content)? json5.parse(content) : undefined;
 		} catch (error) { return undefined; }
 	}
 
@@ -58,20 +65,20 @@ export class Configuration {
 
 
 	public static GetHasShebang(languageCode: string): boolean {
-		return (this.languageHasShebang.get(languageCode) ?? false)
+		return (Configuration.languageHasShebang.get(languageCode) ?? false)
 	}
 
 
 
 	/** Gets the configuration information for the specified language */
-	public static GetCommentConfiguration(languageCode: string): vscode.CommentRule | undefined {
+	public static async GetCommentConfiguration(languageCode: string): Promise<vscode.CommentRule | undefined> {
 		// * if the language config has already been loaded return the loaded value
-		if (this.commentConfig.has(languageCode)) return this.commentConfig.get(languageCode);
+		if (Configuration.commentConfig.has(languageCode)) return Configuration.commentConfig.get(languageCode);
 		
-		// * even if language does not have a config, we set the comment config to make future calls return above.
-		const LanguageConfig = this.GetLanguageConfiguration(languageCode);
+		// * even if language does not have a config, we set the comment config to make future calls return undefined.
+		const LanguageConfig = await Configuration.GetLanguageConfiguration(languageCode);
 		const comments = LanguageConfig?.comments;
-		this.commentConfig.set(languageCode, comments);
+		Configuration.commentConfig.set(languageCode, comments);
 		return comments;
 	}
 

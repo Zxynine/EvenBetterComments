@@ -49,24 +49,22 @@ export function fontStyleToString(fontStyle: OrMask<FontStyle>) {
 	return (style === '')? 'none' : style.trim();
 }
 
-export function ParseFontStyle(segment : string) : FontStyle {
-	switch (segment) {
-		case 'strikethrough': return FontStyle.Strikethrough;
-		case 'underline': return FontStyle.Underline;
-		case 'overline': return FontStyle.Overline;
-		case 'italic': return FontStyle.Italic;
-		case 'bold': return FontStyle.Bold;
-		default : return FontStyle.None;
-	}
-}
+export function ParseFontStyle(segment : string) : FontStyle { switch (segment) {
+	case 'strikethrough': return FontStyle.Strikethrough;
+	case 'underline': return FontStyle.Underline;
+	case 'overline': return FontStyle.Overline;
+	case 'italic': return FontStyle.Italic;
+	case 'bold': return FontStyle.Bold;
+	default : return FontStyle.None;
+}}
 
 
 
 
 
 const STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex|regexp|meta\.embedded)\b/;
-export function toStandardTokenType(tokenType: string): StandardTokenType {
-	const m = tokenType.match(STANDARD_TOKEN_TYPE_REGEXP);
+export function StringToTokenType(token: string): StandardTokenType {
+	const m = token.match(STANDARD_TOKEN_TYPE_REGEXP);
 	if (!m) return StandardTokenType.NotSet;
 	else switch (m[1]) {
 		case 'comment': return StandardTokenType.Comment;
@@ -79,16 +77,29 @@ export function toStandardTokenType(tokenType: string): StandardTokenType {
 }
 
 
-export function TokenTypeToString(token : StandardTokenType) {
+export function TokenTypeToString(token : StandardTokenType) { switch (token) {
+	case StandardTokenType.Other : return "Other";
+	case StandardTokenType.Comment : return "Comment";
+	case StandardTokenType.String : return "String";
+	case StandardTokenType.RegEx : return "RegEx";
+	case StandardTokenType.NotSet : return "Not Set";
+	default: return "????";
+}}
+
+export function ExtractTokenString(token:string|string[]) {
+	if (typeof token !== 'string') token = token.join(' '); //Joins with space to preserve word bounds
+	const m = token.match(STANDARD_TOKEN_TYPE_REGEXP);
+	if (!m) return "Other";
 	switch (token) {
-		case StandardTokenType.Other : return "Other";
-		case StandardTokenType.Comment : return "Comment";
-		case StandardTokenType.String : return "String";
-		case StandardTokenType.RegEx : return "RegEx";
-		case StandardTokenType.NotSet : return "Not Set";
-		default: return "????";
+		case 'comment': return "Comment"; 
+		case 'string': return "String";
+		case 'regex': return "RegEx";
+		case 'regexp': return "RegEx";
+		case "meta.embedded": return "Other";
+		default: return "Other";
 	}
 }
+
 
 
 
@@ -492,6 +503,20 @@ export class TokenTools {
 		for (let i = 0; i<count; i++) FlatMetadata |= tokens[(i<<1)+1];
 		return FlatMetadata;
 	}
+
+	public static ArrayToString(tokens: IToken2Array) {
+		let result = '';
+		const count = (tokens.length >>> 1);
+		for (let i = 0; i<count; i++) {
+			const Metadata = tokens[(i << 1)+1]
+			const StartOffset = (i >= 0)? tokens[i << 1] : 0;
+			const EndOffset = (i<(count-1))? tokens[(i+1) << 1] : "EOL";
+
+			const TokenType = TokenTypeToString(TokenMetadata.getTokenType(Metadata));
+			result += `[${i}:\trange=${StartOffset}-${EndOffset},\ttype=${TokenType}]\n`;
+		}
+		return result;
+	}
 }
 
 
@@ -540,10 +565,61 @@ export function matchScope(scope: string, scopes: readonly string[]) : boolean {
 
 
 
+export interface ITokenData {
+	readonly ForeOffset: 0|int;
+	readonly AftOffset: -1|int;
+	readonly MetaData: TokenMetadata;
+}
+
+export interface ITokenLineData {
+	readonly Count : int;
+	readonly Line? : int;
+	readonly Text? : string;
+	Metadata(index:int): TokenMetadata;
+	ForeOffset(index:int): 0|int;
+	AftOffset(index:int): -1|int;
+	GetRaw(index:int): int;
+	Equals(other:ITokenLineData): bool;
+	ToString(): string;
+
+	// AllMetaData(): Generator<TokenMetadata>;
+	// AllForeOffsets(): Generator<TokenMetadata>;
+	// AllAftOffsets(): Generator<TokenMetadata>;
+}
 
 
+export abstract class AbstactTokenLineData implements ITokenLineData {
+	protected readonly _tokens: IToken2Array;
+	protected readonly _tokensEndOffset: number;
+
+	public readonly Text: string;
+	public readonly Count: int;
+	public readonly Line: int;
+
+	constructor(tokens: IToken2Array, line: int, text: string) {
+		this._tokensEndOffset = text.length;
+		this._tokens = tokens;
+
+		this.Count = (tokens.length >>> 1);
+		this.Text = text;
+		this.Line = line;
+	}
+
+	public Metadata(tokenIndex: int): TokenMetadata { return this._tokens[(tokenIndex << 1) + 1]; }
+	public ForeOffset(tokenIndex: int): 0|int { return (tokenIndex>=0)? this._tokens[(tokenIndex + 0) << 1] : 0; }
+	public AftOffset(tokenIndex: int): -1|int { return (tokenIndex<=(this.Count+1))? this._tokens[(tokenIndex + 1) << 1] : this._tokensEndOffset; }
+	public GetRaw(rawIndex: int): int { return this._tokens[rawIndex]; }
+
+	public Equals(other: ITokenLineData): bool {
+		return false;
+	}
+
+	public ToString(): string {
+		return '';
+	}
 
 
+}
 
 
 
@@ -623,10 +699,10 @@ export abstract class AbstractTokenArray {
 		this._tokens = tokens;
 		this._text = text;
 	}
-
+	
 	public Metadata(tokenIndex:number): number { return this._tokens[(tokenIndex << 1) + 1]; }
-	public StartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0; }
-	public EndOffset(tokenIndex: number): number { return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : this._tokensEndOffset; }
+	public StartOffset(tokenIndex: number): number { return (tokenIndex>=0)? this._tokens[(tokenIndex + 0) << 1] : 0; }
+	public EndOffset(tokenIndex: number): number { return (tokenIndex<=(this._tokensCount+1))? this._tokens[(tokenIndex + 1) << 1] : this._tokensEndOffset; }
 	public GetRaw(rawIndex: number) : number { return this._tokens[rawIndex]; }
 
 	/** Gets the combined metadata of all tokens in the line, this allows for easy queries. */
@@ -663,14 +739,24 @@ export abstract class AbstractTokenArray {
 
 	public getToken(index:number):IToken2 {
 		return <IToken2> {
-			startOffset: (index>0)? this._tokens[(index-1) << 1] : 0,
-			endOffset: (index<this._tokensCount)? this._tokens[index<<1] : this._tokensEndOffset,
+			startOffset: (index>0)? this._tokens[(index+0) << 1] : 0,
+			endOffset: (index<this._tokensCount)? this._tokens[(index+1) << 1] : this._tokensEndOffset,
 			metaData: (index<this._tokensCount)? this._tokens[(index<<1)+1] : this._tokens[(this._tokensCount<<1)-1]
 		};
 	}
 
-	public toString(): string {
+	public toDataString(): string {
 		return [...this.Metadatas()].map(TokenMetadata.toString).join(", ");
+	}
+
+	public toString(): string {
+		return TokenTools.ArrayToString(this._tokens);
+	}
+
+	public GetTokenString(index:int): string {
+		const TokenFore = this.StartOffset(index);
+		const TokenAft = this.EndOffset(index);
+		return this._text.slice(TokenFore, TokenAft);
 	}
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -686,7 +772,7 @@ export abstract class AbstractTokenArray {
 	public ContainsBefore(offset: number): bool {
 		let metaResult = 0;
 		for (let i = 0; i<this._tokensCount; i++) {
-			if (this.EndOffset(i) >= offset) break;
+			if (this.StartOffset(i) >= offset) break;
 			else metaResult |= this._tokens[(i<<1)+1];
 		}
 		return TokenMetadata.ContainsTokenType(this.LineMetadata, metaResult);
@@ -705,15 +791,13 @@ export abstract class AbstractTokenArray {
 		let startPos: Position|undefined = undefined;
 
 		for (let i = 0; i<this._tokensCount; i++) {
-			if (startPos !== undefined) {
-				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) !== tokenType) {
-					RangeArray.push(new Range(startPos, new Position(line, this.EndOffset(i))))
-					startPos = undefined;
-				}
-			} else {
-				if (TokenMetadata.getTokenType(this._tokens[(i<<1)+1]) === tokenType) {
-					startPos = new Position(line, this.EndOffset(i));
-				}
+			const TokenType = TokenMetadata.getTokenType(this._tokens[(i<<1)+1]);
+
+			if (startPos !== undefined && TokenType !== tokenType) {
+				RangeArray.push(new Range(startPos, new Position(line, this.StartOffset(i))))
+				startPos = undefined;
+			} else if (TokenType === tokenType) {
+				startPos = new Position(line, this.StartOffset(i));
 			}
 		}
 
@@ -723,7 +807,6 @@ export abstract class AbstractTokenArray {
 		return RangeArray;
 	}
 
-	
 
 	/**
 	 * Find the token containing offset `offset` //Talking about column offset.
@@ -736,9 +819,6 @@ export abstract class AbstractTokenArray {
 	
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//Iterators
-	protected *Enumerate(): Generator<number> { for (let i = 0; i<this._tokensCount; i++) yield i; }
-	
 	public *Metadatas() { for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)+1]; }
 	public *Offsets() {
 		for (let i = 0; i<this._tokensCount; i++) yield this._tokens[(i<<1)];
@@ -827,8 +907,8 @@ export class SimpleTokenArray {
 	}
 
 	public Metadata(tokenIndex:number): number { return this._tokens[(tokenIndex << 1) + 1]; }
-	public StartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0; }
-	public EndOffset(tokenIndex: number): number { return (tokenIndex<=this._tokensCount)? this._tokens[tokenIndex << 1] : -1; }
+	public StartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex+0) << 1] : 0; }
+	public EndOffset(tokenIndex: number): number { return (tokenIndex<=this._tokensCount)? this._tokens[(tokenIndex+1) << 1] : -1; }
 }
 
 
@@ -855,13 +935,13 @@ export class StandardLineTokens extends AbstractTokenArray {
 
 	public offsetOf(tokenType:StandardTokenType) {
 		const Index = TokenTools.findIndexOfType(this._tokens, tokenType);
-		return (Index === -1)? -1 : this.EndOffset(Index);
+		return (Index === -1)? -1 : this.StartOffset(Index);
 	}
 
 	public getOffsetDelta(tokenIndex: number): number {
 		if (tokenIndex <= 0) return 0;
-		const offsetStart = this._tokens[(tokenIndex-1) << 1];
-		const offsetEnd = this._tokens[tokenIndex << 1];
+		const offsetStart = this._tokens[(tokenIndex+0) << 1];
+		const offsetEnd = this._tokens[(tokenIndex+1) << 1];
 		return offsetEnd-offsetStart;
 	}
 
@@ -890,8 +970,8 @@ export class LineTokens extends AbstractTokenArray implements IViewLineTokens {
 
 
 	public getLineContent(): string { return this._text; }
-	public getStartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex-1) << 1] : 0; }
-	public getEndOffset(tokenIndex: number): number { return this._tokens[tokenIndex << 1]; }
+	public getStartOffset(tokenIndex: number): number { return (tokenIndex>0)? this._tokens[(tokenIndex+0) << 1] : 0; }
+	public getEndOffset(tokenIndex: number): number { return this._tokens[(tokenIndex+1) << 1]; }
 	public getInlineStyle(tokenIndex: number, colorMap: string[]): string {return TokenMetadata.getInlineStyle(this.Metadata(tokenIndex), colorMap); }
 
 
@@ -1076,10 +1156,12 @@ export class ScopedLineTokens {
 
 
 
+// export class TokenDataWrapper {
 
 
 
 
+// }
 
 
 
@@ -1635,10 +1717,10 @@ export class ContiguousMultilineTokensBuilder {
 class SparseMultilineTokensStorage {
 	/**
 	 * The encoding of tokens is:
-	 *  4*i+0  deltaLine (from `startLineNumber`)
-	 *  4*i+1  startCharacter (from the line start)
-	 *  4*i+2  endCharacter (from the line start)
-	 *  4*i+3  metadata
+	 *  (4*i)+0  deltaLine (from `startLineNumber`)
+	 *  (4*i)+1  startCharacter (from the line start)
+	 *  (4*i)+2  endCharacter (from the line start)
+	 *  (4*i)+3  metadata
 	 */
 	private readonly _tokens: Uint32Array;
 	private _tokenCount: number;
@@ -1684,11 +1766,9 @@ class SparseMultilineTokensStorage {
 			const mid = low + Math.floor((high - low) / 2);
 			const midDeltaLine = this._getDeltaLine(mid);
 
-			if (midDeltaLine < deltaLine) {
-				low = mid + 1;
-			} else if (midDeltaLine > deltaLine) {
-				high = mid - 1;
-			} else {
+			if (midDeltaLine < deltaLine) low = mid + 1;
+			else if (midDeltaLine > deltaLine) high = mid - 1;
+			else {
 				let min = mid;
 				let max = mid;
 				while (min > low && this._getDeltaLine(min-1) === deltaLine) min--;
@@ -2861,7 +2941,7 @@ export class TokenTheme {
 		let result = this._cache.get(token);
 		if (typeof result === 'undefined') {
 			const rule = this._match(token);
-			const standardToken = toStandardTokenType(token);
+			const standardToken = StringToTokenType(token);
 			result = (rule.metadata | (standardToken << MetadataConsts.TOKEN_TYPE_OFFSET)) >>> 0;
 			this._cache.set(token, result);
 		}

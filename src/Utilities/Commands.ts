@@ -132,6 +132,60 @@ export interface KeyBinding {
 
 
 
+export const enum CoreCommands {
+	CloseActiveEditor = 'workbench.action.closeActiveEditor',
+	CloseAllEditors = 'workbench.action.closeAllEditors',
+	CursorMove = 'cursorMove',
+	CustomEditorShowFindWidget = 'editor.action.webvieweditor.showFind',
+	Diff = 'vscode.diff',
+	EditorScroll = 'editorScroll',
+	EditorShowHover = 'editor.action.showHover',
+	ExecuteDocumentSymbolProvider = 'vscode.executeDocumentSymbolProvider',
+	ExecuteCodeLensProvider = 'vscode.executeCodeLensProvider',
+	FocusFilesExplorer = 'workbench.files.action.focusFilesExplorer',
+	InstallExtension = 'workbench.extensions.installExtension',
+	MoveViews = 'vscode.moveViews',
+	Open = 'vscode.open',
+	OpenFolder = 'vscode.openFolder',
+	OpenInTerminal = 'openInTerminal',
+	OpenWalkthrough = 'workbench.action.openWalkthrough',
+	OpenWith = 'vscode.openWith',
+	NextEditor = 'workbench.action.nextEditor',
+	PreviewHtml = 'vscode.previewHtml',
+	RevealLine = 'revealLine',
+	RevealInExplorer = 'revealInExplorer',
+	RevealInFileExplorer = 'revealFileInOS',
+	SetContext = 'setContext',
+	ShowExplorer = 'workbench.view.explorer',
+	ShowReferences = 'editor.action.showReferences',
+	ShowSCM = 'workbench.view.scm',
+	UninstallExtension = 'workbench.extensions.uninstallExtension',
+}
+
+
+
+/** Opens a file and reveales the given line number */
+export function openFileAndRevealLine(options: OpenFileAndRevealLineOptions) {
+	if (!options) return;
+
+	function scrollAndMove() {
+		vscode.commands.executeCommand("revealLine", {
+			lineNumber: options.lineNumber,
+			at: options.at,
+		});
+	}
+
+	// Either scroll right away if document is open or wait for the document to open then scroll
+	if (vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri == options.uri) scrollAndMove();
+	else vscode.workspace.openTextDocument(options.uri).then(vscode.window.showTextDocument).then(scrollAndMove);
+}
+
+export type OpenFileAndRevealLineOptions = {
+	uri: vscode.Uri;
+	lineNumber: number;
+	at: string;
+};
+
 
 
 
@@ -155,6 +209,16 @@ export class OpenFileCommand implements vscode.Command {
     }
 }
 
+export class RevealLineCommand implements vscode.Command {
+    command = 'revealLine';
+    title = 'Reveal Line';
+    arguments?: any[];
+	tooltip?: string;
+
+    constructor(line:int, at:string) {
+        this.arguments = [line, at];
+    }
+}
 
 
 
@@ -164,6 +228,61 @@ export class OpenFileCommand implements vscode.Command {
 
 
 
+
+
+
+
+
+
+
+// /**
+//  * @returns {Array} - all the available variables defined by this extension
+//  */
+// const getExtensionDefinedVariables = [
+// 	"${getDocumentText}", 
+// 	"${getTextLines:\\(\\s*\\d+(\\s*[-+%*\/]\\s*\\d+)?\\s*\\)}", 
+// 	"${getTextLines:[-+]?\\d+}",
+// 	"${getTextLines:\\d+-\\d+}", 
+// 	"${getTextLines:\\d+,\\d+,\\d+,\\d+}", 
+// 	"${resultsFiles}"
+// ];
+
+
+// /**
+//  * @returns {Array} - all the available path variables
+//  */
+// const getPathVariables = [
+// 	"${file}", 
+// 	"${relativeFile}", 
+// 	"${fileBasename}", 
+// 	"${fileBasenameNoExtension}", 
+// 	"${fileExtname}", 
+// 	"${fileDirname}",
+// 	"${fileWorkspaceFolder}", 
+// 	"${workspaceFolder}", 
+// 	"${relativeFileDirname}", 
+// 	"${workspaceFolderBasename}", 
+// 	"${selectedText}", 
+// 	"${pathSeparator}", 
+// 	"${lineIndex}", 
+// 	"${lineNumber}", 
+// 	"${CLIPBOARD}",     
+// 	"${matchIndex}", 
+// 	"${matchNumber}"
+// ];
+
+// /**
+//  * @returns {Array} - all the available snippet variables
+//  */
+// const getSnippetVariables = [
+// 	"${TM_CURRENT_LINE}", "${TM_CURRENT_WORD}", 
+	
+// 	"${CURRENT_YEAR}", "${CURRENT_YEAR_SHORT}", "${CURRENT_MONTH}", "${CURRENT_MONTH_NAME}",
+// 	"${CURRENT_MONTH_NAME_SHORT}", "${CURRENT_DATE}", "${CURRENT_DAY_NAME}", "${CURRENT_DAY_NAME_SHORT}",
+// 	"${CURRENT_HOUR}", "${CURRENT_MINUTE}", "${CURRENT_SECOND}", "${CURRENT_SECONDS_UNIX}",
+// 	"${RANDOM}", "${RANDOM_HEX}",
+// 	"${BLOCK_COMMENT_START}", "${BLOCK_COMMENT_END}", "${LINE_COMMENT}"
+// ];
 
 
 
@@ -387,6 +506,169 @@ export function replaceConfigurationVariable(configName: string): string {
 
 
 
+// /**
+//  * Apply case modifier, like '\\U' to capture groups $1, etc..
+//  * @param {Object} namedGroups
+//  * @param {Object} groups
+//  * @param {string} resolvedPathVariable
+//  * @returns {string} - case-modified text
+//  */
+// export function _applyCaseModifier(namedGroups: Object, groups: Object, resolvedPathVariable:string) {
+// 	let resolved = resolvedPathVariable;
+	
+// 	if (namedGroups?.path && namedGroups?.path.search(/\$\{\s*(line|match)(Index|Number)\s*\}/) !== -1) {
+// 		return resolvedPathVariable;
+// 	}
+	
+// 	if (namedGroups?.caseModifier) {
+// 	if (namedGroups?.capGroup) {
+// 		const thisCapGroup = groups[namedGroups.capGroup.replace(/[${}]/g, "")];
+// 		if (thisCapGroup) resolved = thisCapGroup;
+// 	} else if (namedGroups?.caseTransform || namedGroups.conditional) { } // do nothing, resolved already = resolvedPathVariable
+// 	else return "";
+// 	} else if (namedGroups?.pathCaseModifier) resolved = resolvedPathVariable;
+// 	return _modifyCaseOfFindCaptureGroup(namedGroups?.caseModifier || namedGroups?.pathCaseModifier, resolved);
+// }
+
+/**
+ * @param {string} caseModifier - e.g., \\U, \\u, etc.
+ */
+export function ModifyCaptureGroupCase (caseModifier: string, captureGroup: string): string {
+	switch (caseModifier) {
+		case "\\U": return captureGroup.toLocaleUpperCase();  
+		case "\\u": return captureGroup[0].toLocaleUpperCase() + captureGroup.substring(1);
+		case "\\L": return captureGroup.toLocaleLowerCase();
+		case "\\l": return captureGroup[0].toLocaleLowerCase() + captureGroup.substring(1);
+		default: return captureGroup;
+	}
+}
+
+
+/**
+ * Are there capture groups, like `$1` in this conditional replacement text?
+ */
+export function _checkForCaptureGroupsInConditionalReplacement(replacement: string, groups: any): string {
+	const re = /(?<ticks>`\$(\d+)`)/g;
+	const capGroups = [...replacement.matchAll(re)];
+	for (let i = 0; i < capGroups.length; i++) {
+		if (capGroups[i].groups?.ticks !== undefined) replacement = replacement.replace(capGroups[i][0], groups[capGroups[i][2]] ?? "");
+	}
+	return replacement;
+}
+
+
+
+
+// /**
+//  * 
+//  * @param {string} cursorMoveSelect 
+//  * @param {number} numMatches 
+//  * @param {array} combinedMatches 
+//  * @param {vscode.Selection} selection 
+//  * @param {number} index 
+//  */
+// export const resolveCursorMoveSelect = async function (cursorMoveSelect:string, numMatches:int, combinedMatches:any, selection:vscode.Selection, index:int) {
+// 	const specialVariable = new RegExp('\\$\\{?\\d', 'g');
+
+// 	let resolved = "";
+// 	for (let n=0; n < numMatches; n++) {
+// 		resolved = cursorMoveSelect.replaceAll(specialVariable, 
+// 			(match) => this.resolveVariables(match, "cursorMoveSelect", combinedMatches, selection, null, index)
+// 		);
+// 	}
+	
+// 	return resolved;
+// }
+
+
+
+
+// /**
+//  * Build the replaceString by updating the setting 'replaceValue' to
+//  * account for case modifiers, capture groups and conditionals
+//  *
+//  * @param {string} replaceValue
+//  * @param {Object} args - keybinding/setting args
+//  * @param {string} caller - find/replace/cursorMoveSelect
+//  * @param {import("vscode").Selection} selection - the current selection
+//  * 
+//  * @returns {Promise<string>} - the resolved string
+//  */
+// const resolveSearchSnippetVariables = async function (replaceValue:string, args:any, caller:string, selection:vscode.Selection) {
+// 	if (replaceValue === "") return replaceValue;
+
+// 	if (replaceValue !== null) {
+// 	const vars = getSnippetVariables.join("|").replaceAll(/([\$][\{])([^\}]+)(})/g, "\\$1\\s*$2\\s*$3");
+// 	const re = new RegExp(`(?<pathCaseModifier>\\\\[UuLl])?(?<snippetVars>${ vars })`, 'g');
+	
+// 	return replaceValue.replaceAll(re, function (match, p1, p2, offset, string, namedGroups) {
+// 		const variableToResolve =  _resolveSnippetVariables(match, args, caller, selection, undefined);
+// 		return _applyCaseModifier(namedGroups, undefined, variableToResolve);
+// 	});
+// 	};
+// 	return undefined;
+// }
+
+
+
+
+
+
+/**
+ * Resolve thelineIndex/Number variable.
+ * 
+ * @param {string} variableToResolve 
+ * @param {number} index  - match.index
+ * @returns {string} - resolvedVariable with matchIndex/Number replaced
+ */
+export const resolveLineVariable = function (variableToResolve:string, index:int):string {
+	const document = vscode.window.activeTextEditor?.document;
+	if (!document) return variableToResolve;
+	
+	const line = document.positionAt(index).line;
+	variableToResolve = variableToResolve.replaceAll(/\$\{\s*lineIndex\s*\}/g, String(line));
+	variableToResolve = variableToResolve.replaceAll(/\$\{\s*lineNumber\s*\}/g, String(line + 1));
+	return variableToResolve;
+}
+
+
+
+
+/**
+ * Resolve the matchIndex/Number variable.
+ * 
+ * @param {string} variableToResolve 
+ * @param {number} replaceIndex  - for a find/replace/filesToInclude value?
+ * @returns {string} - resolvedVariable with matchIndex/Number replaced
+ */
+export const resolveMatchVariable = function (variableToResolve: string, replaceIndex:int): string {
+	variableToResolve = variableToResolve.replaceAll(/\$\{\s*matchIndex\s*\}/g, String(replaceIndex));
+	variableToResolve = variableToResolve.replaceAll(/\$\{\s*matchNumber\s*\}/g, String(replaceIndex + 1));
+	return variableToResolve;
+}
+
+
+/**
+ * Create codeActions to use on save from settings
+ * @param {import("vscode").ExtensionContext} context
+ */
+export const makeCodeActionProvider = async function (context: vscode.ExtensionContext, codeActionCommands: Array<any[]>) {
+	context.subscriptions.push(vscode.languages.registerCodeActionsProvider('*', 
+		<vscode.CodeActionProvider<vscode.CodeAction>>{ provideCodeActions() { return codeActionCommands.map(_createCommand); } }, 
+		<vscode.CodeActionProviderMetadata>{ providedCodeActionKinds: [vscode.CodeActionKind.Source] }
+	));
+}
+
+/**
+ * Make a codeAction from a setting command
+ * @param {Array} command - one command from the findInCurrentFile settings
+ * @returns {CodeAction}
+ */
+function _createCommand(command: any[]): vscode.CodeAction {
+	const action = new vscode.CodeAction(`${command[1].title}`, vscode.CodeActionKind.Source.append(`${command[0]}`));
+	action.command = { command: `findInCurrentFile.${command[0]}`, title: `${command[1].title}` };
+	return action;
+}
 
 
 
@@ -394,9 +676,15 @@ export function replaceConfigurationVariable(configName: string): string {
 
 
 
-
-
-
+export function registerFailableCommand(commandName: string, commandFn: (...args: any[]) => any): vscode.Disposable {
+	return vscode.commands.registerCommand(commandName, async (...args: any[]) => {
+		try { return await commandFn(...args) } 
+		catch (e:any) {
+			vscode.window.showErrorMessage("The command failed: " + e.message);
+			return false;
+		}
+	});
+}
 
 
 

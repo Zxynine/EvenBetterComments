@@ -1116,3 +1116,43 @@ export class RangeBuilder {
 // 	  "${matchIndex}", "${matchNumber}"
 // 	];
 //   }
+
+
+
+
+
+
+
+
+
+
+
+export function convertToContiguousSelection(editor: vscode.TextEditor, selections: vscode.Selection[]) {
+  // get the `start` of the first selection
+  const startPosition = selections[0].start;
+  // get the `end` of the last selection
+  const endPosition = selections[selections.length - 1].end;
+  editor.selection = new vscode.Selection(startPosition, endPosition);
+}
+
+
+export function convertToColumnSelection(editor: vscode.TextEditor, selection: vscode.Selection) {
+	let startPosition = selection.start;
+	let endPosition = selection.end;
+	let newSelections = [];
+	let linesInSelection = endPosition.line - startPosition.line + 1;
+	if (linesInSelection < 2) return;
+	// Create a new selection for each line that the currentSelection spans
+	for (let i = 0; i < linesInSelection; i++) {
+		const thisLine = startPosition.line + i;
+		newSelections.push(
+			new vscode.Selection(
+			thisLine,
+			startPosition.character,
+			thisLine,
+			endPosition.character
+			)
+		);
+	}
+	editor.selections = newSelections;
+}

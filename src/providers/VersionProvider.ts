@@ -198,3 +198,33 @@ export namespace Version {
 // 	  return this.equal(other) || this.lessThan(other);
 // 	}
 //   }
+
+
+
+
+
+
+
+
+
+
+// /**
+//  * Gets the version of Git Graph.
+//  * @param extensionContext The extension context of Git Graph.
+//  * @returns The Git Graph version.
+//  */
+// export function getExtensionVersion(extensionContext: vscode.ExtensionContext) {
+// 	return new Promise<string>((resolve, reject) => {
+// 		fs.readFile(path.join(extensionContext.extensionPath, 'package.json'), (err, data) => {
+// 			if (err) {
+// 				reject();
+// 			} else {
+// 				try {
+// 					resolve(JSON.parse(data.toString()).version);
+// 				} catch (_) {
+// 					reject();
+// 				}
+// 			}
+// 		});
+// 	});
+// }

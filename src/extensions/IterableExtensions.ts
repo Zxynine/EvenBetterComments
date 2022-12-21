@@ -2,14 +2,15 @@ export {}
 
 
 // declare global {
-// 	interface Iterable<T> {
-// 		every(predicate: (item: T) => boolean): bool;
-// 	}
+// 	// interface Iterable<T> {
+// 	// 	every(predicate: (item: T) => boolean): bool;
+// 	// }
 
 
-// 	interface IterableIterator<T> {
-// 		every(predicate: (item: T) => boolean): bool;
-// 	}
+// 	// interface IterableIterator<T> {
+// 	// 	every(predicate: (item: T) => boolean): bool;
+// 	// }
+	
 // }
 
 

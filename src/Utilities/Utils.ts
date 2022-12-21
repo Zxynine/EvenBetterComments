@@ -26,27 +26,18 @@ import * as https from 'https';
 
 
 
-/**
- *
- * @param aS The set of
- * @param bS
- */
-export function setsAreEqual(aS: Set<any>, bS: Set<any>) {
-	// Stop early
-	if (aS.size !== bS.size) return false;
 
-	// Check every key
-	for (const a of aS) {
-		if (!bS.has(a)) return false;
-	}
 
-	// Sets are equal
-	return true;
+export function stringHash(str:string) {
+	var hash = 5381, i = str.length;
+
+	while(i !== 0) hash = (hash * 33) ^ str.charCodeAt(--i);
+
+	/** JavaScript does bitwise operations (like XOR, above) on 32-bit signed
+	 * integers. Since we want the results to be always positive, convert the
+	 * signed int to an unsigned by doing an unsigned bitshift. */
+	return hash >>> 0;
 }
-
-
-
-
 
 
 
@@ -62,12 +53,8 @@ export function isHookError(e: Error): e is HookError { return !!(e as any).erro
 
 
 
-
-
 // a 1x1 pixel transparent gif, from http://png-pixel.com/
-export const EMPTY_IMAGE_URI = vscode.Uri.parse(
-	`data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==`,
-);
+export const EMPTY_IMAGE_URI = vscode.Uri.parse(`data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==`);
 
 export const ImageMimetypes: Record<string, string> = {
 	'.png': 'image/png',
@@ -80,36 +67,6 @@ export const ImageMimetypes: Record<string, string> = {
 	'.tiff': 'image/tiff',
 	'.bmp': 'image/bmp',
 };
-
-export const enum CoreCommands {
-	CloseActiveEditor = 'workbench.action.closeActiveEditor',
-	CloseAllEditors = 'workbench.action.closeAllEditors',
-	CursorMove = 'cursorMove',
-	CustomEditorShowFindWidget = 'editor.action.webvieweditor.showFind',
-	Diff = 'vscode.diff',
-	EditorScroll = 'editorScroll',
-	EditorShowHover = 'editor.action.showHover',
-	ExecuteDocumentSymbolProvider = 'vscode.executeDocumentSymbolProvider',
-	ExecuteCodeLensProvider = 'vscode.executeCodeLensProvider',
-	FocusFilesExplorer = 'workbench.files.action.focusFilesExplorer',
-	InstallExtension = 'workbench.extensions.installExtension',
-	MoveViews = 'vscode.moveViews',
-	Open = 'vscode.open',
-	OpenFolder = 'vscode.openFolder',
-	OpenInTerminal = 'openInTerminal',
-	OpenWalkthrough = 'workbench.action.openWalkthrough',
-	OpenWith = 'vscode.openWith',
-	NextEditor = 'workbench.action.nextEditor',
-	PreviewHtml = 'vscode.previewHtml',
-	RevealLine = 'revealLine',
-	RevealInExplorer = 'revealInExplorer',
-	RevealInFileExplorer = 'revealFileInOS',
-	SetContext = 'setContext',
-	ShowExplorer = 'workbench.view.explorer',
-	ShowReferences = 'editor.action.showReferences',
-	ShowSCM = 'workbench.view.scm',
-	UninstallExtension = 'workbench.extensions.uninstallExtension',
-}
 
 export const enum Schemes {
 	DebugConsole = 'debug',
@@ -136,9 +93,7 @@ export function findEditor(uri: vscode.Uri): vscode.TextEditor | undefined {
 
 	for (const e of [...(active != null ? [active] : []), ...vscode.window.visibleTextEditors]) {
 		// Don't include diff editors
-		if (e.document.uri.toString() === normalizedUri && e?.viewColumn != null) {
-			return e;
-		}
+		if (e.document.uri.toString() === normalizedUri && e?.viewColumn != null) return e;
 	}
 
 	return undefined;
@@ -307,6 +262,30 @@ export function getEditorCommand() {
 
 
 
+export function getWorkspaceRootPath(): string | undefined {
+    const document = getCurrentTextDocument();
+    if (document) {
+        const fileUri = document.uri;
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
+        if (workspaceFolder) {
+            return workspaceFolder.uri.toString();
+        }
+    }
+	return undefined;
+}
+
+export function getCurrentHttpFileName(): string | undefined {
+    const document = getCurrentTextDocument();
+    if (document) {
+        const filePath = document.fileName;
+        return path.basename(filePath, path.extname(filePath));
+    }
+	return undefined;
+}
+
+export function getCurrentTextDocument(): vscode.TextDocument | undefined {
+    return vscode.window.activeTextEditor?.document;
+}
 
 
 
@@ -422,9 +401,7 @@ export async function sequentialize<T extends (...args: any[]) => unknown>(
 	thisArg?: unknown,
 ): Promise<any> {
 	for (const args of argArray) {
-		try {
-			void (await fn.apply(thisArg, args));
-		} catch {}
+		try { void (await fn.apply(thisArg, args)) } catch {}
 	}
 }
 
@@ -1198,97 +1175,6 @@ export function getCurrentThemeLightness(): 'light' | 'dark' {
 
 
 
-//https://github.com/gitkraken/vscode-gitlens/blob/main/src/logger.ts
-
-export namespace Debug {
-	export const ExtentionTitle = 'EvenBetterComments: ';
-	export function FormatMessage(message:unknown): string;
-	export function FormatMessage(message:unknown, delimeter: string = "", ...args: unknown[]): string {
-		return (ExtentionTitle + [message, ...args].join(delimeter));
-	}
-
-	export function GetTimeStamp(): string { // Ex: "22/11/2022, 22:16:50"
-		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date());
-	}
-
-		
-	/**
-	 * Converts an error value to a string.
-	 *
-	 * @param err The error.
-	 * @return The error as string.
-	 */
-	export function ErrorToString(err: Exception): string {
-		return `[${Debug.GetTimeStamp()}] ${err.name}: '${err.message}'\n\n${err.stack}`;
-	}
-
-
-
-	export const enum Type {
-		Info, Warning, Error
-	}
-
-
-	/**
-	 * Show an information message to users. Optionally provide an array of items which will be presented as
-	 * clickable buttons.
-	 *
-	 * @param message The message to show.
-	 * @param logType The type of message to display (Default is Information message).
-	 * @param buttons A set of items that will be rendered as actions in the message.
-	 * @return A thenable that resolves to the selected item or `undefined` when being dismissed.
-	 */
-
-	
-
-	export function Log(message:string) : Thenable<undefined>;
-	export function Log<T extends vscode.MessageItem>(message:string, ...buttons: T[]) : Thenable<undefined|T>;
-	export function Log<T extends vscode.MessageItem>(message:string, logType:Type, ...buttons: T[]) : Thenable<undefined|T>;
-	export function Log(message:string, logType:Type, ...buttons: string[]) : Thenable<undefined|string>;
-	export function Log(message:string, logType:Type=Type.Info, ...buttons: any[]) : Thenable<undefined|any> {
-		switch (logType) {
-			case Type.Info: return vscode.window.showInformationMessage(message, ...buttons);
-			case Type.Warning: return vscode.window.showWarningMessage(message, ...buttons);
-			case Type.Error: return vscode.window.showErrorMessage(message, ...buttons);
-		}
-	}
-
-	export function LogInfo(message:string) : Thenable<undefined>;
-	export function LogInfo<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
-	export function LogInfo(message:string, ...buttons: string[]): Thenable<undefined|string>;
-	export function LogInfo(message:string, ...buttons: any[]): Thenable<undefined|any> {
-		return vscode.window.showInformationMessage(message, ...buttons);
-	}
-	
-	export function LogWarning(message:string) : Thenable<undefined>;
-	export function LogWarning<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
-	export function LogWarning(message:string, ...buttons: string[]): Thenable<undefined|string>;
-	export function LogWarning(message:string, ...buttons: any[]): Thenable<undefined|any> {
-		return vscode.window.showWarningMessage(message, ...buttons);
-	}
-
-	
-	export function LogError(message:string) : Thenable<undefined>;
-	export function LogError<T extends vscode.MessageItem>(message:string, ...buttons: T[]): Thenable<undefined|T>;
-	export function LogError(message:string, ...buttons: string[]): Thenable<undefined|string>;
-	export function LogError(message:string, ...buttons: any[]): Thenable<undefined|any> {
-		return vscode.window.showErrorMessage(message, ...buttons);
-	}
-
-	//........................................................................
-
-	export function LogException(exception: Exception) : Thenable<undefined>;
-	export function LogException<T extends vscode.MessageItem>(exception: Exception, ...buttons: T[]) : Thenable<undefined|T>;
-	export function LogException(exception: Exception, ...buttons: string[]) : Thenable<undefined|string>;
-	export function LogException(exception: Exception, ...buttons: any[]) : Thenable<undefined|any> {
-		return vscode.window.showErrorMessage(`[${Debug.GetTimeStamp()}] Exception occured! Stack: ${exception.stack}`, ...buttons);
-	}
-}
-
-
-
-
-
 
 
 
@@ -1393,6 +1279,17 @@ export async function copyWholeBuffer(statusBarTimeout : number = 5000) {
 
 
 
+/**
+ * Copy a string to the clipboard.
+ * @param text The string.
+ * @returns A promise resolving to the ErrorInfo of the executed command.
+ */
+export function copyToClipboard(text: string): Thenable<string|null> { //ErrorInfo
+	return vscode.env.clipboard.writeText(text).then(
+		() => null,
+		() => 'Visual Studio Code was unable to write to the Clipboard.'
+	);
+}
 
 
 
@@ -1403,6 +1300,14 @@ export async function copyWholeBuffer(statusBarTimeout : number = 5000) {
 
 
 
+
+/**
+ * Check whether Git Graph is running on a Windows-based platform.
+ * @returns TRUE => Windows-based platform, FALSE => Not a Windows-based platform.
+ */
+export function isWindows() {
+	return process.platform === 'win32' || process.env.OSTYPE === 'cygwin' || process.env.OSTYPE === 'msys';
+}
 
 
 
@@ -2722,3 +2627,51 @@ export function forEachSymbol(f: (symbol: vscode.DocumentSymbol)=> void, symbols
 // }
 
 
+
+
+
+
+
+
+
+
+/*
+since vscode has very limit API to customize tree view, let's do some hacks
+Strings are copied from http://qaz.wtf/u/convert.cgi?text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-
+*/
+
+export type FontNames = keyof typeof fonts
+
+const fonts = {
+	plain: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-',
+	math_monospace: '𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉-',
+	math_sans: '𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹-',
+	math_sans_bold: '𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝐣𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝐫𝐬𝐭𝐮𝐯𝐰𝐱𝐲𝐳𝐀𝐁𝐂𝐃𝐄𝐅𝐆𝐇𝐈𝐉𝐊𝐋𝐌𝐍𝐎𝐏𝐐𝐑𝐒𝐓𝐔𝐕𝐖𝐗𝐘𝐙-',
+	math_sans_italic: '𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘹𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘟𝘠𝘡-',
+	math_sans_bold_italic: '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕-',
+	regional_indicator: '🇦🇧🇨🇩🇪🇫🇬🇭🇮🇯🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿🇦🇧🇨🇩🇪🇫🇬🇭🇮🇯🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿-',
+}
+
+
+const enabledPlatforms = [
+	'win32',
+]
+export function unicodeTransform(text: string, from: FontNames, to: FontNames) {
+	if (!enabledPlatforms.includes(process.platform)) return text
+
+	const FromFont = Array.from(fonts[from])
+	const ToFont = Array.from(fonts[to])
+	return Array.from(text)
+	.map((c) => {
+		if (FromFont.includes(c)) return ToFont[FromFont.indexOf(c)]
+		return c
+	}).join('')
+}
+
+export function unicodeDecorate(text: string, to: FontNames) {
+	return unicodeTransform(text, 'plain', to)
+}
+
+export function decorateLocale(locale: string) {
+	return unicodeDecorate(locale, 'regional_indicator')
+}

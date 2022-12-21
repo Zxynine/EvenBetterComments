@@ -1,17 +1,18 @@
-
+type VSCodeDecorationType = import('vscode').TextEditorDecorationType; 
+type VSCodeDecorationRender = import('vscode').DecorationRenderOptions; 
 
 interface CommentTag {
 	tag: string;
 	escapedTag: string; //Used to search for matches.
 	lowerTag: string; //Used as a key for dict lookup
-	decoration: import('vscode').TextEditorDecorationType;
+	decoration: VSCodeDecorationType;
 	ranges: Array<import('vscode').Range>;
 }
 
 interface RegexCommentTag {
 	tag: string;
 	regex: RegExp; //Used to test for the comment.
-	decoration: import('vscode').TextEditorDecorationType;
+	decoration: VSCodeDecorationType;
 	ranges: Array<import('vscode').Range>;
 }
 
@@ -39,13 +40,15 @@ interface TagDefinition {
 	bold: boolean;
 	italic: boolean;
 	isRegex: boolean;
-	CustomDecoration?: import('vscode').DecorationRenderOptions;
+	CustomDecoration?: VSCodeDecorationRender;
 }
 
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+type IDisposable = {
+	dispose: () => void;
+}
 
 
 /**
@@ -139,10 +142,32 @@ type OrMask<T extends number> = number;
 
 
 // Syntax sugar
-type Func<TArgs extends any[] = [], TResult = void> = (...args: TArgs) => TResult; 
-type Action<TArgs extends any[] = []> = Func<TArgs>; 
+type Func<TArgs = [], TResult = void> = ([TArgs] extends [any[]] 
+	? (...args:TArgs) => TResult 
+	: ([TResult] extends [void] 
+		? () => TArgs 
+		: (arg: TArgs) => TResult
+	)
+);
 
-type Event = Func<[], void>;
+
+type Action<TArgs = []> = [TArgs] extends [any[]] ? Func<TArgs, void> :  Func<[TArgs], void>; 
+
+
+
+// type TestFunc1 = Func<[number, bool], int>;
+// type TestFunc2 = Func<number, int>;
+// type TestFunc3 = Func<number>;
+
+// type TestAction1 = Action<[number, bool]>;
+// type TestAction2 = Action<[number]>;
+// type TestAction3 = Action<number>;
+
+type Event<T = []> = Func<T, void>;
+/** A function used to subscribe to an EventEmitter. */
+type EventSubscribe<T> = Func<[listener: EventListener<T>], IDisposable>;
+/** A function used by a subscriber to process an event emitted from an EventEmitter. */
+type EventListener<T> = (event: T) => void;
 
 
 type nulldefined = null|undefined;
@@ -167,6 +192,9 @@ type char = string;
 
 type Exception = Error;
 
+type Integer = number & { readonly __type__: "Integer" };
+type Float = number & { readonly __type__: "Float" };
+type Character = string & { readonly __type__: "Character" };
 
 
 type Bit = 0|1;
@@ -285,6 +313,8 @@ type PathValue<T, P extends Path<T>> = (P extends `${infer Key}:${infer Rest}`
 // type WorkspaceStoragePath = Path<WorkspaceStorage>;
 // type WorkspaceStoragePathValue<P extends WorkspaceStoragePath> = PathValue<WorkspaceStorage, P>;
 
+type OrUndefined<T> = { [P in keyof T]: T[P] | undefined };
+
 
 
 
@@ -328,8 +358,6 @@ type PathValue<T, P extends Path<T>> = (P extends `${infer Key}:${infer Rest}`
 
 
 
-type Integer = number & { __type: "Integer" };
-type Character = string & { __type: "Character" };
 
 
 /**

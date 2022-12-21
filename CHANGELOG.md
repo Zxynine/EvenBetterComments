@@ -1,4 +1,18 @@
 # Change Log
+## [5.0.4] (2022-12-20)
+### Development
+This is a patch to work on more issues, performance problems, and implementing link comment highlighting.
+
+### Features
+* Link comment highlights support added, just need to document and provide options for it in future update.
+* Added new command `BetterHyperScopes: Show Tokens Full Line` which will log all of the TextMate scopes (and their ranges) for the currently selected line to the console.
+
+### Bug Fixes
+* Fixed the thousands of uncaught errors being generated since the release of this extension which I never saw until now.
+* Fixed additional errors being generated when the configuration was changed caused by "this" not having any context.
+* Fixed issue of spaces before monoline comment symbol being styled despite `highlightTagOnly` being enabled. Re-Closes [#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
+* Fixed issue of regex incorrectly looking for the end of a line. Closes [#11](https://github.com/Zxynine/EvenBetterComments/issues/11)
+* Potentially fixed issue of mixed line comments not loading until the document is edited. Possibly Closes [#12](https://github.com/Zxynine/EvenBetterComments/issues/12)
 
 ## [5.0.3] (2022-12-09)
 ### Development
@@ -6,29 +20,29 @@ This is a patch to work on some issues posted recently as well as set up the ext
 
 ### Features
 * Removed preview features `tag.CSSBorderDecoration`, `tag.CSSOutlineDecoration`, `tag.CSSTextDecoration` in favour of new style method. (I did warn you it was temporary)
-* Added more permanent and fleshed out preview feature `tag.CustomDecoration` for advanced users to have full control over their decorations style. See [this page](https://code.visualstudio.com/api/references/vscode-api#DecorationRenderOptions). Closes[#8](https://github.com/Zxynine/EvenBetterComments/issues/8)
+* Added more permanent and fleshed out preview feature `tag.CustomDecoration` for advanced users to have full control over their decorations style. See [this page](https://code.visualstudio.com/api/references/vscode-api#DecorationRenderOptions). Closes [#8](https://github.com/Zxynine/EvenBetterComments/issues/8)
 * Added new command `BetterHyperScopes: Show Line Comments` which will highlight and log the ranges of all comments in the current selection.
 * Added new command `EvenBetterComments: Remove All Comments In Current Document` which will let you remove every comment in the currently opened file.
 * Added new command `EvenBetterComments: Remove All Comments In Current Selection` which will let you remove every comment in the current selection.
 
 ### Bug Fixes
-* Fixed issue of space after a tag being included in the highlighting. Closes[#7](https://github.com/Zxynine/EvenBetterComments/issues/7)
-* Fixed issue of monoline comment symbol being styled despite `highlightTagOnly` being enabled. Closes[#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
+* Fixed issue of space after a tag being included in the highlighting. Closes [#7](https://github.com/Zxynine/EvenBetterComments/issues/7)
+* Fixed issue of monoline comment symbol being styled despite `highlightTagOnly` being enabled. Closes [#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
 
 ## [5.0.2] (2022-11-28)
 ### Development
 This is a hotfix to solve a number of small bugs either created during the last major update, or have always been present but never addressed.
 
 ### Features
-* Added `highlightTagOnly` option to settings. Closes[#1](https://github.com/Zxynine/EvenBetterComments/issues/1)
+* Added `highlightTagOnly` option to settings. Closes [#1](https://github.com/Zxynine/EvenBetterComments/issues/1)
 * Added `allowFullBlockHighlights` option to settings.
 * Added preview feature `tag.CSSTextDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration)
 * Added preview feature `tag.CSSOutlineDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/outline)
 * Added preview feature `tag.CSSBorderDecoration` for advanced users to have full control over their decorations style. See [this page](https://developer.mozilla.org/en-US/docs/Web/CSS/border)
 
 ### Bug Fixes
-* Fixed issue of Markdown(and others) having matching tags outside of comments. Closes[#4](https://github.com/Zxynine/EvenBetterComments/issues/4)
-* Fixed issue of Tag-matching not respecting word boundaries. Closes[#3](https://github.com/Zxynine/EvenBetterComments/issues/3)
+* Fixed issue of Markdown(and others) having matching tags outside of comments. Closes [#4](https://github.com/Zxynine/EvenBetterComments/issues/4)
+* Fixed issue of Tag-matching not respecting word boundaries. Closes [#3](https://github.com/Zxynine/EvenBetterComments/issues/3)
 
 ## [5.0.1] (2022-11-26)
 ### Development

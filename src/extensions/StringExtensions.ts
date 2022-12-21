@@ -1124,9 +1124,332 @@ function doEqualsIgnoreCase(a: string, b: string, stopAt = a.length): boolean {
 
 export function startsWithIgnoreCase(str: string, candidate: string): boolean {
     const candidateLength = candidate.length;
-    if (candidate.length > str.length) {
-        return false;
-    }
-
+    if (candidate.length > str.length) return false;
     return doEqualsIgnoreCase(str, candidate, candidateLength);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export namespace ChangeCase {
+	export interface Options {
+		readonly splitRegexp?: RegExp | RegExp[];
+		readonly stripRegexp?: RegExp | RegExp[];
+		readonly delimiter?: string;
+		readonly transform?: (part: string, index: number, parts: string[]) => string;
+		readonly separateNumbers?: boolean;
+	}
+	// Support camel case ("camelCase" -> "camel Case" and "CAMELCase" -> "CAMEL Case").
+	const DEFAULT_SPLIT_REGEXP = [/([a-z0-9])([A-Z])/g, /([A-Z])([A-Z][a-z])/g];
+	// Remove all non-word characters.
+	const DEFAULT_STRIP_REGEXP = /[^A-Z0-9]+/gi;
+	// Regex to split numbers ("13test" -> "13 test")
+	const SEPARATE_NUMBERS_SPLIT_REGEXP = [...DEFAULT_SPLIT_REGEXP, /([0-9])([A-Za-z])/g, /([A-Za-z])([0-9])/g];
+		
+	
+	/**
+	 * Lower case as a function.
+	 */
+	export function lowerCase(str: string) {
+		return str.toLowerCase();
+	}
+	/**
+	 * Returns a string where all alphabetic characters have been converted to lowercase, taking into account the host environment's current locale.
+	*/
+	export function toLocaleLowerCase(str: string, locale?: string|string[]) {
+		return str.toLocaleLowerCase(locale);
+	}
+	/**
+	 * Returns a boolean indicating whether the string is lower case.
+	 */
+	export function isLowerCase(input: string) {
+		return input.toLowerCase() === input && input.toUpperCase() !== input;
+	}
+	/**
+	 * Lower case the first character of an input string.
+	 */
+	export function lowerCaseFirst(input: string) {
+		return input.charAt(0).toLowerCase() + input.slice(1);
+	}
+
+	
+
+	
+	/**
+	 * Upper case as a function.
+	 */
+	export function upperCase(str: string) {
+		return str.toUpperCase();
+	}
+	/**
+	 * Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale.
+	*/
+	export function toLocaleUpperCase(str: string, locale?: string|string[]) {
+		return str.toLocaleUpperCase(locale);
+	}
+	/**
+	 * Returns a boolean indicating whether the string is upper case.
+	 */
+	export function isUpperCase(input: string) {
+		return input.toUpperCase() === input && input.toLowerCase() !== input;
+	}
+
+	/**
+	 * Upper case the first character of an input string.
+	 */
+	export function upperCaseFirst(input: string) {
+		return input.charAt(0).toUpperCase() + input.slice(1);
+	}
+
+
+
+
+
+
+
+
+
+
+	/**
+	 * Normalize the string into something other libraries can manipulate easier.
+	 */
+	export function noCase(input: string, options: Options = {}) {
+		const {
+			// splitRegexp = DEFAULT_SPLIT_REGEXP,
+			stripRegexp = DEFAULT_STRIP_REGEXP,
+			transform = lowerCase,
+			delimiter = " ",
+			separateNumbers,
+		} = options;
+		let { splitRegexp } = options;
+
+		/**
+		 * If splitRegexp was not passed in options, and seperateNumbers is true,
+		 * update DEFAULT_SPLIT_REGEXP with regex to split numbers.
+		 */
+		if (!splitRegexp) {
+		  splitRegexp = separateNumbers ? SEPARATE_NUMBERS_SPLIT_REGEXP : DEFAULT_SPLIT_REGEXP;
+		}
+	
+		let result = replace(replace(input, splitRegexp, "$1\0$2"), stripRegexp, "\0");
+		let start = 0;
+		let end = result.length;
+	
+		// Trim the delimiter from around the output string.
+		while (result.charAt(start) === "\0") start++;
+		while (result.charAt(end - 1) === "\0") end--;
+	
+		// Transform each token independently.
+		return result.slice(start, end).split("\0").map(transform).join(delimiter);
+	}
+	
+	/**
+	 * Replace `re` in the input string with the replacement value.
+	 */
+	function replace(input: string, re: RegExp | RegExp[], value: string) {
+		return ((re instanceof RegExp)
+			? input.replace(re, value) 
+			: re.reduce((input, re) => input.replace(re, value), input)
+		);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	export function pascalCaseTransform(input: string, index: number) {
+		const firstChar = input.charAt(0);
+		const lowerChars = input.slice(1).toLowerCase();
+		return ((index > 0 && firstChar >= "0" && firstChar <= "9")
+			? `_${firstChar}${lowerChars}` 
+			: `${firstChar.toUpperCase()}${lowerChars}`
+		);
+	}
+	
+	export function pascalCaseTransformMerge(input: string) {
+		return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+	}
+	
+	export function pascalCase(input: string, options: Options = {}) {
+		return noCase(input, {
+		delimiter: "",
+		transform: pascalCaseTransform,
+		...options,
+		});
+	}
+
+
+
+
+
+
+
+	//Transform into a string with the separator denoted by the next word capitalized.
+	export function camelCaseTransform(input: string, index: number) {
+		return (index === 0) ? input.toLowerCase() : pascalCaseTransform(input, index);
+	}
+	//Transform into a string with the separator denoted by the next word capitalized. If you'd like to remove the behavior prefixing _ before numbers, you can use camelCaseTransformMerge:
+	export function camelCaseTransformMerge(input: string, index: number) {
+		return (index === 0) ? input.toLowerCase() : pascalCaseTransformMerge(input);
+	}
+	//Transform into a string with the separator denoted by the next word capitalized.
+	export function camelCase(input: string, options: Options = {}) {
+		return pascalCase(input, {
+			transform: camelCaseTransform,
+			...options,
+		});
+	}
+
+
+
+
+		
+	export function capitalCaseTransform(input: string) {
+		return upperCaseFirst(input.toLowerCase());
+	}
+	
+	export function capitalCase(input: string, options: Options = {}) {
+		return noCase(input, {
+			delimiter: " ",
+			transform: capitalCaseTransform,
+			...options,
+		});
+	}
+
+	//Transform into upper case string with an underscore between words.
+	export function constantCase(input: string, options: Options = {}) {
+		return noCase(input, {
+			delimiter: "_",
+			transform: upperCase,
+			...options,
+		});
+	}
+
+
+		
+	export function dotCase(input: string, options: Options = {}) {
+		return noCase(input, { delimiter: ".", ...options });
+	}
+	export function paramCase(input: string, options: Options = {}) {
+		return noCase(input, { delimiter: "-", ...options });
+	}
+
+	export function pathCase(input: string, options: Options = {}) {
+		return noCase(input, { delimiter: "/", ...options });
+	}
+
+	export function snakeCase(input: string, options: Options = {}) {
+		return noCase(input, { delimiter: "_", ...options });
+	}
+
+	export function headerCase(input: string, options: Options = {}) {
+		return capitalCase(input, { delimiter: "-", ...options });
+	}
+
+
+		
+	export function sentenceCaseTransform(input: string, index: number) {
+		const result = input.toLowerCase();
+		if (index === 0) return upperCaseFirst(result);
+		return result;
+	}
+	
+	export function sentenceCase(input: string, options: Options = {}) {
+		return noCase(input, {
+		delimiter: " ",
+		transform: sentenceCaseTransform,
+		...options,
+		});
+	}
+
+		
+
+	export function spongeCase(input: string): string {
+		let result = "";
+		for (let i = 0; i < input.length; i++) {
+			result += Math.random() > 0.5 ? input[i].toUpperCase() : input[i].toLowerCase();
+		}
+		return result;
+	}
+
+	export function swapCase(input: string) {
+		let result = "";
+		for (let i = 0; i < input.length; i++) {
+			const lower = input[i].toLowerCase();
+			result += input[i] === lower ? input[i].toUpperCase() : lower;
+		}
+		return result;
+	}
+
+
+
+	const isAnObject = (object: any) => typeof object === "object" && !!object; // `!object` to catch null, which is a typeof object in js
+
+	/**
+	 * changes the case of each key in the object
+	 *
+	 * example:
+	 * ```ts
+	 * import { camelCase, changeCaseOfKeys } from 'change-case';
+	 *
+	 * const changedObject = changeCaseOfKeys({
+	 *   first_name: 'bob',
+	 *   last_name: 'the builder',
+	 *   credentials: [{ built_things: true }],
+	 * }, camelCase);
+	 * /*
+	 *  {
+	 *    firstName: 'bob',
+	 *    lastName: 'the builder',
+	 *    credentials: [{ builtThings: true }],
+	 *  }
+	 * /*
+	 * ```
+	 */
+	export const changeCaseOfKeys = (object: any, changeCaseFn: Func<string, string>) => {
+	// handle non objects
+	if (!isAnObject(object)) return object;
+
+	// recursively loop through each key
+	const changedObject: Record<string, any> = {}; // set as new object
+	Object.keys(object).forEach((key) => {
+		// define the new key name
+		const changedKey = changeCaseFn(key);
+
+		// recursively run on the value
+		const value = object[key];
+		// set the value that had its keys deeply omitted under the key we're allowed to keep
+		changedObject[changedKey] = (() => {
+			if (Array.isArray(value)) return value.map((valueInArray) => changeCaseOfKeys(valueInArray, changeCaseFn)); // if array, run on each item of array
+			else return changeCaseOfKeys(value, changeCaseFn);
+		})();
+	});
+
+	// return the changed object
+	return changedObject;
+	};
 }

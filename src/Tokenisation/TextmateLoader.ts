@@ -7,7 +7,7 @@ import { LanguageLoader } from "../providers/LanguageProvider";
 // import LanguageConfig from "./languageConfig";
 
 //https://github.com/rafamel/subtle-brackets
-//
+//https://github.com/CoenraadS/Bracket-Pair-Colorizer-2/blob/master/src/IExtensionGrammar.ts
 
 
 
@@ -25,14 +25,14 @@ export function getNodeModule(moduleName: string) { return require(getNodeModule
 
 
 export class TMRegistry {
-	static readonly vsctm = getNodeModule("vscode-textmate");
-	static readonly oniguruma = getNodeModule("vscode-oniguruma");
-	static readonly onigurumaPath = path.join(getNodeModulePath("vscode-oniguruma"), 'release', 'onig.wasm');
-	static readonly WASMBin = fs.readFileSync(TMRegistry.onigurumaPath).buffer;
-	static readonly vscodeOnigurumaLib: Promise<IOnigLib> = (
-		TMRegistry.oniguruma.loadWASM(TMRegistry.WASMBin).then(() => <IOnigLib>{
+	public static readonly vsctm = getNodeModule("vscode-textmate");
+	public static readonly oniguruma = getNodeModule("vscode-oniguruma");
+	public static readonly onigurumaPath = path.join(getNodeModulePath("vscode-oniguruma"), 'release', 'onig.wasm');
+	public static readonly WASMBin = fs.readFileSync(TMRegistry.onigurumaPath).buffer;
+	public static readonly vscodeOnigurumaLib: Promise<IOnigLib> = (
+		TMRegistry.oniguruma.loadWASM(TMRegistry.WASMBin).then((_: any) => <IOnigLib>{
 			createOnigScanner : (patterns) => new TMRegistry.oniguruma.OnigScanner(patterns),
-			createOnigString : (str) => new TMRegistry.oniguruma.OnigString(str)
+			createOnigString : (string) => new TMRegistry.oniguruma.OnigString(string)
 		})
 	);
 
@@ -43,18 +43,12 @@ export class TMRegistry {
 			TMRegistry.registry = new TMRegistry.vsctm.Registry(<RegistryOptions>{
 				onigLib: TMRegistry.vscodeOnigurumaLib,
 				getInjections: (scopeName: string) => LanguageLoader.scopeNameToInjections.get(scopeName),
-				/** Load the grammar at `path` synchronously. **/
-				loadGrammarFromPathSync: (path: string) => LanguageLoader.ReadFileSync(path),
 				
 				/** Load the grammar for `scopeName` and all referenced included grammars asynchronously. **/
 				loadGrammar: async (scopeName: string) => {
 					const path = LanguageLoader.scopeNameToPath.get(scopeName);
 					return ((!path)? null :  LanguageLoader.ReadFileAsync(path).then((data) => TMRegistry.vsctm.parseRawGrammar(data, path)));
-				},
-				
-				
-				// /** Get the grammar for `scopeName`. The grammar must first be created via `loadGrammar` or `loadGrammarFromPathSync`. **/
-				// grammarForScopeName(scopeName: string): IGrammar;
+				}
 			});
 		} catch (err) {
 			TMRegistry.registry = undefined;

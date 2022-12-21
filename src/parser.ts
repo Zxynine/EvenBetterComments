@@ -9,7 +9,7 @@ import { FlagsArray } from './typings/BitFlags';
 //Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
 
 export class Parser {
-	private readonly regextags: RegexCommentTag[] = [];
+	// private readonly regextags: RegexCommentTag[] = [];
 	private readonly tags: CommentTag[] = [];
 	private readonly tagsMap: Map<string,CommentTag> = new Map<string,CommentTag>();
 	private PushTag(Tag : CommentTag) {
@@ -17,16 +17,16 @@ export class Parser {
 		this.tagsMap.set(Tag.lowerTag, Tag);
 	}
 
-	protected PushRegexTag(Tag: RegexCommentTag) {
-		this.regextags.push(Tag);
-	}
+	// protected PushRegexTag(Tag: RegexCommentTag) {
+	// 	this.regextags.push(Tag);
+	// }
 
-	protected GetRegexTag(testString: string) {
-		if (this.regextags.length === 0) return undefined;
-		for (const RegexTag of this.regextags)
-			if (RegexTag.regex.test(testString)) return RegexTag;
-		return undefined;
-	}
+	// protected GetRegexTag(testString: string) {
+	// 	if (this.regextags.length === 0) return undefined;
+	// 	for (const RegexTag of this.regextags)
+	// 		if (RegexTag.regex.test(testString)) return RegexTag;
+	// 	return undefined;
+	// }
 
 	protected GetTag(key: string) {
 		return this.tagsMap.get(key);
@@ -56,6 +56,7 @@ export class Parser {
 		// MultiLineJSMatchFull: / /,
 	}
 
+	//Todo: Support regex tags by using named groups, require a named group "tag" and the match comparison to use for identifying regex tags. 
 
 	private delimiter: string = "";
 	private blockCommentStart: string = "";
@@ -135,19 +136,19 @@ export class Parser {
 	}
 
 
-	/**
-	 * Static method used to create CommentTag objects.
-	 * @param itemTag The string that repesents the tag.
-	 * @returns {CommentTag} The created CommentTag object.
-	 */
-	 protected static CreateRegexTag(itemTag : string, options : vscode.DecorationRenderOptions) : RegexCommentTag {
-		return <RegexCommentTag>{
-			tag: itemTag,
-			regex: new RegExp(itemTag),
-			ranges: [],
-			decoration: vscode.window.createTextEditorDecorationType(options)
-		};
-	}
+	// /**
+	//  * Static method used to create CommentTag objects.
+	//  * @param itemTag The string that repesents the tag.
+	//  * @returns {CommentTag} The created CommentTag object.
+	//  */
+	//  protected static CreateRegexTag(itemTag : string, options : vscode.DecorationRenderOptions) : RegexCommentTag {
+	// 	return <RegexCommentTag>{
+	// 		tag: itemTag,
+	// 		regex: new RegExp(itemTag),
+	// 		ranges: [],
+	// 		decoration: vscode.window.createTextEditorDecorationType(options)
+	// 	};
+	// }
 
 
 	private static TagDefinitionToDecorationOptions(tag : TagDefinition) {
@@ -213,8 +214,8 @@ export class Parser {
 	 * @param languageCode The short code of the current language
 	 * https://code.visualstudio.com/docs/languages/identifiers
 	 */
-	public SetRegex(languageCode: string) {
-		this.setDelimiter(languageCode); //This checks if language is supported as well. Make better name. InitialiseLanguage?
+	public async SetRegex(languageCode: string) {
+		await this.setDelimiter(languageCode); //This checks if language is supported as well. Make better name. InitialiseLanguage?
 		// if the language isn't supported, we don't need to go any further
 		if (!this.supportedLanguage) return;
 
@@ -226,8 +227,8 @@ export class Parser {
 		if (this.isPlainText) this.delimiter = '';
 
 		const MonoLineCommon = "("+this.delimiter+")+([ \\t]*)("+TagArray+")([ \\t]+|:|$)(.*$)";
-		this.Expressions.MonoLineSimple = new RegExp("(^)([ \\t]*)"+MonoLineCommon, "igm");
-		this.Expressions.MonoLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+")\\S*.*?)"+MonoLineCommon, "igm");
+		this.Expressions.MonoLineSimple = new RegExp("(^[ \\t]*)"+MonoLineCommon, "igm");
+		this.Expressions.MonoLineMixed = new RegExp("(^[ \\t]*(?!"+this.delimiter+")\\S*.*?)"+MonoLineCommon, "igm");
 
 		//..............................................
 		
@@ -278,7 +279,7 @@ export class Parser {
 	**/
 	public FindSingleLineCommentsSimple(activeEditor: vscode.TextEditor): void {
 		for (const match of Parser.MatchAllInText(activeEditor.document.getText(), this.Expressions.MonoLineSimple)) {
-			const startPos = activeEditor.document.positionAt(match.index + match[2].length);
+			const startPos = activeEditor.document.positionAt(match.index + match[1].length);
 			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
 			//Mark line as visited.
 			if (this.CommentTracker.CheckFlag(startPos.line)) continue;
@@ -288,12 +289,12 @@ export class Parser {
 			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
 
 			// Find which custom delimiter was used in order to add it to the collection
-			const matchString = (match[5] as string).toLowerCase();
+			const matchString = (match[4] as string).toLowerCase();
 			// console.log(match);
 			this.tagsMap.get(matchString)?.ranges.push(
 				((!this.highlightTagOnly)
 					? new vscode.Range(startPos, endPos)
-					: new vscode.Range(startPos.line, startPos.character + match[3].length, endPos.line, startPos.character + match[3].length + match[4].length + match[5].length + (match[6].trim().length))
+					: new vscode.Range(startPos.line, startPos.character + match[2].length + match[3].length, endPos.line, startPos.character + match[2].length + match[3].length + match[4].length + (match[5].trim().length))
 				)
 			);
 		}
@@ -337,7 +338,7 @@ export class Parser {
 					if (this.tagsMap.has(matchString)) {
 						const range = ((!this.highlightTagOnly)
 							? new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length)
-							: new vscode.Range(startPos.line, offset + matchResult[2].length, endPos.line, offset + matchResult[2].length + matchResult[3].length + matchResult[4].length + matchResult[5].trim().length)
+							: new vscode.Range(startPos.line, offset + matchResult[2].length + matchResult[3].length, endPos.line, offset + matchResult[2].length + matchResult[3].length + matchResult[4].length + matchResult[5].trim().length)
 						);
 						this.tagsMap.get(matchString)!.ranges.push(range);
 					}
@@ -362,7 +363,7 @@ export class Parser {
 
 
 
-	/**  .......................................................................................................................
+	//  .......................................................................................................................
 
 
 
@@ -493,7 +494,7 @@ export class Parser {
 
 
 
-	/**  .......................................................................................................................
+	//  .......................................................................................................................
 
 
 
@@ -621,9 +622,7 @@ export class Parser {
 
 	//#region  Private Methods.......................................................................................................................
 
-	/**
-	 * A set listing all of the "languages", like plaintext, that don't have comment syntax
-	 */ /* */
+	/** A set listing all of the "languages", like plaintext, that don't have comment syntax */
 	private static readonly TextLanguages = new Set([
 		'code-text-binary', 'bibtex', 'log', 'Log', 'search-result', 
 		'plaintext', 'juliamarkdown', 'scminput', 'properties', 'csv', 'tsv', 'excel'
@@ -635,12 +634,13 @@ export class Parser {
 	 * @param languageCode The short code of the current language
 	 * https://code.visualstudio.com/docs/languages/identifiers
 	 */
-	private setDelimiter(languageCode: string): void {
+	private async setDelimiter(languageCode: string) {
+		//Defaults
 		this.supportedLanguage = false;
 		this.ignoreFirstLine = false;
 		this.isPlainText = false;
 
-		const config: vscode.CommentRule|undefined = Configuration.GetCommentConfiguration(languageCode); 
+		const config: vscode.CommentRule|undefined = await Configuration.GetCommentConfiguration(languageCode); 
 		if (config) {
 			this.supportedLanguage = true;
 			this.ignoreFirstLine = Configuration.GetHasShebang(languageCode);
@@ -691,8 +691,9 @@ export class Parser {
 			
 			//Idea: allow item.tag to be an array? Avoid the need for alias field to begin with.
 			//Create CommentTag for primary tag
-			if (!item.isRegex) this.PushTag(Parser.CreateTag(item.tag, options));
-			else this.PushRegexTag(Parser.CreateRegexTag(item.tag, options))
+			this.PushTag(Parser.CreateTag(item.tag, options));
+			// if (!item.isRegex) this.PushTag(Parser.CreateTag(item.tag, options));
+			// else this.PushRegexTag(Parser.CreateRegexTag(item.tag, options))
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
 			item.aliases?.forEach(aliasTag => this.PushTag(Parser.CreateTag(aliasTag, options)));
 		}
@@ -710,6 +711,7 @@ export class Parser {
 	 * @param end The end delimiter for block comments
 	 */
 	private setCommentFormat(monoLine: string|string[]|nulldefined, start: string|nulldefined = null, end: string|nulldefined = null): void {
+		//Defaults
 		this.delimiter = "";
 		this.blockCommentStart = "";
 		this.blockCommentEnd = "";
@@ -717,6 +719,9 @@ export class Parser {
 		this.highlightMonolineComments = false;
 		this.highlightMultilineComments = false;
 		this.highlightFullBlockComments = false;
+
+		//If extension is disabled, dont bother creating tags.
+		if (!this.contributions.enabled) return;
 
 		// If no single line comment delimiter is passed, monoline comments are not supported
 		if (monoLine) {
@@ -732,6 +737,7 @@ export class Parser {
 			}
 		}
 
+		// If no multi line comment delimiters are passed, multiline comments are not supported
 		if (start && end) {
 			this.highlightMultilineComments = this.contributions.multilineComments;
 			this.blockCommentStart = Parser.escapeRegExp(start);
@@ -749,7 +755,7 @@ export class Parser {
 
 
 
-const IsString = (item:any): item is String => typeof item === 'string';
+const IsString = (item:any): item is String => typeof item === 'string'; //Testing string //
 
 
 
@@ -759,16 +765,7 @@ const IsString = (item:any): item is String => typeof item === 'string';
 
 
 
-export function getDocumentType(fsPath: string) { return /\.([\w]+)$/.exec(fsPath)?.pop(); }
-
-
-
-
-
-
-
-
-
+export function getDocumentType(fsPath: string) { return /\.([\w]+)$/.exec(fsPath)?.pop(); } //Testing string //
 
 
 
@@ -782,6 +779,21 @@ export function getDocumentType(fsPath: string) { return /\.([\w]+)$/.exec(fsPat
 
 
 
+
+
+
+
+
+
+
+export class ParserCommentFinder {
+	public static readonly MonolineSimple = "(^[ \\t]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
+	public static readonly MultilineSimple = "(^[ \\t]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
+	
+	public static readonly MonolineMixed = "(^[ \\t]*[^\`\'\"]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
+	public static readonly MultilineMixed = "(^[ \\t]*[^\`\'\"]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
+
+}
 
 
 

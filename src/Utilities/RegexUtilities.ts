@@ -9,7 +9,18 @@ export const Whitespace = /[ \t]*/;
 
 
 
-
+  // loop through ignore regex strings and convert to valid RegEx's.
+export function toIgnoreLinePattern(ignorePattern: string) {
+	//parse the string for a regex
+	const regParts = ignorePattern.match(/^\/(.*?)\/([gim]*)$/);
+	if (regParts) {
+		// the parsed pattern had delimiters and modifiers. handle them.
+		return new RegExp(regParts[1], regParts[2]);
+	} else {
+		// we got pattern string without delimiters
+		return new RegExp(ignorePattern);
+	}
+}
 
 
 export const enum RegexFlags {
@@ -90,12 +101,8 @@ export const validRegexFlags = ['i','m','s','u'];
  * @returns {{errMsg: string, regex: RegExp}}
  */
  export function createRegexSearchRegex(searchInput:string, flags:string) {
-	try {
-	  return {regex: new RegExp(searchInput, flags)};
-	}
-	catch(err : any) {
-	  return {errMsg: `Invalid regex input.\n${err.message}`};
-	}
+	try { return {regex: new RegExp(searchInput, flags)} }
+	catch(err : any) { return {errMsg: `Invalid regex input.\n${err.message}`} }
   }
 
 
@@ -797,3 +804,54 @@ export function OffsetFromRegex(array:RegExpExecArray|RegExpMatchArray, index:nu
 export function *MatchAllInText(text:string, pattern:RegExp): Generator<RegExpExecArray> {
 	for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
 }
+
+
+
+
+
+
+
+
+
+
+
+// Examples
+// {namespaces}/{lang}.json
+// {lang}/{namespace}/**/*.json
+// something/{lang}/{namespace}/**/*.*
+export function ParsePathMatcher(pathMatcher: string, exts = '') {
+	let regstr = pathMatcher
+	  .replace(/\./g, '\\.')
+	  .replace('.*', '..*')
+	  .replace('*\\.', '.*\\.')
+	  .replace(/\/?\*\*\//g, '(?:.*/|^)')
+	  .replace('{locale}', '(?<locale>[\\w-_]+)')
+	  .replace('{locale?}', '(?<locale>[\\w-_]*?)')
+	  .replace('{namespace}', '(?<namespace>[^/\\\\]+)')
+	  .replace('{namespace?}', '(?<namespace>[^/\\\\]*?)')
+	  .replace('{namespaces}', '(?<namespace>.+)')
+	  .replace('{namespaces?}', '(?<namespace>.*?)')
+	  .replace('{ext}', `(?<ext>${exts})`)
+  
+	regstr = `^${regstr}$`
+  
+	return new RegExp(regstr)
+  }
+  
+  export function ReplaceLocale(filepath: string, pathMatcher: string, locale: string, exts = '') {
+	let regstr = pathMatcher
+	  .replace(/\./g, '\\.')
+	  .replace('.*', '..*')
+	  .replace('*\\.', '.*\\.')
+	  .replace(/\/?\*\*\//g, '(?:.*/|^)')
+	  .replace('{locale}', ')[\\w-_]+(')
+	  .replace('{namespace}', '(?:[^/\\\\]+)')
+	  .replace('{namespace?}', '(?:[^/\\\\]*?)')
+	  .replace('{namespaces}', '(?:.+)')
+	  .replace('{namespaces?}', '(?:.*?)')
+	  .replace('{ext}', `(?<ext>${exts})`)
+  
+	regstr = `^(${regstr})$`
+  
+	return filepath.replace(new RegExp(regstr), `$1${locale}$2`)
+  }

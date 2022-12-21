@@ -4,7 +4,7 @@ interface IOnigLib {
     createOnigString(str: string): IOnigString;
 }
 interface IOnigScanner {
-    findNextMatchSync(string: string | IOnigString, startPosition: number, options: number): IOnigMatch | null;
+    findNextMatchSync(string: string | IOnigString, startPosition: int, options: number): IOnigMatch | null;
     dispose?(): void;
 }
 interface IOnigString {
@@ -12,11 +12,11 @@ interface IOnigString {
     dispose?(): void;
 }
 interface IOnigMatch {
-    index: number;
+    index: int;
     captureIndices: IOnigCaptureIndex[];
 }
 interface IOnigCaptureIndex {
-    start: number;
-    end: number;
-    length: number;
+    start: int;
+    end: int;
+    length: int;
 }

@@ -75,8 +75,8 @@ declare global {
 		condensedFlatMap<TR>(this : ReadonlyArray<T>, map:Func<[T], Array<TR>>) : Array<TR>;
 		filteredMap<TR>(this : ReadonlyArray<T>, map:Func<[T], TR>, filter:Func<[TR], unknown>) : Array<TR>;
 		filteredFlatMap<TR>(this : ReadonlyArray<T>, flatMap:Func<[T], Array<TR>>, filter:Func<[Array<TR>], unknown>) : Array<TR>;
-		// mappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, map:Func<[T], TR>) : Array<TR>;
-		// flatMappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, flatMap:Func<[T], Array<TR>>) : Array<TR>;
+		mappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, map:Func<[T], TR>) : ReadonlyArray<TR>;
+		flatMappedFilter<TR>(this : ReadonlyArray<T>, filter:Func<[T], unknown>, flatMap:Func<[T], Array<TR>>) : ReadonlyArray<TR>;
 		binarySearch<T>(this : ReadonlyArray<T>, filter:Func<[T], 1|0|-1>) : T|undefined;
 		/**
 		 * Returns the value of the first element in the array where predicate is true, and undefined otherwise.
@@ -623,3 +623,24 @@ export function uniqBy<T>(arr: T[], fn: (el: T) => string): T[] {
 
 
   //https://github.com/gitkraken/vscode-gitlens/blob/main/src/system/array.ts
+
+
+
+
+
+
+interface Group<TKey, TItem> {
+	key: TKey;
+	items: TItem[];
+}
+
+export function GroupBy<TKey, T>(items: ReadonlyArray<T>, selectKey: Func<[item : T], TKey>): Map<TKey, Group<TKey, T>> {
+	const map = new Map<TKey, Group<TKey, T>>();
+	for (const item of items) {
+		const key = selectKey(item);
+		let group = map.get(key);
+		if (!group) map.set(key, group = { key, items: [] });
+		group.items.push(item);
+	}
+	return map;
+}

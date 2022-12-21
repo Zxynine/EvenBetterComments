@@ -61,18 +61,33 @@ export class DisposableStore extends Disposable {
 
 
 
-export class DisposableArray implements Disposable {
-	private disposables = new Array<Disposable>();
-  
+export class DisposableArray extends Array<Disposable> implements Disposable  {
+	public popDispose(): void {
+		super.pop()?.dispose();
+	}
+
+	public spliceDispose(start: number, deleteCount: number = 1): void {
+		super.splice(start, deleteCount).forEach(D => D.dispose());
+	}
+
+	public clearDispose() {
+		super.forEach(D => D.dispose());
+		super.length = 0;
+	}
+
 	public dispose() {
-	  this.disposables.forEach((d) => d.dispose());
-	  this.disposables = [];
+		super.forEach(D => D.dispose());
+		super.length = 0;
 	}
-  
-	public push(disposable: Disposable) {
-	  this.disposables.push(disposable);
+}
+
+export abstract class DisposableContext implements Disposable {
+	protected readonly subscriptions: Disposable[] = [];
+	public readonly dispose = () =>	{
+		this.subscriptions.forEach(D => D.dispose());
+		this.subscriptions.length = 0;
 	}
-  }
+}
 
 
 export function using<T extends Disposable>(resource: T, func: (resource: T) => void) {
@@ -85,10 +100,10 @@ export function using<T extends Disposable>(resource: T, func: (resource: T) => 
 
 export function dispose<T extends Disposable>(disposables: T[]): T[] {
 	disposables.forEach(d => d.dispose());
-	return [];
+	return new Array<T>();
 }
 
-export function toDisposable(dispose: () => void): Disposable { return { dispose } }
+export function toDisposable(dispose: Action): Disposable { return { dispose } }
 
 export function combinedDisposable(disposables: Disposable[]): Disposable {
 	return toDisposable(() => dispose(disposables));
@@ -119,6 +134,60 @@ export const EmptyDisposable = toDisposable(() => null);
 //         return [];
 //     }
 // }
+
+
+
+
+
+
+
+// export class Disposable implements vscode.Disposable {
+// 	private disposables: vscode.Disposable[] = [];
+// 	private disposed: boolean = false;
+
+// 	/**
+// 	 * Disposes the resources used by the subclass.
+// 	 */
+// 	public dispose() {
+// 		this.disposed = true;
+// 		this.disposables.forEach((disposable) => {
+// 			try {
+// 				disposable.dispose();
+// 			} catch (_) { }
+// 		});
+// 		this.disposables = [];
+// 	}
+
+// 	/**
+// 	 * Register a single disposable.
+// 	 */
+// 	protected registerDisposable(disposable: vscode.Disposable) {
+// 		this.disposables.push(disposable);
+// 	}
+
+// 	/**
+// 	 * Register multiple disposables.
+// 	 */
+// 	protected registerDisposables(...disposables: vscode.Disposable[]) {
+// 		this.disposables.push(...disposables);
+// 	}
+
+// 	/**
+// 	 * Is the Disposable disposed.
+// 	 * @returns `TRUE` => Disposable has been disposed, `FALSE` => Disposable hasn't been disposed.
+// 	 */
+// 	protected isDisposed() {
+// 		return this.disposed;
+// 	}
+// }
+
+
+
+
+
+
+
+
 
 
 
@@ -332,10 +401,10 @@ export function writeUInt16LE(destination: Uint8Array, value: number, offset: nu
 
 export function readUInt32BE(source: Uint8Array, offset: number): number {
 	return (
-		source[offset] * 2 ** 24
-		+ source[offset + 1] * 2 ** 16
-		+ source[offset + 2] * 2 ** 8
-		+ source[offset + 3]
+		  source[offset + 0] * (2 ** 24)
+		+ source[offset + 1] * (2 ** 16)
+		+ source[offset + 2] * (2 **  8)
+		+ source[offset + 3] * (2 **  0)
 	);
 }
 

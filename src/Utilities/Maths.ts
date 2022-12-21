@@ -1,5 +1,6 @@
 
 
+export type Sign = 1|-1;
 
 export class Counter {
 	private _next = 0;
@@ -23,11 +24,12 @@ export function Max(...values:number[]):number {
 	return min;
 }
 
-export function Sign(value:number):1|-1 { return (value < 0)? -1:1; }
+export function Sign(value:number):Sign { return (value < 0)? -1:1; }
 
 export function Mod2(value:number) { return (((value>>1) << 1) ^ value); }
 
 export function IsEven(value:number) { return (((value>>1) << 1) ^ value) === 0; }
+export function IsOdd(value:number) { return (((value>>1) << 1) ^ value) === 1; }
 
 
 
@@ -49,8 +51,8 @@ export class MovingAverage {
 
 
 
-export function Round(number: number, decimalPoints: number): number {
-	const decimal = Math.pow(10, decimalPoints);
+export function Round(number: number, decimalPlaces: number): number {
+	const decimal = Math.pow(10, decimalPlaces);
 	return Math.round(number * decimal) / decimal;
 }
 
@@ -59,6 +61,9 @@ export function Round(number: number, decimalPoints: number): number {
 export function Clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
 }
+export function Clamp01(value: number) {
+	return (value > 1)? 1 : (value < 0)? 0 : value;
+}
 
 export function Rot(index: number, modulo: number): number {
 	return (modulo + (index % modulo)) % modulo;
@@ -66,6 +71,13 @@ export function Rot(index: number, modulo: number): number {
 
 
 
+export function InRange(value: number, low:number, high:number): bool {
+	return (low <= value) && (value <= high);
+}
+
+export function InRange01(value: number): bool {
+	return (0 <= value) && (value <= 1);
+}
 
 
 
@@ -82,4 +94,25 @@ export function ToBinaryString(nMask : number) {
 	);
 	sMask=sMask.replace(/\B(?=(.{8})+(?!.))/g, " ") // added
 	return sMask;
-  }
+}
+
+
+
+
+
+
+
+
+// abbreviateNumber source https://gist.github.com/tobyjsullivan/96d37ca0216adee20fa95fe1c3eb56ac
+
+export function abbreviateNumber(value: number): string {
+	const suffixes = ['', 'K', 'M', 'B', 'T']
+	let newValue = value
+	let suffixNum = 0
+	while (newValue >= 1000) {
+		newValue /= 1000
+		suffixNum++
+	}
+
+	return newValue.toPrecision(3) + suffixes[suffixNum];
+}

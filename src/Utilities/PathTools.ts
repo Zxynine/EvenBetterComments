@@ -14,6 +14,97 @@ import * as os from 'os'
 
 
 
+
+
+
+
+// const DRIVE_LETTER_PATH_REGEX = /^[a-z]:\//;
+
+
+
+
+/* Path Manipulation */
+const FS_REGEX = /\\/g;
+
+/**
+ * Get the normalised path of a URI.
+ * @param uri The URI.
+ * @returns The normalised path.
+ */
+export function getPathFromUri(uri: vscode.Uri) {
+	return uri.fsPath.replace(FS_REGEX, '/');
+}
+
+
+/**
+ * Get the normalised path of a string.
+ * @param str The string.
+ * @returns The normalised path.
+ */
+export function getPathFromStr(str: string) {
+	return str.replace(FS_REGEX, '/');
+}
+
+/**
+ * Get the path with a trailing slash.
+ * @param path The path.
+ * @returns The path with a trailing slash.
+ */
+export function pathWithTrailingSlash(path: string) {
+	return (path.charCodeAt(path.length - 1) === CharCode.Slash)? path : path+'/';
+}
+
+
+/**
+ * Check whether a path is within the current Visual Studio Code Workspace.
+ * @param path The path to check.
+ * @returns TRUE => Path is in workspace, FALSE => Path isn't in workspace.
+ */
+export function isPathInWorkspace(path: string) {
+	let rootsExact = [], rootsFolder = [], workspaceFolders = vscode.workspace.workspaceFolders;
+	if (typeof workspaceFolders !== 'undefined') {
+		for (const Folder of workspaceFolders) {
+			const tmpPath = getPathFromUri(Folder.uri);
+			rootsExact.push(tmpPath);
+			rootsFolder.push(pathWithTrailingSlash(tmpPath));
+		}
+	}
+	return rootsExact.indexOf(path) > -1 || rootsFolder.findIndex(x => path.startsWith(x)) > -1;
+}
+
+
+/**
+ * Get the normalised canonical absolute path (i.e. resolves symlinks in `path`).
+ * @param path The path.
+ * @param native Use the native realpath.
+ * @returns The normalised canonical absolute path.
+ */
+export function realpath(path: string, native: boolean = false) {
+	return new Promise<string>((resolve) => {
+		(native ? fs.realpath.native : fs.realpath)(path, (err, resolvedPath) => resolve(err !== null ? path : getPathFromUri(vscode.Uri.file(resolvedPath))));
+	});
+}
+
+
+/**
+ * Checks whether a file exists, and the user has access to read it.
+ * @param path The path of the file.
+ * @returns Promise resolving to a boolean: TRUE => File exists, FALSE => File doesn't exist.
+ */
+export function doesFileExist(path: string) {
+	return new Promise<boolean>((resolve) => fs.access(path, fs.constants.R_OK, (err) => resolve(err === null)));
+}
+
+
+
+
+
+
+
+
+
+
+
 export function endWithSlash(path: string): string {
 	return (path.charCodeAt(path.length - 1) === CharCode.Slash)? path : path+'/';
 }

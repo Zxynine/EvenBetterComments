@@ -193,12 +193,9 @@ export class FlagsArray {
 
 	//#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	public GetFlag(index: int): BitFlag { return this.CheckFlag(index)? 1:0; }
-	public QuickCheck(index: int): bool { 
-		if (index >= this.Flags.length<<5) return false;
-		return (this.Flags[FlagsArray.GetPrimeIndex(index)] !== 0);
-	}
+	public QuickCheck(index: int): bool { return (index < this.Flags.length<<5) && (this.Flags[FlagsArray.GetPrimeIndex(index)] !== 0); }
 
-	//TODO: implement try set flag which returns a bool if it was sucessful in setting (not already the value when setting)
+	//returns a bool if it was sucessful in setting (not already the value when setting)
 	public TrySetFlag(index: int, value:bool): bool {
 		const [PrimeIndex, SubIndex] = FlagsArray.GetIndices(index);
 		if (PrimeIndex >= this.Flags.length) return false;
@@ -488,8 +485,8 @@ export class FlagsArray {
 	protected GetFlag01(primeIndex: int, subIndex: int) { return (((this.Flags[primeIndex] & (1<<(31-subIndex))) !== 0) ? 1:0); }
 	protected GetFlagBool(primeIndex: int, subIndex: int) { return ((this.Flags[primeIndex] & (1<<(31-subIndex))) !== 0); }
 
-	protected ForEachBit(func: Action<[BitFlag]>) { for (const Bit of this.EnumerateFlags()) func(Bit); }
-	protected ForEachChunk(func: Action<[int]>) { this.Flags.forEach(func); }
+	protected ForEachBit(func: Action<BitFlag>) { for (const Bit of this.EnumerateFlags()) func(Bit); }
+	protected ForEachChunk(func: Action<int>) { this.Flags.forEach(func); }
 	protected FromEachChunk<T>(func: Func<[int],T>) {
 		const result = new Array<T>(this.Flags.length);
 		for (let i=this.Flags.length-1; i >= 0; --i) result[i] = func(this.Flags[i]);

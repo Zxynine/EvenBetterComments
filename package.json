@@ -1,31 +1,43 @@
 {
+	"icon": "icon.png",
 	"name": "evenbettercomments",
 	"displayName": "Even Better Comments",
-	"description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
-	"icon": "icon.png",
+	"description": "Improve your code commenting by using stylised comments for Alerts, Infos, Warnings, TODOs, and more!",
 	"version": "5.0.3",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
 	},
+	"homepage": "https://github.com/Zxynine/EvenBetterComments/blob/main/README.md",
 	"license": "SEE LICENSE IN LICENSE.md",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Zxynine/EvenBetterComments"
 	},
-	"bugs": "https://github.com/Zxynine/EvenBetterComments/issues",
+    "sponsor": {
+        "url": "https://ko-fi.com/zxynine"
+    },
+	"bugs": "https://github.com/Zxynine/EvenBetterComments/issues", 
+	"keywords": [
+		"Todo",
+		"Highlight",
+		"Comments",
+		"Formatter",
+		"Colouring",
+		"Coloring"
+	  ],
 	"categories": [
-		"Formatters",
 		"Other",
+		"Formatters",
 		"Visualization"
 	],
-	"engines": {
-		"vscode": "^1.68.0"
-	},
 	"extensionKind": [
 		"ui",
 		"workspace"
 	],
+	"engines": {
+		"vscode": "^1.68.0"
+	},
 	"activationEvents": [
 		"onStartupFinished"
 	],
@@ -65,6 +77,11 @@
 				"when": "editorTextFocus"
 			},
 			{
+				"title": "BetterHyperScopes: Show Tokens Full Line",
+				"command": "evenbettercomments.hscopes.show-line-tokens",
+				"when": "editorTextFocus"
+			},
+			{
 				"title": "BetterHyperScopes: Show Inspector",
 				"command": "evenbettercomments.hscopes.show-scope-inspector",
 				"when": "editorTextFocus"
@@ -90,7 +107,7 @@
 			"properties": {
 				"evenbettercomments.enabled": {
 					"type": "boolean",
-					"description": "Controls if the extension will highlight or not",
+					"description": "Controls if the entire extension will highlight or not",
 					"default": true
 				},
 				"evenbettercomments.monolineComments": {
@@ -711,6 +728,18 @@
 							"italic": false
 						}
 					]
+				},
+				"evenbettercomments.links": {
+					"properties": {
+						"enabled": {
+							"type": "boolean",
+							"description": "Controls if the extension will highlight links or not",
+							"default": true
+						},
+						"linkStyle": {
+							"$ref": "#ThemableDecorationRenderOptions"
+						}
+					}
 				}
 			}
 		}

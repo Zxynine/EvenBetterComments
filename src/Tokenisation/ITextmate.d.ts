@@ -38,12 +38,6 @@ declare const enum OptionalStandardTokenType {
 type ScopeName = string;
 
 /**
- * An expression language of ScopeNames with a binary space (to indicate nesting) operator.
- * Examples: `foo.bar boo.baz`
-*/
-type ScopePath = string;
-
-/**
  * An expression language of ScopePathStr with a binary comma (to indicate alternatives) operator.
  * Examples: `foo.bar boo.baz,quick quack`
 */
@@ -167,8 +161,8 @@ interface IRawRepositoryMap {
 /** A registry helper that can locate grammar file paths given scope names. **/
 interface RegistryOptions {
 	onigLib: Promise<IOnigLib>;
-	loadGrammar(scopeName: string): Promise<IRawGrammar | undefined | null>;
-	getInjections?(scopeName: string): string[] | undefined;
+	getInjections(scopeName: string): string[] | undefined;
+	loadGrammar(scopeName: string): Promise<IRawGrammar | nulldefined>;
 }
 
 
@@ -189,7 +183,7 @@ interface IRegistry {
 
 
 interface IToken {
-	startIndex: number;
+	readonly startIndex: number;
 	readonly endIndex: number;
 	readonly scopes: string[];
 }
@@ -221,7 +215,7 @@ interface ITokenizeLineResult {
 
 interface ITokenizeLineResult2 {
 	/** The tokens in binary format. Each token occupies two array indices. For token i:
-	 *  - at offset 2*i => startIndex
+	 *  - at offset 2*i + 0 => startIndex
 	 *  - at offset 2*i + 1 => metadata
 	**/
 	readonly tokens: IToken2Array;
@@ -241,14 +235,6 @@ interface IStackElement {
 	readonly depth: number;
 	clone(): IStackElement;
 	equals(other: IStackElement): boolean;
-}
-
-
-interface IWhileCheckResult {
-	readonly stack: IStackElement;
-	readonly linePos: number;
-	readonly anchorPosition: number;
-	readonly isFirstLine: boolean;
 }
 
 

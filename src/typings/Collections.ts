@@ -424,12 +424,12 @@ export class Lazy<T> {
 	private _value?: T;
 	private _error: Error | undefined;
 
-	constructor( private readonly executor: () => T) { }
+	constructor( private readonly factory: () => T) { }
 
 	/**
 	 * True if the lazy value has been resolved.
 	 */
-	hasValue() { return this._didRun; }
+	public hasValue() { return this._didRun; }
 
 	/**
 	 * Get the wrapped value.
@@ -439,7 +439,7 @@ export class Lazy<T> {
 	 */
 	getValue(): T {
 		if (!this._didRun) {
-			try { this._value = this.executor(); } 
+			try { this._value = this.factory(); } 
 			catch (err:any) { this._error = err; } 
 			finally { this._didRun = true; }
 		}
@@ -459,6 +459,198 @@ export class Lazy<T> {
 	 */
 	map<R>(f: (x: T) => R): Lazy<R> { return new Lazy<R>(() => f(this.getValue())); }
 }
+
+
+
+
+
+
+
+// export const Regexp_Fenced_Code_Block = /^ {0,3}(?<fence>(?<char>[`~])\k<char>{2,})[^`\r\n]*$[^]*?^ {0,3}\k<fence>\k<char>* *$/gm;
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Represents an EventEmitter, which is used to automate the delivery of events to subscribers. This applies the observer pattern.
+ */
+export class EventEmitter<T> implements vscode.Disposable {
+	private readonly event: EventSubscribe<T>;
+	private listeners: EventListener<T>[] = [];
+
+	/**
+	 * Creates an EventEmitter.
+	 */
+	constructor() {
+		this.event = (listener: EventListener<T>) => {
+			this.listeners.push(listener);
+			return <vscode.Disposable>{
+				dispose: () => {
+					const removeListener = this.listeners.indexOf(listener);
+					if (removeListener > -1) this.listeners.splice(removeListener, 1);
+				}
+			};
+		};
+	}
+
+	/**
+	 * Disposes the resources used by the EventEmitter.
+	 */
+	public dispose() {
+		this.listeners = [];
+	}
+
+	/**
+	 * Emit an event to all subscribers of the EventEmitter.
+	 * @param event The event to emit.
+	 */
+	public emit(event: T) {
+		this.listeners.forEach((listener) => {
+			try { listener(event) } catch { }
+		});
+	}
+
+	/**
+	 * Does the EventEmitter have any registered listeners.
+	 * @returns TRUE => There are one or more registered subscribers, FALSE => There are no registered subscribers
+	 */
+	public hasSubscribers() {
+		return this.listeners.length > 0;
+	}
+
+	/**
+	 * Get the Event of this EventEmitter, which can be used to subscribe to the emitted events.
+	 * @returns The Event.
+	 */
+	get subscribe() {
+		return this.event;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Represents a BufferedQueue, which is queue that buffers items for a short period of time before processing them.
+ */
+export class BufferedQueue<T> extends Disposable {
+	private readonly queue: T[] = [];
+	private timeout: NodeJS.Timer | null = null;
+	private processing: boolean = false;
+
+	private readonly bufferDuration: number;
+	private onItem: (item: T) => Promise<boolean>;
+	private onChanges: () => void;
+
+	/**
+	 * Constructs a BufferedQueue instance.
+	 * @param onItem A callback invoked to process an item in the queue.
+	 * @param onChanges A callback invoked when a change was indicated by onItem.
+	 * @param bufferDuration The number of milliseconds to buffer items in the queue.
+	 * @returns The BufferedQueue instance.
+	 */
+	constructor(onItem: (item: T) => Promise<boolean>, onChanges: () => void, bufferDuration: number = 1000) {
+		super();
+		this.bufferDuration = bufferDuration;
+		this.onItem = onItem;
+		this.onChanges = onChanges;
+
+		// this.registerDisposable({
+		// 	dispose: () => {
+		// 	if (this.timeout !== null) {
+		// 		clearTimeout(this.timeout);
+		// 		this.timeout = null;
+		// 	}
+		// }});
+	}
+
+	/**
+	 * Enqueue an item if it doesn't already exist in the queue.
+	 * @param item The item to enqueue.
+	 */
+	public enqueue(item: T) {
+		const itemIndex = this.queue.indexOf(item);
+		if (itemIndex > -1) {
+			this.queue.splice(itemIndex, 1);
+		}
+		this.queue.push(item);
+
+		if (!this.processing) {
+			if (this.timeout !== null) {
+				clearTimeout(this.timeout);
+			}
+			this.timeout = setTimeout(() => {
+				this.timeout = null;
+				this.run();
+			}, this.bufferDuration);
+		}
+	}
+
+	/**
+	 * Process all of the items that are currently queued, and call the onChanges callback if any of the items resulted in a change
+	 */
+	private async run() {
+		this.processing = true;
+		let item, changes = false;
+		while (item = this.queue.shift()) {
+			if (await this.onItem(item)) {
+				changes = true;
+			}
+		}
+		this.processing = false;
+		if (changes) this.onChanges();
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1300,3 +1492,50 @@ export async function readCommentsInFile(expression: RegExp, file: vscode.Uri) {
 // //         return node;
 // //     }
 // // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ *
+ * @param aS The set of
+ * @param bS
+ */
+export function setsAreEqual(aS: Set<any>, bS: Set<any>) {
+	// Stop early
+	if (aS.size !== bS.size) return false;
+
+	// Check every key
+	for (const a of aS) {
+		if (!bS.has(a)) return false;
+	}
+
+	// Sets are equal
+	return true;
+}
+

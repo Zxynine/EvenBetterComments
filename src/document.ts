@@ -8,6 +8,7 @@ import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { LanguageLoader } from './providers/LanguageProvider';
 import { StandardLineTokens } from './Tokenisation/tokenisation';
 import { Configuration } from './configuration';
+import { Console } from './Utilities/Debug';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
 	console.error("HyperScopes: "+message, ...optionalParams, err);
@@ -33,7 +34,7 @@ export function LoadDocumentsAndGrammer() {
 
 export function FunctionWrapper<TArgs extends any[], TReturn extends any, T extends Func<TArgs, TReturn>>(func:T) {
 	return (...args: TArgs) => {
-		try { return func(...args); }
+		try { return func(args); }
 		catch (err) { HyperScopeError(err, "Error caught for function: ", func, ...args); }
 		return undefined;
 	}
@@ -76,10 +77,16 @@ export async function TryGetGrammar(scopeName : string) : Promise<IGrammar|undef
 }
 
 
+export function TryGetDocumentTokenLine(document:vscode.TextDocument, position:vscode.Position) {
+	try { return DocumentLoader.getDocument(document.uri)?.getLineTokenData(position); } 
+	catch (err) { HyperScopeError(err, "Unable to get Scope at position: ", position, "\n"); }
+	return undefined;
+}
 
 export const GetGetScopeAtAPI = { 
 	getScopeAt: TryGetDocumentScopeAt, 
 	getScopeLine: TryGetDocumentScopeLine,
+	getTokenLine: TryGetDocumentTokenLine,
 	getGrammar: TryGetGrammar 
 };
 
@@ -114,30 +121,34 @@ export class DocumentLoader {
 	}
 
 	public static getDocumentController(document : vscode.TextDocument) {
+		if (!document) return;
 		return DocumentLoader.documentsMap.get(document.uri);
 	}
 
 
 	public static async openDocument(document : vscode.TextDocument) {
+		if (!document) return;
 		if (DocumentLoader.documentsMap.has(document.uri)) { //Refreshes if exists.
-			DocumentLoader.documentsMap.get(document.uri)!.refresh();
+			DocumentLoader.documentsMap.get(document.uri)?.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
 			const scopeName = LanguageLoader.GetLanguageScopeName(document.languageId);
 			if (scopeName) return TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
-				if (grammar) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+				if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
 			});
 		}
 	}
 
 	public static updateDocument(document: vscode.TextDocument) {
+		if (!document) return;
 		if (DocumentLoader.documentsMap.has(document.uri)) {
-			DocumentLoader.documentsMap.get(document.uri)!.refresh();
+			DocumentLoader.documentsMap.get(document.uri)?.refresh();
 		}
 	}
 
 	public static closeDocument(document:vscode.TextDocument) {
+		if (!document) return;
 		if (DocumentLoader.documentsMap.has(document.uri)) {
-			DocumentLoader.documentsMap.get(document.uri)!.dispose();
+			DocumentLoader.documentsMap.get(document.uri)?.dispose();
 			DocumentLoader.documentsMap.delete(document.uri);
 		}
 	}
@@ -146,14 +157,17 @@ export class DocumentLoader {
 
 
 	public static async reloadDocuments() {
+		// Debug.LogTime("HyperScopes: Reloading all documents...")
 		DocumentLoader.unloadDocuments();
-		vscode.workspace.textDocuments.forEach(DocumentLoader.openDocument);
-		console.log("HyperScopes: Reloaded all documents.");
-		//TODO: add a trigger here to refresh comment parsing, first pass did not have access to token data.
+		const CurrentDocument = vscode.window.activeTextEditor?.document;
+		//If a document is currently open, load it first.
+		return (CurrentDocument !== undefined ? DocumentLoader.openDocument(CurrentDocument) : Promise.resolve()).then(() => 
+			Promise.all(vscode.workspace.textDocuments.map(DocumentLoader.openDocument)).then(() => Console.LogWarning("HyperScopes: All documents have been reloaded."))
+		);
 	}
 
 	public static unloadDocuments() {
-		for (const document of DocumentLoader.documentsMap.values()) document.dispose();
+		for (const document of DocumentLoader.documentsMap.values()) document?.dispose();
 		DocumentLoader.documentsMap.clear();
 	}
 }
@@ -206,11 +220,11 @@ export class DocumentController extends DisposableContext {
 		this.document = doc;
 		this.parseEntireDocument();
 		/* Store content changes. Will be clear when calling `getScopeAt()`. */
-		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange));
+		this.subscriptions.push(vscode.workspace.onDidChangeTextDocument(this.onTextDocumentChange, this));
 	}
 
 	private onTextDocumentChange(event: vscode.TextDocumentChangeEvent) {
-		if (event.document.uri === this.document.uri && event.contentChanges.length) { //Validates changes
+		if (this.document && event.document.uri === this.document.uri && event.contentChanges.length) { //Validates changes
 			//Sorts changes to apply so that line changes can just reparse the rest of the doc.
 			this.applyChanges([...event.contentChanges].sort(DocumentController.ChangeSorter));
 		}
@@ -415,6 +429,8 @@ export class DocumentController extends DisposableContext {
 
 	protected parseLines(startLine:number, endLine:number) : void {
 		if(!this.grammar) return;
+		if (startLine < 0) startLine = 0;
+		if (endLine >= this.document.lineCount) endLine = this.document.lineCount-1;
 		for (; (startLine <= endLine); startLine++) this.internalParseLine(this.document.lineAt(startLine));
 	}
 
@@ -423,7 +439,7 @@ export class DocumentController extends DisposableContext {
 		this.parseLines(range.start.line, range.end.line);
 	}
 
-	protected parseEntireDocument() : void {
+	protected async parseEntireDocument() {
 		this.parseLines(0, this.document.lineCount-1);
 	}
 
@@ -545,16 +561,15 @@ export class TokenInfo {
 		const tokenLine = this.range.start.line+1; //Documents disply lines counting from 1.
 		const tokenText = (tokenLength < 120)? `'${this.text.replace("'","''")}'` : `'${this.text.substring(0, 116).replace("'","''")}...'`; //double single quote escapes it to be displayed
 		const tokenScopes = this.scopes.sort().join('\n  - '); //Why sort them? surely the order matters...
-		const baseScope = this.scopes[0].split('.')[0];
-		// const 
+		const baseScope = '';//ExtractTokenString(this.scopes.join("."));
 
 		return `\n---\nText: ${tokenText}\nLine: ${tokenLine}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;
 
 	}
 
-	public IsComment() : boolean {
-		return (this.scopes[0].startsWith('comment') || ((this.scopes.length > 1) && this.scopes[1].startsWith('comment')));
-	}
+	// public IsComment() : boolean {
+	// 	return ExtractTokenString(this.scopes.join(".")) === 'Comment'
+	// }
 }
 
 

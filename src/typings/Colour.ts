@@ -6,7 +6,7 @@ namespace Colour {
 	const rgbRegex = new RegExp( "^rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*(\\d+(?:\\.\\d+)?))?\\)$", "gi" );
 
 	
-
+//https://github.com/enyancc/vscode-ext-color-highlight/blob/master/src/lib/dynamic-contrast.js
 
 
 	export function isHexColour( colour:string ) {
