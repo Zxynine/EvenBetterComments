@@ -1,5 +1,10 @@
 # Change Log
 
+## [5.0.7] (2022-12-22)
+### Bug Fixes
+* Force all modules to be included in extension. Re-Re-Re-Closes [#10](https://github.com/Zxynine/EvenBetterComments/issues/10)
+
+
 ## [5.0.6] (2022-12-21)
 ### Development
 This is a hotfix for a recent set of problems introduced by and or while fixing other problems.
