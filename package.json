@@ -3,7 +3,7 @@
 	"name": "evenbettercomments",
 	"displayName": "Even Better Comments",
 	"description": "Improve your code commenting by using stylised comments for Alerts, Infos, Warnings, TODOs, and more!",
-	"version": "5.0.5",
+	"version": "5.0.6",
 	"publisher": "Tion",
 	"author": {
 		"name": "Zxynine"
@@ -747,7 +747,7 @@
 		}
 	},
 	"dependencies": {
-		"json5": "^2.2.1",
+		"json5": "^2.2.2",
 		"minimatch": "^5.1.2",
 		"webpack": "^5.74.0",
 		"webpack-cli": "^4.10.0"
