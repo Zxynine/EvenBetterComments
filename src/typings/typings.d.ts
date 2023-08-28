@@ -1,5 +1,6 @@
 type VSCodeDecorationType = import('vscode').TextEditorDecorationType; 
 type VSCodeDecorationRender = import('vscode').DecorationRenderOptions; 
+type VSCodeCharacterPair = import('vscode').CharacterPair;
 
 interface CommentTag {
 	tag: string;
@@ -42,6 +43,24 @@ interface TagDefinition {
 	isRegex: boolean;
 	CustomDecoration?: VSCodeDecorationRender;
 }
+
+
+
+
+
+// interface CommentConfiguration {
+// 	/** The line comment token, like `// this is a comment` */
+// 	lineComment?: string;
+
+// 	/** The block comment character pair, like `/ * block comment * /` */
+// 	blockComment?: VSCodeCharacterPair;
+
+// 	/* this is used to prevent the first line of the file (specifically python) from coloring like other comments */
+// 	ignoreFirstLine: bool;
+// }
+
+
+
 
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

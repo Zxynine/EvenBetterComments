@@ -133,7 +133,14 @@ export class DocumentLoader {
 			DocumentLoader.documentsMap.get(document.uri)?.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
 			const scopeName = LanguageLoader.GetLanguageScopeName(document.languageId);
-			if (scopeName) return TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
+
+			// if (scopeName) return TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
+			// 	if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+			// });
+			// if (scopeName) return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
+			// 	if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
+			// });
+			if (scopeName) return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
 				if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
 			});
 		}
@@ -392,7 +399,7 @@ export class DocumentController extends DisposableContext {
 
 
 
-
+	//TODO: Improve validation by intelligently determining how much of the document actually needs to be re-parsed. Binary search?
 	//...............................................................................
 	// * Validation
 	// TODO: FIXME: if some other extensions call this API by changing text without triggering `onDidChangeTextDocument` event in this extension, it may cause an error.
@@ -573,6 +580,7 @@ export class TokenInfo {
 		const tokenLine = this.range.start.line+1; //Documents disply lines counting from 1.
 		const tokenText = (tokenLength < 120)? `'${this.text.replace("'","''")}'` : `'${this.text.substring(0, 116).replace("'","''")}...'`; //double single quote escapes it to be displayed
 		const tokenScopes = this.scopes.sort().join('\n  - '); //Why sort them? surely the order matters...
+		//const tokenScopes = this.scopes; //Why sort them? surely the order matters...
 		const baseScope = '';//ExtractTokenString(this.scopes.join("."));
 
 		return `\n---\nText: ${tokenText}\nLine: ${tokenLine}\nLength: ${tokenLength}\nScopes:\n  - ${tokenScopes}\nBase Scope: ${baseScope}`;

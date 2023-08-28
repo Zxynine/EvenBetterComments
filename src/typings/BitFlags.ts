@@ -281,7 +281,7 @@ export class FlagsArray {
 				: this.Flags[StartPrimeIndex]  & ~((-1 << (31-EndSubIndex)) & (-1 >>> StartSubIndex))
 			);
         } else {
-			const SetValue = (value? 1 : 0);
+			const SetValue = (value? (-1>>>0) : 0);
 
 			this.Flags[StartPrimeIndex] = (value
 				? this.Flags[StartPrimeIndex] | (-1 >>> StartSubIndex)

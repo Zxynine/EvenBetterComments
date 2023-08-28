@@ -13,6 +13,8 @@ declare global {
 		/** Returns if the array contains no items */
 		readonly IsEmpty : bool;
 
+		pushAll<T>(this : Array<T>, from : Array<T>) : void;
+
 		/** 
 		 * Null safe version of a map, its the same as mapping then filtering with a truth check. 
 		**/
@@ -125,6 +127,10 @@ Object.defineProperty(Array.prototype, "IsEmpty", {
 
 
 
+
+Array.prototype.pushAll = function <T>(this : Array<T>, from : Array<T>) : void {
+	if (from) this.push(...from);
+}
 
 
 /** Null safe version of a map, its the same as mapping then filtering with a truth check. */
@@ -644,3 +650,5 @@ export function GroupBy<TKey, T>(items: ReadonlyArray<T>, selectKey: Func<[item 
 	}
 	return map;
 }
+
+//https://github.com/microsoft/vscode/blob/main/extensions/html-language-features/server/src/utils/arrays.ts

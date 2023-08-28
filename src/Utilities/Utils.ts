@@ -642,7 +642,7 @@ export function mergeObjects(target: any, ...sources: any[]): any {
  export function safeStringify(obj: any): string {
 	const seen = new Set<any>();
 	return JSON.stringify(obj, (key, value) => {
-		if (isObject(value) || Array.isArray(value)) {
+		if (isObject2(value) || Array.isArray(value)) {
 			if (seen.has(value)) return '[Circular]';
 			else seen.add(value);
 		}
@@ -656,7 +656,7 @@ export function mergeObjects(target: any, ...sources: any[]): any {
  * @returns whether the provided parameter is of type `object` but **not**
  *	`null`, an `array`, a `regexp`, nor a `date`.
  */
- export function isObject(obj: unknown): obj is Object {
+ export function isObject2(obj: unknown): obj is Object {
 	// The method can't do a type cast since there are type (like strings) which
 	// are subclasses of any put not positvely matched by the function. Hence type
 	// narrowing results in wrong results.
@@ -672,7 +672,7 @@ export function mergeObjects(target: any, ...sources: any[]): any {
  */
  export function isEmptyObject(obj: unknown): obj is object {
 	const hasOwnProperty = Object.prototype.hasOwnProperty;
-	if (!isObject(obj)) return false;
+	if (!isObject2(obj)) return false;
 
 	for (const key in obj) {
 		if (hasOwnProperty.call(obj, key)) return false;
@@ -964,6 +964,147 @@ export function AreFunctions(...objects: unknown[]): boolean { return objects.le
 export function isThenable<T>(obj: unknown): obj is Promise<T> {
 	return !!obj && typeof (obj as unknown as Promise<T>).then === 'function';
 }
+
+
+
+
+
+
+
+
+
+
+
+/*@internal*/
+export function isMissing<T extends null | undefined, U>(value: T | U): value is T;
+/*@internal*/
+export function isMissing(value: any) {
+    return value === null || value === undefined;
+}
+
+function isTypeOf(value: any, typeTag: "string" | "symbol" | "number" | "boolean" | "object" | "function", optional: boolean) {
+    return isMissing(value) ? optional : typeof value === typeTag;
+}
+
+
+/*@internal*/
+export function isString<T extends string, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isString<T extends string | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isString<T>(value: T, optional = false) {
+    return isTypeOf(value, "string", optional);
+}
+
+/*@internal*/
+export function isNumber<T extends number, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isNumber<T extends number | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isNumber<T>(value: T, optional = false) {
+    return isTypeOf(value, "number", optional);
+}
+
+/*@internal*/
+export function isBoolean<T extends boolean, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isBoolean<T extends boolean | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isBoolean<T>(value: T, optional = false) {
+    return isTypeOf(value, "boolean", optional);
+}
+
+/*@internal*/
+export function isSymbol<T extends symbol, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isSymbol<T extends symbol | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isSymbol<T>(value: T, optional = false) {
+    return isTypeOf(value, "symbol", optional);
+}
+
+/*@internal*/
+export function isFunction<T extends Function, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isFunction<T extends Function | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isFunction<T>(value: T, optional = false) {
+    return isTypeOf(value, "function", optional);
+}
+
+/*@internal*/
+export function isObject<T extends object, U extends Function, V>(value: T | U | V | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isObject<T extends object | null | undefined, U extends Function, V>(value: T | U | V, optional: boolean): value is T;
+/*@internal*/
+export function isObject<T>(value: T, optional = false) {
+    return isTypeOf(value, "object", optional);
+}
+
+
+/*@internal*/
+export function isInstance<C extends new (...args: any[]) => any, T extends InstanceType<C>, U>(value: T | U | null | undefined, constructor: C, optional?: false): value is T;
+/*@internal*/
+export function isInstance<C extends new (...args: any[]) => any, T extends InstanceType<C> | null | undefined, U>(value: T | U, constructor: C, optional: boolean): value is T;
+/*@internal*/
+export function isInstance<T>(value: T, constructor: new (...args: any[]) => any, optional = false) {
+    return isMissing(value) ? optional : value instanceof constructor;
+}
+
+/*@internal*/
+export function isIterable<T extends Iterable<any>, U>(value: T | U | null | undefined, optional?: false): value is T;
+/*@internal*/
+export function isIterable<T extends Iterable<any> | null | undefined, U>(value: T | U, optional: boolean): value is T;
+/*@internal*/
+export function isIterable<T>(value: T, optional = false) {
+    return isMissing(value) ? optional : isObject(value) && isFunction((<any>value)[Symbol.iterator]);
+}
+
+
+
+/*@internal*/
+export function isPromiseLike<T extends PromiseLike<any>, U>(value: T | U | null | undefined): value is T;
+/*@internal*/
+export function isPromiseLike(value: any){
+    return isObject(value) && isFunction((<any>value).then);
+}
+
+
+
+
+
+/////////////////////////////////////
+// Checks if the value is a promise;
+export function isPromise(value: any) {
+    return value && typeof value.then === 'function';
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

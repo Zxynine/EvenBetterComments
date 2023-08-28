@@ -511,9 +511,10 @@ export class TokenTools {
 			const Metadata = tokens[(i << 1)+1]
 			const StartOffset = (i >= 0)? tokens[i << 1] : 0;
 			const EndOffset = (i<(count-1))? tokens[(i+1) << 1] : "EOL";
+			const LanguageID = TokenMetadata.getLanguageId(Metadata);
 
 			const TokenType = TokenTypeToString(TokenMetadata.getTokenType(Metadata));
-			result += `[${i}:\trange=${StartOffset}-${EndOffset},\ttype=${TokenType}]\n`;
+			result += `[${i}:\trange=${StartOffset}-${EndOffset},\ttype=${TokenType},\tlanguage=${LanguageID}]\n`;
 		}
 		return result;
 	}

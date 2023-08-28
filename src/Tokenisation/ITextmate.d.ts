@@ -74,6 +74,8 @@ interface ILocatable {readonly $vscodeTextmateLocation?: ILocation;}
 
 
 interface IGrammar {
+	readonly language: string;
+
 	/** Tokenize `lineText` using previous line state `prevState` **/
 	tokenizeLine(lineText: string, prevState?: IStackElement): ITokenizeLineResult;
 	/**

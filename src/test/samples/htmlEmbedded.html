@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+        <style>
+            p {
+                color: #FF7A59;
+            }
+        </style>
+		<script>
+			//This is a JS comment. No highlighting
+			//! this is a highlighted comment!!
+			function myFunction() {
+				if (document.getElementById("demo").innerHTML === "Paragraph changed.") {
+					document.getElementById("demo").innerHTML = "Paragraph changed again.";	
+				} else {
+					document.getElementById("demo").innerHTML = "Paragraph changed.";
+				}
+			}
+		</script>
+	</head>
+
+		<!-- 
+			! This is a HTML comment 
+			This is not highlighted
+		-->
+	<body>
+		<h2>Demo JavaScript in Head</h2>
+		<p id="demo">A Paragraph</p>
+		<button type="button" onclick="myFunction()">Try it</button>
+	</body>
+
+</html>

@@ -5,8 +5,6 @@ import { LanguageLoader } from './providers/LanguageProvider';
 import { TextDecoder } from 'util';
 
 
-// export type Target = 'global' | 'workspace';
-
 // /**
 //  * Type for {@link CommandId.ToggleSetting} command.
 //  */
@@ -78,6 +76,7 @@ export class Configuration {
 		// * even if language does not have a config, we set the comment config to make future calls return undefined.
 		const LanguageConfig = await Configuration.GetLanguageConfiguration(languageCode);
 		const comments = LanguageConfig?.comments;
+		// Store result, ignoring nullity, to indicate it has been loaded before.
 		Configuration.commentConfig.set(languageCode, comments);
 		return comments;
 	}

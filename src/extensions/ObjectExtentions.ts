@@ -50,3 +50,23 @@ Object.prototype.mergeInto = function (this : any, ...objs: Record<string, unkno
 
 
 //https://github.com/gitkraken/vscode-gitlens/blob/main/src/system/object.ts
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////
+// Sets an object property as read-only and non-enumerable.
+export function extend<T>(obj:any, name:string, value:T) {
+    Object.defineProperty(obj, name, {
+        value: value,
+        configurable: false,
+        enumerable: false,
+        writable: false
+    });
+}

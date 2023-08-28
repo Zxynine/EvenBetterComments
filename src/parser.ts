@@ -28,6 +28,9 @@ export class Parser {
 	// 	return undefined;
 	// }
 
+	//IDEA: Add the ability to continue style on the next line using predefined characters similar to the symbols
+	//    ? like this but works for all styles.
+
 	protected GetTag(key: string) {
 		return this.tagsMap.get(key);
 	}
@@ -498,7 +501,6 @@ export class Parser {
 
 
 
-	//Keyli
 
 
 	/** 
@@ -682,6 +684,22 @@ export class Parser {
 		}
 	}
 	
+	/* 
+	supportedLanguage
+	ignoreFirstLine
+	isPlainText
+	CommentFormat
+		lineComment
+		startDelim
+		endDelim
+	highlightJSDoc
+	highlightMonolineComments
+	highlightMultilineComments
+	*/
+
+
+
+
 
 	/** Sets the highlighting tags up for use by the parser */
 	private setTags(): void {
@@ -745,8 +763,8 @@ export class Parser {
 			this.highlightFullBlockComments = this.contributions.allowFullBlockHighlights;
 		}
 
-		// this.highlightTagOnly = this.contributions.highlightTagOnly;
-		this.highlightTagOnly = true;
+		this.highlightTagOnly = this.contributions.highlightTagOnly;
+		//this.highlightTagOnly = true;
 	}
 
 

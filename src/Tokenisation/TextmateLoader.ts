@@ -1,11 +1,7 @@
-import * as path from "path";
 import * as vscode from "vscode";
 import fs = require("fs");
+import path = require("path");
 import { LanguageLoader } from "../providers/LanguageProvider";
-// import { IGrammar } from "vscode-textmate";
-// import { getRegexForBrackets } from "./bracketUtil";
-// import LanguageConfig from "./languageConfig";
-
 //https://github.com/rafamel/subtle-brackets
 //https://github.com/CoenraadS/Bracket-Pair-Colorizer-2/blob/master/src/IExtensionGrammar.ts
 
@@ -42,6 +38,7 @@ export class TMRegistry {
 		try {
 			TMRegistry.registry = new TMRegistry.vsctm.Registry(<RegistryOptions>{
 				onigLib: TMRegistry.vscodeOnigurumaLib,
+
 				getInjections: (scopeName: string) => LanguageLoader.scopeNameToInjections.get(scopeName),
 				
 				/** Load the grammar for `scopeName` and all referenced included grammars asynchronously. **/
@@ -55,7 +52,64 @@ export class TMRegistry {
 			console.error(err);
 		}
 	}
+
+
+	public static async CreateGrammar(languageId: string): Promise<IGrammar | nulldefined> {
+		if (!LanguageLoader.HasLanguage(languageId)) return null;
+		return this.InternalCreateGrammar(languageId, LanguageLoader.languageCodec.encodeLanguageId(languageId));
+
+	}
+
+	private static async InternalCreateGrammar(languageId: string, encodeLanguageId: number) {
+		const scopeName = LanguageLoader.languageToScopeName.get(languageId);
+		if (typeof scopeName !== 'string') throw new Error(`Missing Textmate Grammar for language: ${languageId}`);
+		const grammarDefinition = LanguageLoader.scopeNameToDefinition.get(scopeName);
+		if (!grammarDefinition) throw new Error(`Missing Textmate Grammar for language: ${languageId}`);
+
+		var scopeNameToId: IEmbeddedLanguagesMap = <IEmbeddedLanguagesMap>{};
+		if (grammarDefinition.embeddedLanguages) {
+			for (const EmbLanSymbol of Object.keys(grammarDefinition.embeddedLanguages)) {
+				scopeNameToId[EmbLanSymbol] = LanguageLoader.languageCodec.encodeLanguageId(grammarDefinition.embeddedLanguages[EmbLanSymbol]);
+			}
+		}
+
+		return await TMRegistry.registry?.loadGrammarWithConfiguration(
+			scopeName, 
+			encodeLanguageId, 
+			<IGrammarConfiguration>{
+				embeddedLanguages: scopeNameToId,
+				tokenTypes: grammarDefinition.tokenTypes,
+				balancedBracketSelectors: grammarDefinition.balancedBracketSelectors,
+				unbalancedBracketSelectors: grammarDefinition.unbalancedBracketSelectors
+			}
+		);
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
