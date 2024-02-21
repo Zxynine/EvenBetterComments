@@ -51,56 +51,56 @@ The default 5 can be modified to change the styles, and more can be added.
 
 ```json
 "evenbettercomments.tags": [
-	{
-		"tag": "!",
-		"aliases": ["Issue", "problem"],
-		"color": "#FF2D00",
-		"overline": false,
-		"strikethrough": false,
-		"underline": false,
-		"backgroundColor": "transparent",
-		"bold": false,
-		"italic": false
-	}, {
-		"tag": "?",
-		"aliases": ["Idea", "Info"],
-		"color": "#3498DB",
-		"overline": false,
-		"strikethrough": false,
-		"underline": false,
-		"backgroundColor": "transparent",
-		"bold": false,
-		"italic": false
-	}, {
-		"tag": "//",
-		"aliases": ["-----"],
-		"color": "#474747",
-		"overline": false,
-		"strikethrough": true,
-		"underline": false,
-		"backgroundColor": "transparent",
-		"bold": false,
-		"italic": false
-	}, {
-		"tag": "TODO",
-		"color": "#FF8C00",
-		"overline": false,
-		"strikethrough": false,
-		"underline": false,
-		"backgroundColor": "transparent",
-		"bold": false,
-		"italic": false
-	}, {
-		"tag": "*",
-		"aliases": ["Important", "Wip", "~~~~~"],
-		"color": "#98C379",
-		"overline": false,
-		"strikethrough": false,
-		"underline": false,
-		"backgroundColor": "transparent",
-		"bold": false,
-		"italic": false
-	}
+  {
+    "tag": "!",
+    "aliases": ["Issue", "problem"],
+    "color": "#FF2D00",
+    "overline": false,
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  }, {
+    "tag": "?",
+    "aliases": ["Idea", "Info"],
+    "color": "#3498DB",
+    "overline": false,
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  }, {
+    "tag": "//",
+    "aliases": ["-----"],
+    "color": "#474747",
+    "overline": false,
+    "strikethrough": true,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  }, {
+    "tag": "TODO",
+    "color": "#FF8C00",
+    "overline": false,
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  }, {
+    "tag": "*",
+    "aliases": ["Important", "Wip", "~~~~~"],
+    "color": "#98C379",
+    "overline": false,
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  }
 ]
 ```
 
