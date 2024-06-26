@@ -19,7 +19,8 @@ import { TextDecoder } from 'util';
 export class Configuration {
 	private static readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
 	private static readonly languageHasShebang = new Map<string, boolean>();
-
+	//Utilities
+	private static readonly textDecoder = new TextDecoder();
 
 
 
@@ -46,12 +47,7 @@ export class Configuration {
 			if (filePath === undefined) return undefined;
             const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
 			// use json5, because the config can contain comments
-			return json5.parse(new TextDecoder().decode(rawContent));
-
-			// return LanguageLoader.ReadLanguageFileAsync(languageCode).then(content => (content !== undefined)? json5.parse(content) : undefined);
-
-			// const content = LanguageLoader.ReadLanguageFileSync(languageCode);
-			// return (content)? json5.parse(content) : undefined;
+			return json5.parse(Configuration.textDecoder.decode(rawContent));
 		} catch (error) { return undefined; }
 	}
 

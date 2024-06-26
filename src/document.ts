@@ -133,13 +133,6 @@ export class DocumentLoader {
 			DocumentLoader.documentsMap.get(document.uri)?.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
 			const scopeName = LanguageLoader.GetLanguageScopeName(document.languageId);
-
-			// if (scopeName) return TMRegistry.Current.loadGrammar(scopeName).then(grammar =>{
-			// 	if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
-			// });
-			// if (scopeName) return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
-			// 	if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
-			// });
 			if (scopeName) return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
 				if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
 			});
@@ -179,6 +172,25 @@ export class DocumentLoader {
 		DocumentLoader.documentsMap.clear();
 	}
 }
+
+
+
+//.........................................................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //.........................................................................................................................
