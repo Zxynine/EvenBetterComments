@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import * as fs from 'fs';
-import { Console } from "../Utilities/Debug";
+import { Console } from "../Utilities/Logging/Console";
 
 
 export interface IExtensionGrammar {
@@ -173,7 +173,7 @@ export class LanguageLoader {
 
 			}
 		}
-		Console.LogTime("EvenBetterComments: Language Definitions Updated!");
+		Console.Log("EvenBetterComments: Language Definitions Updated!");
 	}
 
 	public static HasLanguage(languageCode: string) : boolean { return LanguageLoader.languageToConfigPath.has(languageCode)}

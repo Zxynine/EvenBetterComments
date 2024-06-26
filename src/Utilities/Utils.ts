@@ -2,27 +2,26 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { homedir } from 'os';
 import * as os from "os";
-import { KeyValPair } from '../typings/Collections';
-import { Endianness } from '../typings/BitFlags';
+// import { KeyValPair } from '../typings/Collections';
+import { Endianness } from '../Utilities/Tools/BitFlags';
 import { statSync } from 'fs';
 import * as fs from 'fs';
-import { showQuickPick } from './Input';
 import * as process from 'process';
 // import { Color } from 'vscode';
-import { sleep } from './Async';
+import { Sleep } from './Async';
 import * as https from 'https';
 
 //: Idea- insert key should align multiselect cursors.
 
 
-/**
- * From { "lib": "libraries", "other": "otherpath" }
- * To [ { key: "lib", value: "libraries" }, { key: "other", value: "otherpath" } ]
- * @param mappings { "lib": "libraries" }
- */
- export function parseMappings(mappings: { [key: string]: string }): KeyValPair<string,string>[] {
-	return Object.entries(mappings).map(([Key, Val]) => ({ Key, Val }));
-}
+// /**
+//  * From { "lib": "libraries", "other": "otherpath" }
+//  * To [ { key: "lib", value: "libraries" }, { key: "other", value: "otherpath" } ]
+//  * @param mappings { "lib": "libraries" }
+//  */
+//  export function parseMappings(mappings: { [key: string]: string }): KeyValPair<string,string>[] {
+// 	return Object.entries(mappings).map(([Key, Val]) => ({ Key, Val }));
+// }
 
 
 
@@ -2077,43 +2076,6 @@ export const readHtml = async (htmlPath:string, panel: vscode.WebviewPanel) => (
 //   }
 
 
-
-/**
- * Get the configured root location for project repositories.
- *
- * Defaults to the users home directory if not configured.
- *
- * @returns The configured root location as a string.
- */
- function getRootLocations(config: vscode.WorkspaceConfiguration): string[] {
-    const r: string[] | undefined = config.get("projectsRootLocation");
-	const root: string[] = (r !== undefined && r.length !== 0)? r : [os.homedir()];
-    console.log(`Root locations: ${root}`);
-    return root;
-}
-
-
-
-
-/**
- * Have the user select the root location from the output of getRootLocations.
- *
- * @returns A promise that resolves with the selected item.
- */
- export async function getRootLocation(
-    config: vscode.WorkspaceConfiguration
-): Promise<string> {
-    let choices: string[] = getRootLocations(config);
-    // If there's only one choice don't prompt for the users input
-    if (choices.length === 1) return choices[0];
-
-    // Create a promise from the quick pick
-    return await showQuickPick(choices, "Select root location");
-}
-
-
-
-
 /**
  * Get the configured location for code-workspace files.
  *
@@ -2406,24 +2368,24 @@ export function getPathRelativeToWorkspaceFolder(uri: vscode.Uri): string {
 
 
 
-/**
- * Replace ${workspaceRoot} with workfolder.uri.path
- *
- * @param mappings
- * @param workfolder
- */
- export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], workfolder?: vscode.WorkspaceFolder): KeyValPair<string,string>[] {
-	const rootPath = workfolder?.uri.path;
-	if (rootPath) {
-		// Replace placeholder with workspace folder
-		return mappings.map(({ Key, Val }) => ({
-			Key, Val: replaceWorkspaceFolderWithRootPath(Val, rootPath),
-		}));
-	} else {
-		// Filter items out which contain a workspace root
-		return mappings.filter(({ Val }) => !valueContainsWorkspaceFolder(Val));
-	}
-}
+// /**
+//  * Replace ${workspaceRoot} with workfolder.uri.path
+//  *
+//  * @param mappings
+//  * @param workfolder
+//  */
+//  export function replaceWorkspaceFolder(mappings: KeyValPair<string,string>[], workfolder?: vscode.WorkspaceFolder): KeyValPair<string,string>[] {
+// 	const rootPath = workfolder?.uri.path;
+// 	if (rootPath) {
+// 		// Replace placeholder with workspace folder
+// 		return mappings.map(({ Key, Val }) => ({
+// 			Key, Val: replaceWorkspaceFolderWithRootPath(Val, rootPath),
+// 		}));
+// 	} else {
+// 		// Filter items out which contain a workspace root
+// 		return mappings.filter(({ Val }) => !valueContainsWorkspaceFolder(Val));
+// 	}
+// }
 
 /**
  * Replaces both placeholders with the rootpath
@@ -2467,7 +2429,7 @@ export async function getSymbols(document: vscode.TextDocument): Promise<vscode.
 
 	for (let timeout = 800; (timeout <= 2000); timeout+=600) {
 		if (!symbols || symbols.length === 0) symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
-		if (!symbols || symbols.length === 0) await sleep(timeout);
+		if (!symbols || symbols.length === 0) await Sleep(timeout);
 		else break;
 	}
 

@@ -4,7 +4,7 @@ import { getLinksRangesDoc } from './providers/CommentLinkProvider';
 
 import { linkedCommentDecoration } from './providers/DecorationProvider';
 import { DocumentLoader } from './document';
-import { FlagsArray } from './typings/BitFlags';
+import { FlagsArray } from './Utilities/Tools/BitFlags';
 
 //Idea : Toggle key character option (specific tag which tells the parser what to highlight.)
 
@@ -784,12 +784,6 @@ const IsString = (item:any): item is String => typeof item === 'string'; //Testi
 
 
 
-export function getDocumentType(fsPath: string) { return /\.([\w]+)$/.exec(fsPath)?.pop(); } //Testing string //
-
-
-
-
-
 
 
 
@@ -896,159 +890,6 @@ export function MakeTitleMatcher(regexString:string) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-	// // @ts-ignore
-	// private static escapeRegExp2(s:string) { return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
-	// private static escapeMarkdownSyntaxTokens(text: string): string {
-	// 	return text.replace(/[.,_~-*+/;:^`'"!?%#&$@<=>()[\]{|}]/g, '\\$&');
-	// }
-	
-	// private static removeMarkdownEscapes(text: string): string {
-	// 	return text.replace(/\\([.,_~-*+/;:^`'"!?%#&$@<=>()[\]{|}])/g, '$1');
-	// }
-
-
-
-
-
-
-// export class RegexBuilder {
-// 	public readonly LS = '^'
-// 	public readonly LE = '$'
-// 	public readonly Indent = "[ \\t]*";
-
-
-// 	public Group(content:string) { return `(${content})`}
-// 	public NamedGroup(name:string, content:string) { return `(?<${name}>${content})`}
-// 	public NonCaptureGroup(content:string) { return `(?:${content})`}
-	
-// 	public LookAhead(content:string) { return `(?=${content})`}
-// 	public LookNotAhead(content:string) { return `(?!${content})`}
-	
-// 	public LookBehind(content:string) { return `(?<=${content})`}
-// 	public LookNotBehind(content:string) { return `(?<!${content})`}
-	
-// 	public Any(...content: string[]) { return content.join('|')}
-
-
-// 	public GroupRef(index:int|string) {return (typeof index === 'number') 
-// 		? `\\${index >>> 0}`
-// 		: `\\k<${index}>`
-// 	}
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		// this.Expressions.MonoLineBlockMixed = new RegExp(`(^[ \\t]*)(${this.blockCommentStart})(.*?)(${this.blockCommentEnd})`, "ig");
-		//(^[ \t]*\S.*?)(/\*\*?)((?:.*[\r\n]+)*?.*)(\*?\*/)
-		//^[ \t]*(?!/\*|//)\S+.*?(?:\*/)?(/\*[^\*])([\s\S\n]*?)(\*/)
-		// this.Expressions.MultiLineMixed = new RegExp("(^)([ \\t]*(?!"+this.delimiter+"|"+this.blockCommentStart+")\\S+.*?(?:"+this.blockCommentEnd+")?)"+MultiLineCommon, "igm");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // Sort folders and workspace files alphabetically,
-// // putting folders above workspace files.
-// const sortFilesAndFolders = function sortFilesAndFolders(a:any, b:any) {
-// 	if (a.collapsableState === vscode.TreeItemCollapsibleState.Collapsed) {
-// 		if (b.collapsableState === vscode.TreeItemCollapsibleState.Collapsed) {
-// 			return (a.label === [a.label, b.label].sort())? -1 : 1;
-// 		} else return -1;
-// 	}
-// 	if (b.collapsableState === vscode.TreeItemCollapsibleState.Collapsed) return 1;
-// 	return (a.label === [a.label, b.label].sort())? -1 : 1;
-// };
-
-
-
-
-
-
-
-
-
-
-// export class RegexBuilder {
-// 	private regexString: string;
-
-
-// 	public constructor();
-// 	public constructor(initialValue:string);
-// 	public constructor(initialValue:string = '') {
-// 		this.regexString = initialValue;
-// 	}
-
-
-
-
-
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export namespace CustomCommands {
-// 	export async function RemoveSelectedComments() {
-// 		const ActiveEditor = vscode.window.activeTextEditor;
-// 		if (!ActiveEditor) return;
-// 		const ActiveDocument = DocumentLoader.getDocument(ActiveEditor.document.uri);
-// 		if (ActiveDocument === undefined) return; //No tokens loaded yet, cant properly find comments.
-// 		const Selections = ActiveEditor.selections;
-		
-
-
-		
-// 	}
-
-
-
-
-// }
 
 
 

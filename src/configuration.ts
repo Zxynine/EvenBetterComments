@@ -5,16 +5,6 @@ import { LanguageLoader } from './providers/LanguageProvider';
 import { TextDecoder } from 'util';
 
 
-// /**
-//  * Type for {@link CommandId.ToggleSetting} command.
-//  */
-//  export interface ToggleSettingType {
-// 	setting: string;
-// 	value?: unknown[] | string;
-// 	target?: Target;
-// }
-
-
 // The configuration necessary to find supported languages on startup
 export class Configuration {
 	private static readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();

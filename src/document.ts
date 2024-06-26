@@ -8,7 +8,7 @@ import { TMRegistry } from './Tokenisation/TextmateLoader';
 import { LanguageLoader } from './providers/LanguageProvider';
 import { StandardLineTokens } from './Tokenisation/tokenisation';
 import { Configuration } from './configuration';
-import { Console } from './Utilities/Debug';
+import { Console } from './Utilities/Logging/Console';
 // import { FlagsArray } from './typings/BitFlags';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
@@ -163,7 +163,7 @@ export class DocumentLoader {
 		const CurrentDocument = vscode.window.activeTextEditor?.document;
 		//If a document is currently open, load it first.
 		return (CurrentDocument !== undefined ? DocumentLoader.openDocument(CurrentDocument) : Promise.resolve()).then(() => 
-			Promise.all(vscode.workspace.textDocuments.map(DocumentLoader.openDocument)).then(() => Console.LogWarning("HyperScopes: All documents have been reloaded."))
+			Promise.all(vscode.workspace.textDocuments.map(DocumentLoader.openDocument)).then(() => Console.Warn("HyperScopes: All documents have been reloaded."))
 		);
 	}
 

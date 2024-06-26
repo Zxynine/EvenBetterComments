@@ -134,60 +134,60 @@ export namespace Debug {
 
 
 
-export namespace Console {
-	export const ExtentionTitle = 'EvenBetterComments: ';
-	export function FormatMessage(message:unknown): string;
-	export function FormatMessage(message:unknown, delimeter: string = "", ...args: unknown[]): string {
-		return (ExtentionTitle + [message, ...args].join(delimeter));
-	}
+// export namespace Console {
+// 	export const ExtentionTitle = 'EvenBetterComments: ';
+// 	export function FormatMessage(message:unknown): string;
+// 	export function FormatMessage(message:unknown, delimeter: string = "", ...args: unknown[]): string {
+// 		return (ExtentionTitle + [message, ...args].join(delimeter));
+// 	}
 
-	export function GetTimeStamp(): string { // Ex: "22/11/2022, 22:16:50"
-		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date());
-	}
+// 	export function GetTimeStamp(): string { // Ex: "22/11/2022, 22:16:50"
+// 		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date());
+// 	}
 
 		
-	export function LogTime(message:string, ...args: any[]): void {
-		console.log(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
-	}
+// 	export function LogTime(message:string, ...args: any[]): void {
+// 		console.log(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
+// 	}
 
-	export function LogError(err: Exception): void {
-		console.error(`[${Console.GetTimeStamp()}] Error<${err.name}>: '${err.message}'\n\n${err.stack}`);
-	}
+// 	export function LogError(err: Exception): void {
+// 		console.error(`[${Console.GetTimeStamp()}] Error<${err.name}>: '${err.message}'\n\n${err.stack}`);
+// 	}
 
-	export function LogWarning(message:string, ...args: any[]): void {
-		console.warn(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
-	}
+// 	export function LogWarning(message:string, ...args: any[]): void {
+// 		console.warn(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
+// 	}
  
 
 
-	export const enum Type {
-		Info, Warning, Error
-	}
+// 	export const enum Type {
+// 		Info, Warning, Error
+// 	}
 
 
-	/**
-	 * Show an information message to users. Optionally provide an array of items which will be presented as
-	 * clickable buttons.
-	 *
-	 * @param message The message to show.
-	 * @param logType The type of message to display (Default is Information message).
-	 * @param buttons A set of items that will be rendered as actions in the message.
-	 * @return A thenable that resolves to the selected item or `undefined` when being dismissed.
-	 */
+// 	/**
+// 	 * Show an information message to users. Optionally provide an array of items which will be presented as
+// 	 * clickable buttons.
+// 	 *
+// 	 * @param message The message to show.
+// 	 * @param logType The type of message to display (Default is Information message).
+// 	 * @param buttons A set of items that will be rendered as actions in the message.
+// 	 * @return A thenable that resolves to the selected item or `undefined` when being dismissed.
+// 	 */
 
 	
 
-	export function Log(message:string) : void;
-	export function Log(message:string, logType:Type, ...args: any[]) : void;
-	export function Log(message:string, logType:Type=Type.Info, ...args: any[]) : void {
-		switch (logType) {
-			case Type.Info: return console.log(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
-			case Type.Warning: return console.warn(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
-			case Type.Error: console.error(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
-		}
-	}
+// 	export function Log(message:string) : void;
+// 	export function Log(message:string, logType:Type, ...args: any[]) : void;
+// 	export function Log(message:string, logType:Type=Type.Info, ...args: any[]) : void {
+// 		switch (logType) {
+// 			case Type.Info: return console.log(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
+// 			case Type.Warning: return console.warn(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
+// 			case Type.Error: console.error(`[${Console.GetTimeStamp()}]: ${message}`, ...args);
+// 		}
+// 	}
 
-}
+// }
 
 
 

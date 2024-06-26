@@ -9,27 +9,10 @@ import * as vscode from 'vscode';
 
 
 
-
-
-export function wait(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-
 /**
  * Emulate delay with async setTimeout().
  */
-export const sleep = async (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
-
-
-/**
- * Emulate delay with async setTimeout().
- */
-export async function Sleep(ms: number): Promise<number> {
-	return new Promise(resolve => setTimeout(() => resolve(ms), ms));
-}
-
-
+export const Sleep = async (ms: number): Promise<void> => (ms <= 0) ? Promise.resolve() : new Promise(resolve => setTimeout(resolve, ms));
 
 
 export async function Pulse(delay: float, count: int, callback: Action) {
@@ -54,11 +37,6 @@ export async function PulseWithCountCancelable(delay: float, count: int, callbac
 		if (counter++ > count) clearInterval(intervalId);
 		if (!callback(counter)) clearInterval(intervalId);
 	}, delay);
-}
-
-
-export async function delay(ms: number) {
-	return (ms <= 0)? Promise.resolve() : new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 
