@@ -60,6 +60,7 @@ export class Parser {
 	}
 
 	//Todo: Support regex tags by using named groups, require a named group "tag" and the match comparison to use for identifying regex tags. 
+	//TODO: Turn the first line search into a special regex saved
 
 	private delimiter: string = "";
 	private blockCommentStart: string = "";
@@ -114,6 +115,7 @@ export class Parser {
  	//TODO: just save the regex string, this.tags should not change except for config reloads.
 	/** Build up regex matcher for custom delimiter tags */
 	protected static JoinDelimiters = (tags : Array<CommentTag>) => `(?:${tags.map(Tag => Tag.escapedTag).join('|')})`;
+	protected static JoinDelimitersSimple = (tags : Array<CommentTag>) => `(?:${tags.map(Tag => Tag.tag.replace(/([.*+?^${()|[\\])/g, '\\$1')).join('|')})`;
 
 	protected static OffsetToLine = (document: vscode.TextDocument, offset:int): int => document.positionAt(offset).line;
 	protected static CreateRange(document: vscode.TextDocument, startIndex: int, endIndex: int): vscode.Range {
@@ -127,31 +129,18 @@ export class Parser {
 	 * @param itemTag The string that repesents the tag.
 	 * @returns {CommentTag} The created CommentTag object.
 	 */
-	protected static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions) : CommentTag {
-		const escapedSequence = itemTag.replace(/([.*+?^${()|[\\])/g, '\\$1'); //?   /([()[{*+.$^\\|?])/g
+	protected static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions, prefix : bool = false) : CommentTag {
+		const escapedSequence = itemTag.replace(/([.*+?^${()|[\\])/g, '\\$1'); //?   /([()[{*+.$^\\|?])/g  //? hardcoded to escape slashes
+		const regexTag = (prefix) ? `(?:${Parser.escapeSlashes(escapedSequence)})+` : Parser.escapeSlashes(escapedSequence);
+		// const regexTag = Parser.escapeSlashes(escapedSequence);//(prefix) ? `(?:${Parser.escapeSlashes(escapedSequence)})+` : Parser.escapeSlashes(escapedSequence);
 		return <CommentTag>{
 			tag: itemTag,
-			escapedTag: Parser.escapeSlashes(escapedSequence),  //? hardcoded to escape slashes
+			escapedTag: regexTag, //Allows repeating character 
 			lowerTag: itemTag.toLowerCase(), //? used for comparison
 			ranges: [],
 			decoration: vscode.window.createTextEditorDecorationType(options)
 		};
 	}
-
-
-	// /**
-	//  * Static method used to create CommentTag objects.
-	//  * @param itemTag The string that repesents the tag.
-	//  * @returns {CommentTag} The created CommentTag object.
-	//  */
-	//  protected static CreateRegexTag(itemTag : string, options : vscode.DecorationRenderOptions) : RegexCommentTag {
-	// 	return <RegexCommentTag>{
-	// 		tag: itemTag,
-	// 		regex: new RegExp(itemTag),
-	// 		ranges: [],
-	// 		decoration: vscode.window.createTextEditorDecorationType(options)
-	// 	};
-	// }
 
 
 	private static TagDefinitionToDecorationOptions(tag : TagDefinition) {
@@ -251,7 +240,7 @@ export class Parser {
 	}
 
 
-
+	//TODO: Turn the first line search into a special regex saved
 
 	//===============================================================================================================================================
 
@@ -293,7 +282,8 @@ export class Parser {
 			}
 
 			// Find which custom delimiter was used in order to add it to the collection
-			const matchString = (match[4] as string).toLowerCase();
+			const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
+			const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
 			// console.log(match);
 			this.tagsMap.get(matchString)?.ranges.push(
 				((!this.highlightTagOnly)
@@ -338,7 +328,8 @@ export class Parser {
 					if (ContainsCommentBefore) continue; //Dont highlight a line with multiple comments on the same line.
 					
 					// Find which custom delimiter was used in order to add it to the collection
-					const matchString = (matchResult[4] as string).toLowerCase();
+					const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
+					const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const range = ((!this.highlightTagOnly)
 							? new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length)
@@ -710,12 +701,15 @@ export class Parser {
 			
 			//Idea: allow item.tag to be an array? Avoid the need for alias field to begin with.
 			//Create CommentTag for primary tag
-			this.PushTag(Parser.CreateTag(item.tag, options));
+			this.PushTag(Parser.CreateTag(item.tag, options, item.prefix));
 			// if (!item.isRegex) this.PushTag(Parser.CreateTag(item.tag, options));
 			// else this.PushRegexTag(Parser.CreateRegexTag(item.tag, options))
 			//Turn each alias into its own CommentTag because im lazy and it is easy to do.
 			item.aliases?.forEach(aliasTag => this.PushTag(Parser.CreateTag(aliasTag, options)));
 		}
+
+		
+		console.log(Parser.JoinDelimiters(this.tags));
 	}
 
 	
@@ -800,14 +794,14 @@ const IsString = (item:any): item is String => typeof item === 'string'; //Testi
 
 
 
-export class ParserCommentFinder {
-	public static readonly MonolineSimple = "(^[ \\t]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
-	public static readonly MultilineSimple = "(^[ \\t]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
+// export class ParserCommentFinder {
+// 	public static readonly MonolineSimple = "(^[ \\t]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
+// 	public static readonly MultilineSimple = "(^[ \\t]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
 	
-	public static readonly MonolineMixed = "(^[ \\t]*[^\`\'\"]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
-	public static readonly MultilineMixed = "(^[ \\t]*[^\`\'\"]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
+// 	public static readonly MonolineMixed = "(^[ \\t]*[^\`\'\"]*)(${delimiter})([ \\t]+|:|$)(.*$)"; //igm
+// 	public static readonly MultilineMixed = "(^[ \\t]*[^\`\'\"]*)(${start})([ \\t]+|:|$)([\\s\\S]*?)(${end})"; //igm
 
-}
+// }
 
 
 

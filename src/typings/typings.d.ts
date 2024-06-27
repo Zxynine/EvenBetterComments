@@ -33,6 +33,7 @@ interface Contributions {
 interface TagDefinition {
 	tag: string;
 	aliases: Array<string>;
+	prefix: boolean;
 	color: string;
 	backgroundColor: string;
 	overline: boolean;
@@ -40,7 +41,7 @@ interface TagDefinition {
 	underline: boolean;
 	bold: boolean;
 	italic: boolean;
-	isRegex: boolean;
+	// isRegex: boolean;
 	CustomDecoration?: VSCodeDecorationRender;
 }
 

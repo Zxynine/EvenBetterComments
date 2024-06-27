@@ -73,6 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	//TODO: incorporate this into the document script
 	function CheckUpdateDecorations(event : vscode.TextDocumentChangeEvent) {
 		// Trigger updates if the text was changed in the same document
+		//TODO: Specify how much of the document changed, as to not reparse tags constantly.
 		if (activeEditor && event.document === activeEditor.document) triggerUpdateDecorations();
 	}
 	
