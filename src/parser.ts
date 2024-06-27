@@ -259,10 +259,6 @@ export class Parser {
 
 
 
-
-
-
-
 	/**  .......................................................................................................................
 	 * Finds all single line comments delimited by a given delimiter and matching tags specified in package.json
 	 * @param activeEditor The active text editor containing the code document
@@ -288,8 +284,13 @@ export class Parser {
 			if (this.CommentTracker.CheckFlag(startPos.line)) continue;
 			this.CommentTracker.SetFlag(startPos.line, true);
 
-			// Required to ignore the first line of files (#61) Many scripting languages start their file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3)
-			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) continue;
+			// Required to ignore the first line of files (#61) Many scripting languages start their 
+			// file with a shebang to indicate which interpreter should be used (i.e. python3 scripts have #!/usr/bin/env python3) which could match a tag.
+			if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
+				//We are dealing with the first line so use the lenguage regex to check if first line matches.
+				const ShebangSearch = new RegExp(Configuration.GetShebangSearch(activeEditor.document.languageId));
+				if (ShebangSearch.test(activeEditor.document.lineAt(0).text.trim())) continue;
+			}
 
 			// Find which custom delimiter was used in order to add it to the collection
 			const matchString = (match[4] as string).toLowerCase();
@@ -922,7 +923,7 @@ export function MakeTitleMatcher(regexString:string) {
 //[[./extension.ts]]
 
 //[[icon.png]]
-
+//Testing next to it
 
 	/**
 	 * Idea: first split document up into groups that are not block comments and ones that are. Iterate over each individual group and apply the formatting appropriately.

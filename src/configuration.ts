@@ -9,6 +9,7 @@ import { TextDecoder } from 'util';
 export class Configuration {
 	private static readonly commentConfig = new Map<string, vscode.CommentRule | undefined>();
 	private static readonly languageHasShebang = new Map<string, boolean>();
+	private static readonly languageShebangSearch = new Map<string, string | undefined>();
 	//Utilities
 	private static readonly textDecoder = new TextDecoder();
 
@@ -24,6 +25,7 @@ export class Configuration {
 		Configuration.languageHasShebang.clear();
 		await LanguageLoader.LoadLanguages();
 		for (const language of LanguageLoader.AllLanguageDefinitions) {
+			Configuration.languageShebangSearch.set(language.id, language.firstLine);
 			Configuration.languageHasShebang.set(language.id, Boolean(language.firstLine));
 		}
 	}
@@ -49,9 +51,13 @@ export class Configuration {
 
 
 	public static GetHasShebang(languageCode: string): boolean {
-		return (Configuration.languageHasShebang.get(languageCode) ?? false)
+		return (Configuration.languageHasShebang.get(languageCode) ?? false);
 	}
 
+	//Returns a zero width negative look ahead that matches nothing if undefined.
+	public static GetShebangSearch(languageCode: string): string {
+		return Configuration.languageShebangSearch.get(languageCode) ?? "(?!)";
+	}
 
 
 	/** Gets the configuration information for the specified language */
