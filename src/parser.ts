@@ -131,8 +131,7 @@ export class Parser {
 	 */
 	protected static CreateTag(itemTag : string, options : vscode.DecorationRenderOptions, prefix : bool = false) : CommentTag {
 		const escapedSequence = itemTag.replace(/([.*+?^${()|[\\])/g, '\\$1'); //?   /([()[{*+.$^\\|?])/g  //? hardcoded to escape slashes
-		const regexTag = (prefix) ? `(?:${Parser.escapeSlashes(escapedSequence)})+` : Parser.escapeSlashes(escapedSequence);
-		// const regexTag = Parser.escapeSlashes(escapedSequence);//(prefix) ? `(?:${Parser.escapeSlashes(escapedSequence)})+` : Parser.escapeSlashes(escapedSequence);
+		const regexTag = (prefix) ? `(?:${Parser.escapeSlashes(escapedSequence)})+` : Parser.escapeSlashes(escapedSequence); //? For prefix tags, put in non cap group to allow repeats
 		return <CommentTag>{
 			tag: itemTag,
 			escapedTag: regexTag, //Allows repeating character 
@@ -168,6 +167,9 @@ export class Parser {
 		for (let match:RegExpExecArray|null; (match = pattern.exec(text));) yield match;
 	}
 
+	private static MatchFirst(match: string, text: string) {
+		return (new RegExp(`.*?(${match})`)).exec(text)?.[0];
+	}
 
 	//===============================================================================================================================================
 
@@ -282,8 +284,9 @@ export class Parser {
 			}
 
 			// Find which custom delimiter was used in order to add it to the collection
-			const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
-			const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
+			// const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
+			// const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
+			const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (match[4] as string))!.toLowerCase();
 			// console.log(match);
 			this.tagsMap.get(matchString)?.ranges.push(
 				((!this.highlightTagOnly)
@@ -328,8 +331,10 @@ export class Parser {
 					if (ContainsCommentBefore) continue; //Dont highlight a line with multiple comments on the same line.
 					
 					// Find which custom delimiter was used in order to add it to the collection
-					const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
-					const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
+					// const GetFirst = new RegExp(`.*?(${Parser.JoinDelimitersSimple(this.tags)})`)
+					// const matchString = GetFirst.exec((match[4] as string))![0].toLowerCase();
+					
+					const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (match[4] as string))!.toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const range = ((!this.highlightTagOnly)
 							? new vscode.Range(startPos.line, offset, endPos.line, activeEditor.document.lineAt(startPos).text.length)
@@ -405,7 +410,9 @@ export class Parser {
 			if (this.highlightFullBlockComments) {
 				const SubMatch = activeEditor.document.lineAt(StartLine).text.match(fullBlockRegEx);
 				if (SubMatch) {
-					const matchString = (SubMatch[3] as string).toLowerCase();
+					// const matchString = (SubMatch[3] as string).toLowerCase();
+					
+					const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (SubMatch[3] as string))!.toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const StartIndex = match.index + match[1].length;
 						const EndIndex = StartIndex + match[2].length + match[3].length + match[4].length;
@@ -421,7 +428,9 @@ export class Parser {
 			// Find the specific lines that contain the match
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) {
 				// Find which custom delimiter was used in order to add it to the collection
-				const matchString = (line[2] as string).toLowerCase();
+				// const matchString = (line[2] as string).toLowerCase();
+					
+				const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (line[2] as string))!.toLowerCase();
 				if (this.tagsMap.has(matchString)) {
 					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					const range = ((!this.highlightTagOnly)
@@ -461,7 +470,8 @@ export class Parser {
 			if (this.CommentTracker.CheckRange(StartLine, EndLine)) continue; //Already has highlights in range, skip.
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) { // Find the line
 				// Find which custom delimiter was used in order to add it to the collection
-				const matchString = (line[2] as string).toLowerCase();
+				// const matchString = (line[2] as string).toLowerCase();
+				const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (line[2] as string))!.toLowerCase();
 				if (this.tagsMap.has(matchString)) {
 					const lineMatchIndex = line.index + match.index; //Adds index of start of block to index of match within the block.
 					const range = ((!this.highlightTagOnly)
@@ -493,7 +503,7 @@ export class Parser {
 
 
 
-
+	//TODO: need to suppot prefix tags.
 
 	/** 
 	 * Finds all multiline comments starting with "*"
@@ -523,6 +533,7 @@ export class Parser {
 				const SubMatch = activeEditor.document.lineAt(StartLine).text.match(fullBlockRegEx);
 				if (SubMatch) {
 					const matchString = (SubMatch[3] as string).toLowerCase();
+					// const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), ((SubMatch[3] as string)))!.toLowerCase();
 					if (this.tagsMap.has(matchString)) {
 						const StartIndex = match.index + match[1].length;
 						const EndIndex = StartIndex + match[2].length + match[3].length + match[4].length;
@@ -539,6 +550,7 @@ export class Parser {
 			for (const line of Parser.MatchAllInText(commentBlock, commentRegEx)) {
 				// Find which custom delimiter was used in order to add it to the collection
 				const matchString = (line[2] as string).toLowerCase();
+				// const matchString = Parser.MatchFirst(Parser.JoinDelimitersSimple(this.tags), (line[2] as string))!.toLowerCase();
 				if (this.tagsMap.has(matchString)) {
 					const lineMatchIndex = line.index + match.index;
 					const range = ((!this.highlightTagOnly)
