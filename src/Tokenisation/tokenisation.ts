@@ -4,8 +4,8 @@ import { Color, Position, Range } from "vscode";
 export interface ITokenPresentation {
 	foreground: ColorId;
 	background: ColorId,
-	italic: boolean;
 	bold: boolean;
+	italic: boolean;
 	underline: boolean;
 	strikethrough: boolean;
 }
@@ -832,7 +832,7 @@ export abstract class AbstractTokenArray {
 		yield this._tokensEndOffset;
 	}
 	
-	protected FromEnumerate<T>(func: Func<[int], T>) {
+	protected FromEnumerate<T>(func: Func<int, T>) {
 		const returnArray = new Array<T>(this._tokensCount);
 		for (let i = 0; i<this._tokensCount; i++) returnArray[i] = func(i);
 		return returnArray;
@@ -1087,56 +1087,17 @@ export function fromBase64(s: string): Uint8Array {
 	return Buffer.from(s, 'base64');
 }
 
-// const textEncoder = new TextEncoder();
 
-// export function base64(s: string): string;
-// export function base64(bytes: Uint8Array): string;
-// export function base64(data: string | Uint8Array): string {
-// 	let bytes = typeof data === 'string' ? textEncoder.encode(data) : data;
 
-// 	let output = '';
-// 	for (let i = 0, { length } = bytes; i < length; i++) {
-// 		output += String.fromCharCode(bytes[i]);
-// 	}
-// 	return globalThis.btoa(output);
-// }
 
-// export function fromBase64(s: string): Uint8Array {
-// 	const decoded = globalThis.atob(s);
 
-// 	const len = decoded.length;
-// 	const bytes = new Uint8Array(len);
-// 	for (let i = 0; i < len; i++) {
-// 		bytes[i] = decoded.charCodeAt(i);
-// 	}
-// 	return bytes;
-// }
 
 
 
-export function encodeUtf8Hex(s: string): string {
-	return Buffer.from(s, 'utf8').toString('hex');
-}
 
-export function decodeUtf8Hex(hex: string): string {
-	return Buffer.from(hex, 'hex').toString('utf8');
-}
 
 
 
-export function reverseEndianness(arr: Uint8Array): void {
-	for (let i = 0, len = arr.length; i < len; i += 4) {
-		// flip bytes 0<->3 and 1<->2
-		const b0 = arr[i + 0];
-		const b1 = arr[i + 1];
-		const b2 = arr[i + 2];
-		const b3 = arr[i + 3];
-		arr[i + 0] = b3;
-		arr[i + 1] = b2;
-		arr[i + 2] = b1;
-		arr[i + 3] = b0;
-	}
-}
 
 
 
@@ -1148,90 +1109,6 @@ export function reverseEndianness(arr: Uint8Array): void {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export const enum StringEOL {
-	Unknown = 0,
-	Invalid = 3,
-	LF = 1,
-	CRLF = 2
-}
-
-
-
-export function countEOL(text: string): [number, number, number, StringEOL] {
-	let eolCount = 0;
-	let firstLineLength = 0;
-	let lastLineStart = 0;
-	let eol: StringEOL = StringEOL.Unknown;
-	for (let i = 0, len = text.length; i < len; i++) {
-		const chr = text.charCodeAt(i);
-
-		if (chr === CharCode.CarriageReturn) {
-			if (eolCount === 0) firstLineLength = i;
-			eolCount++;
-			if (i + 1 < len && text.charCodeAt(i + 1) === CharCode.LineFeed) {
-				// \r\n... case
-				eol |= StringEOL.CRLF;
-				i++; // skip \n
-			} else {// \r... case
-				eol |= StringEOL.Invalid;
-			}
-			lastLineStart = i + 1;
-		} else if (chr === CharCode.LineFeed) {
-			// \n... case
-			eol |= StringEOL.LF;
-			if (eolCount === 0) firstLineLength = i;
-			eolCount++;
-			lastLineStart = i + 1;
-		}
-	}
-	return [eolCount, ((eolCount === 0)? text.length : firstLineLength), (text.length - lastLineStart), eol];
-}
 
 
 

@@ -1,187 +1,6 @@
 import { Disposable, Event } from "vscode";
 // import { TextDecoder, TextEncoder } from "util";
-
-export interface IDisposable {
-	dispose(): void;
-}
-
-
-
-
-
-/**
- * Manages a collection of disposable values.
- *
- * This is the preferred way to manage multiple disposables. A `DisposableStore` is safer to work with than an
- * `IDisposable[]` as it considers edge cases, such as registering the same value multiple times or adding an item to a
- * store that has already been disposed of.
- */
-export class DisposableStore extends Disposable {
-	static DISABLE_DISPOSED_WARNING = false;
-
-	/** @return `true` if this object has been disposed of. **/
-	public get isDisposed(): boolean {return this._isDisposed;}
-	private _isDisposed = false;
-
-	private readonly _toDispose = new Set<IDisposable>();
-
-	public constructor() { super(()=> (this._toDispose.size !== 0)&& Disposable.from(...this._toDispose).dispose()); }
-
-
-	/**
-	 * Dispose of all registered disposables and mark this object as disposed.
-	 * Any future disposables added to this object will be disposed of on `add`.
-	 */
-	public dispose(): void {
-		if (this._isDisposed) return;
-		this._isDisposed = true;
-		super.dispose();
-		this.clear();
-	}
-
-
-	/** Dispose of all registered disposables but do not mark this object as disposed. **/
-	public clear(): void {
-		if (this._toDispose.size === 0) return;
- 		else try { Disposable.from(...this._toDispose).dispose(); } 
-		finally { this._toDispose.clear(); }
-	}
-
-	/** Add a new {@link IDisposable disposable} to the collection. **/
-	public add<T extends IDisposable>(o: T): T {
-		if (!o) return o;
-		if ((o as unknown as DisposableStore) === this) throw new Error('Cannot register a disposable on itself!');
-
-		if (this._isDisposed) {
-			if (!DisposableStore.DISABLE_DISPOSED_WARNING) console.warn(new Error('Trying to add a disposable to a DisposableStore that has already been disposed of. The added object will be leaked!').stack);
-		} else this._toDispose.add(o);
-		return o;
-	}
-}
-
-
-
-export class DisposableArray extends Array<Disposable> implements Disposable  {
-	public popDispose(): void {
-		super.pop()?.dispose();
-	}
-
-	public spliceDispose(start: number, deleteCount: number = 1): void {
-		super.splice(start, deleteCount).forEach(D => D.dispose());
-	}
-
-	public clearDispose() {
-		super.forEach(D => D.dispose());
-		super.length = 0;
-	}
-
-	public dispose() {
-		super.forEach(D => D.dispose());
-		super.length = 0;
-	}
-}
-
-export abstract class DisposableContext implements Disposable {
-	protected readonly subscriptions: Disposable[] = [];
-	public readonly dispose = () =>	{
-		this.subscriptions.forEach(D => D.dispose());
-		this.subscriptions.length = 0;
-	}
-}
-
-
-export function using<T extends Disposable>(resource: T, func: (resource: T) => void) {
-	try { func(resource); } 
-	finally { resource.dispose(); }
-}
-
-
-
-
-export function dispose<T extends Disposable>(disposables: T[]): T[] {
-	disposables.forEach(d => d.dispose());
-	return new Array<T>();
-}
-
-export function toDisposable(dispose: Action): Disposable { return { dispose } }
-
-export function combinedDisposable(disposables: Disposable[]): Disposable {
-	return toDisposable(() => dispose(disposables));
-}
-
-
-export const EmptyDisposable = toDisposable(() => null);
-
-
-
-
-// export function dispose<T extends Disposable>(disposable: T): T | undefined;
-// export function dispose<T extends Disposable>(...disposables: T[]): T[] | undefined;
-// export function dispose<T extends Disposable>(disposables: T[]): T[] | undefined;
-// export function dispose<T extends Disposable>(first: T | T[], ...rest: T[]): T | T[] | undefined {
-//     if (Array.isArray(first)) {
-//         first.forEach(d => d && d.dispose());
-//         return [];
-//     } else if (rest.length === 0) {
-//         if (first) {
-//             first.dispose();
-//             return first;
-//         }
-//         return undefined;
-//     } else {
-//         dispose(first);
-//         dispose(rest);
-//         return [];
-//     }
-// }
-
-
-
-
-
-
-
-// export class Disposable implements vscode.Disposable {
-// 	private disposables: vscode.Disposable[] = [];
-// 	private disposed: boolean = false;
-
-// 	/**
-// 	 * Disposes the resources used by the subclass.
-// 	 */
-// 	public dispose() {
-// 		this.disposed = true;
-// 		this.disposables.forEach((disposable) => {
-// 			try {
-// 				disposable.dispose();
-// 			} catch (_) { }
-// 		});
-// 		this.disposables = [];
-// 	}
-
-// 	/**
-// 	 * Register a single disposable.
-// 	 */
-// 	protected registerDisposable(disposable: vscode.Disposable) {
-// 		this.disposables.push(disposable);
-// 	}
-
-// 	/**
-// 	 * Register multiple disposables.
-// 	 */
-// 	protected registerDisposables(...disposables: vscode.Disposable[]) {
-// 		this.disposables.push(...disposables);
-// 	}
-
-// 	/**
-// 	 * Is the Disposable disposed.
-// 	 * @returns `TRUE` => Disposable has been disposed, `FALSE` => Disposable hasn't been disposed.
-// 	 */
-// 	protected isDisposed() {
-// 		return this.disposed;
-// 	}
-// }
-
-
+import { DisposableStore } from "./Disposable";
 
 
 
@@ -215,7 +34,7 @@ export function filterEvent<T>(event: Event<T>, filter: (e: T) => boolean): Even
 
 export function anyEvent<T>(...events: Event<T>[]): Event<T> {
 	return (listener: (e: T) => any, thisArgs?: any, disposables?: Disposable[]) => {
-		const result = combinedDisposable(events.map(event => event(i => listener.call(thisArgs, i))));
+		const result = Disposable.from(...events.map(event => event(i => listener.call(thisArgs, i))));
 		if (disposables) disposables.push(result);
 		return result;
 	};
@@ -611,14 +430,9 @@ export namespace Stream {
 	export type ReadableStreamEventPayload<T> = T | Error | 'end';
 
 		
-	/**
-	 * A interface that emulates the API shape of a node.js readable
-	 * for use in native and web environments.
-	 */
+	/** A interface that emulates the API shape of a node.js readable for use in native and web environments. */
 	export interface Readable<T> {
-		/**
-		 * Read data from the underlying source. Will return null to indicate that no more data can be read.
-		 */
+		/** Read data from the underlying source. Will return null to indicate that no more data can be read. */
 		read(): T | null;
 	}
 

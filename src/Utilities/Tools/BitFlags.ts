@@ -502,7 +502,7 @@ export class FlagsArray {
 
 	protected ForEachBit(func: Action<BitFlag>) { for (const Bit of this.EnumerateFlags()) func(Bit); }
 	protected ForEachChunk(func: Action<int>) { this.Flags.forEach(func); }
-	protected FromEachChunk<T>(func: Func<[int],T>) {
+	protected FromEachChunk<T>(func: Func<int,T>) {
 		const result = new Array<T>(this.Flags.length);
 		for (let i=this.Flags.length-1; i >= 0; --i) result[i] = func(this.Flags[i]);
 		return result; 

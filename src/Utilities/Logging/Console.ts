@@ -20,4 +20,9 @@ export namespace Console {
 			)).join(' ')
 		);
 	}
+
+	
+	export function TimeLog(...args: any[]) { Display(`${Console.GetTimeStamp()}:`,'[LOG] ', ...args); }
+	export function TimeError(...args: any[]) { Display(`${Console.GetTimeStamp()}:`,'[ERROR] ', ...args); }
+	export function TimeWarn(...args: any[]) { Display(`${Console.GetTimeStamp()}:`,'[WARNING] ', ...args); }
 }

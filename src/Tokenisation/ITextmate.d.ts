@@ -1,4 +1,37 @@
 
+// //https://github.com/microsoft/vscode/blob/aea213b7fcc7de5c24ad797ac1af209b159d451f/src/vs/workbench/services/textMate/common/TMGrammars.ts#L19
+
+
+// export interface IExtensionPackage {
+// 	contributes?: IExtensionContributes
+// }
+
+// export interface IExtensionContributes {
+// 	languages?: Array<IExtensionLanguage>;
+// 	grammars?: Array<IExtensionGrammar>;
+// }
+
+// export interface IExtensionLanguage {
+// 	id:string;
+// 	configuration:string;
+// 	firstLine?: string;
+// }
+
+
+// export interface IEmbeddedLanguagesMap { [scopeName: string]: string; }
+// export interface ITokenTypesContribution { [scopeName: string]: string; }
+
+// export interface IExtensionGrammar {
+// 	language?: string;	// undefined if the grammar is only included by other grammars
+// 	scopeName: string;
+// 	path?: string;
+// 	embeddedLanguages?: IEmbeddedLanguagesMap;
+// 	tokenTypes?: ITokenTypesContribution;
+// 	injectTo?: Array<string>;
+// 	balancedBracketScopes: string[];
+// 	unbalancedBracketScopes: string[];
+// }
+
 
 
 declare const enum StandardTokenType {
@@ -31,28 +64,18 @@ declare const enum OptionalStandardTokenType {
 
 
 
-/**
- * Identifiers with a binary dot operator.
- * Examples: `baz` or `foo.bar`
-*/
+/** Identifiers with a binary dot operator. <br/> Examples: `baz` or `foo.bar` */
 type ScopeName = string;
-
-/**
- * An expression language of ScopePathStr with a binary comma (to indicate alternatives) operator.
- * Examples: `foo.bar boo.baz,quick quack`
-*/
+/** An expression language of ScopePathStr with a binary comma (to indicate alternatives) operator. <br/> Examples: `foo.bar boo.baz,quick quack`*/
 type ScopePattern = string;
-/**
- * A TextMate theme.
- */
+
+/** A TextMate theme. */
 interface IRawTheme {
 	readonly name?: string;
 	readonly settings: IRawThemeSetting[];
 }
 
-/**
- * A single theme setting.
- */
+/** A single theme setting. */
 interface IRawThemeSetting {
 	readonly name?: string;
 	readonly scope?: ScopePattern | ScopePattern[];
@@ -160,6 +183,20 @@ interface IRawRepositoryMap {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** A registry helper that can locate grammar file paths given scope names. **/
 interface RegistryOptions {
 	onigLib: Promise<IOnigLib>;
@@ -237,16 +274,4 @@ interface IStackElement {
 	readonly depth: number;
 	clone(): IStackElement;
 	equals(other: IStackElement): boolean;
-}
-
-
-interface IDecodedMetadata {
-	languageId: string | undefined;
-	tokenType: StandardTokenType;
-	bold: boolean | undefined;
-	italic: boolean | undefined;
-	underline: boolean | undefined;
-	strikethrough: boolean | undefined;
-	foreground: string | undefined;
-	background: string | undefined;
 }

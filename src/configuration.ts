@@ -35,7 +35,8 @@ export class Configuration {
 		// * if no config exists for this language, back out and leave the language unsupported
 		if (!LanguageLoader.HasLanguage(languageCode)) return undefined;
 		try {
-			const filePath = LanguageLoader.languageToConfigPath.get(languageCode);
+			
+			const filePath = LanguageLoader.languageIdToConfigPath.get(languageCode);
 			if (filePath === undefined) return undefined;
             const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
 			// use json5, because the config can contain comments

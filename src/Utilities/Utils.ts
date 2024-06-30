@@ -14,6 +14,57 @@ import * as https from 'https';
 //: Idea- insert key should align multiselect cursors.
 
 
+
+
+
+// declare global {
+// 	interface Function {
+// 		applyEvery(this : Func<any,bool>, ...args : any[]) : bool;
+// 		applySome(this : Func<any,bool>, ...args : any[]) : bool;
+// 	}
+
+// 	interface FunctionConstructor {
+		
+// 	}
+// }
+
+// Function.prototype.applyEvery = function(this : Func<any,bool>, ...args : any[]) : bool { return args.every(this) }
+// Function.prototype.applySome = function(this : Func<any,bool>, ...args : any[]) : bool { return args.some(this) }
+
+
+//It will return the passed property/key name but will generate a compile time error when the property name does not exist on type T.
+export const nameOf = <T>(name: Extract<keyof T, string>): string => name;
+
+const NameGetter = new Proxy({}, { get(_,key){ return key}});
+export const nameIn = <T>() => NameGetter as { [P in keyof T]: P};
+
+
+
+
+
+export function as<T>(subject: unknown): T { return subject as T }
+
+export function asAny(subject: unknown): any { return subject }
+
+
+
+/**
+ * amend `subject` with type `T`
+ */
+export function amend<S>(subject: S) {
+	return {
+		union<T>(): T & S {
+			return subject as T & S
+		},
+		intersect<T>(): T | S {
+			return subject as T | S
+		}
+	}
+}
+
+
+
+
 // /**
 //  * From { "lib": "libraries", "other": "otherpath" }
 //  * To [ { key: "lib", value: "libraries" }, { key: "other", value: "otherpath" } ]
@@ -23,7 +74,12 @@ import * as https from 'https';
 // 	return Object.entries(mappings).map(([Key, Val]) => ({ Key, Val }));
 // }
 
-
+export function PropertyMerger<T>(LHS:T,RHS:T) : T { return (
+	(LHS==null || RHS==null) ? (LHS??RHS) :									//If either is not given just return the other.
+	(Array.isArray(LHS) && Array.isArray(RHS)) ? ([...LHS,...RHS] as T) :	//If its an array, combine into a single array.
+	((typeof LHS && typeof RHS) === 'object') ? ({...LHS,...RHS} as T) :	//If its an object, combine into a single object.
+	(LHS || RHS)															//If all else fails, return the more truthy option.
+)}
 
 
 
@@ -872,25 +928,16 @@ export function withUndefinedAsNull<T>(x: T | undefined): T | null {
 	return typeof x === 'undefined' ? null : x;
 }
 
-
-/**
- * Checks whether the input value is the type 'string'
- */
+/**  @returns whether the input value is the type 'string' */
 export function IsCharacter(item:unknown): item is Character { return typeof item === 'string' && (item.length === 1 || /^.$/.test(item)); }
-
-/**
- * Checks whether the input value is the type 'string'
- */
+/**  @returns whether the input value is the type 'string' */
 export function IsString(item:unknown): item is String { return typeof item === 'string'; }
-
-/**
- * @returns whether the provided parameter is a JavaScript Array and each element in the array is a string.
- */
+/**  @returns whether the provided parameter is a JavaScript Array and each element in the array is a string. */
 export function IsStringArray(value: unknown): value is string[] { return Array.isArray(value) && (value).every(elem => IsString(elem)); }
 
 /**
- * Checks whether the input value is a integer. Anything that could be parsed as a number will yield false.
- * Example: The string '1' yields false. The number '1.0' yields true. The number '1.1' yields false.
+ * @returns whether the input value is a integer. Anything that could be parsed as a number will yield false.
+ * Examples: `"1"` is false, `1.0` is true, `1.1` is false.
  */
 export function IsInteger(number: unknown): number is Integer { return Number.isInteger(number); }
 
@@ -901,60 +948,30 @@ export function IsInteger(number: unknown): number is Integer { return Number.is
  * @returns whether the provided parameter is a JavaScript Number or not.
  */
 export function IsNumber(value : unknown) : value is number { return typeof value === 'number' && !isNaN(value); }
-
-/**
- * @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type
- */
+/**  @returns whether the provided parameter is of type `Buffer` or Uint8Array dervived type */
 export function IsTypedArray(obj: unknown): obj is Object { return typeof obj === 'object' && obj instanceof Object.getPrototypeOf(Uint8Array); }
-
-/**
- * @returns whether the provided parameter is an Iterable, casting to the given generic
- */
+/**  @returns whether the provided parameter is an Iterable, casting to the given generic */
 export function IsIterable<T>(obj: unknown): obj is Iterable<T> { return !!obj && typeof (obj as any)[Symbol.iterator] === 'function'; }
-
-/**
- * @returns whether the provided parameter is a JavaScript Boolean or not.
- */
+/**  @returns whether the provided parameter is a JavaScript Boolean or not. */
 export function IsBoolean(obj: unknown): obj is boolean { return (obj === true || obj === false); }
-
-/**
- * @returns whether the provided parameter is undefined.
- */
+/**  @returns whether the provided parameter is undefined. */
 export function IsUndefined(obj: unknown): obj is undefined { return (typeof obj === 'undefined'); }
-
-/**
- * @returns whether the provided parameter is null.
- */
+/**  @returns whether the provided parameter is null. */
 export function IsNull(obj: unknown): obj is null { return (obj === null); }
 
-
-/**
- * @returns whether the provided parameter is undefined or null.
- */
+/**  @returns whether the provided parameter is undefined or null. */
 export function IsUndefinedOrNull(obj: unknown): obj is undefined|null { return (IsUndefined(obj) || obj === null); }
-
-/**
- * @returns whether the provided parameter is defined.
- */
+/**  @returns whether the provided parameter is defined. */
 export function IsDefined<T>(arg: T | null | undefined): arg is T { return !IsUndefinedOrNull(arg); }
 
-
-/**
- * @returns whether the provided parameter is a JavaScript Function or not.
- */
+/**  @returns whether the provided parameter is a JavaScript Function or not. */
 export function IsFunction(obj: unknown): obj is Function { return (typeof obj === 'function'); }
 
-
-/**
- * @returns whether the provided parameters is are JavaScript Function or not.
- */
+/**  @returns whether the provided parameters is are JavaScript Function or not. */
 export function AreFunctions(...objects: unknown[]): boolean { return objects.length > 0 && objects.every(IsFunction); }
 
 
-
-/**
- * Return `true` when item is an object (NOT Array, NOT null, NOT undefined)
- */
+/**  @returns `true` when item is an object (NOT Array, NOT null, NOT undefined) */
  export function isSimpleObject(item: unknown): item is Record<string, unknown> {
 	return (item !== undefined && item !== null && !Array.isArray(item) && typeof item === 'object');
 }
@@ -2395,13 +2412,6 @@ export function getPathRelativeToWorkspaceFolder(uri: vscode.Uri): string {
  * @param value
  * @param rootPath
 **/
-function replaceWorkspaceFolderWithRootPath(value: string, rootPath: string) {
-	return value.replace('${workspaceRoot}', rootPath).replace('${workspaceFolder}', rootPath);
-}
-
-function valueContainsWorkspaceFolder(value: string): boolean {
-	return value.includes('${workspaceFolder}') || value.includes('${workspaceRoot}');
-}
 
 
 

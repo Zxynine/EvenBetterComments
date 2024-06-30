@@ -43,34 +43,16 @@ declare global {
 
 
 
-						
-		/**
-		 * Convert string to PascalCase.  
-		 * first_second_third => FirstSecondThird  
-		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
-		 * 
-		 * @returns {string} transformed value  
-		 */
+		/** PascalCase: `first_second_third => FirstSecondThird`  
+		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts} */
 		toPascalCase() : string;
 
-		
-		/**
-		 * Convert string to camelCase.  
-		 * first_second_third => firstSecondThird  
-		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts}  
-		 * 
-		 * @returns {string} transformed value  
-		 */
+		/** camelCase: `first_second_third => firstSecondThird`  
+		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/snippet/snippetParser.ts} */
 		toCamelCase() : string;
 		
-		
-		/**
-		 * Convert string to snakeCase.  
-		 * first_second_third => firstSecondThird  
-		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/linesOperations/browser/linesOperations.ts}  
-		 * 
-		 * @returns {string} transformed value  
-		 */
+		/** snakeCase: `first_second_third => firstSecondThird`  
+		 * from {@link https://github.com/microsoft/vscode/blob/main/src/vs/editor/contrib/linesOperations/browser/linesOperations.ts} */
 		toSnakeCase(): string;
 
 		/** TitleCase all words in a string */
@@ -111,7 +93,7 @@ declare global {
 		CompareArrays(LHS:string[], RHS:string[]): CompareResult;
 
 
-		Format(message: string, ...args: Printable[]) : string;
+		Format(message: string, ...args: any[]) : string;
 
 		/** Iterates over each character in the two strings and returns the index at which they are different. */
 		IndexOfDifference(LHS:string, RHS:string): int;
@@ -299,7 +281,7 @@ export const NumberCompare = (LHS:num, RHS:num) => (
 
 
 
-String.Format = (message: string, ...args: Printable[]): string => (
+String.Format = (message: string, ...args: any[]): string => (
 	(args.length === 0) ? message : 
 	message.replace(/\{(\d+)\}/g, (match, indices) => `${args[indices[0]]}`)
 );

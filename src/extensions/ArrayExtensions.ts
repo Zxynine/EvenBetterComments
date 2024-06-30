@@ -15,9 +15,7 @@ declare global {
 
 		pushAll<T>(this : Array<T>, from : Array<T>) : void;
 
-		/** 
-		 * Null safe version of a map, its the same as mapping then filtering with a truth check. 
-		**/
+		/** Null safe version of a map, its the same as mapping then filtering with a truth check. **/
 		condensedMap<TR>(this : Array<T>, map:Func<[T], TR>) : Array<TR>;
 		/** Null safe version of a flatMap, its the same as flatMapping then filtering with a truth check. */
 		condensedFlatMap<TR>(this : Array<T>, map:Func<[T], Array<TR>>) : Array<TR>;
@@ -110,11 +108,18 @@ declare global {
 
 		mapObject<TK extends keyof any, TV>(this: ReadonlyArray<T>, map:Func<[T], [TK,TV]>): MappedObject<TV>;
     }
+
+
+	interface ArrayConstructor {
+		areArrays<T>(args : any[]) : args is Array<any[]>;
+	}
 }
 
 
 
-
+Array.areArrays = function<T>(args : any[]) : args is Array<any[]> {
+	return args.every(Array.isArray);
+}
 
 
 
@@ -131,6 +136,8 @@ Object.defineProperty(Array.prototype, "IsEmpty", {
 Array.prototype.pushAll = function <T>(this : Array<T>, from : Array<T>) : void {
 	if (from) this.push(...from);
 }
+
+
 
 
 /** Null safe version of a map, its the same as mapping then filtering with a truth check. */
@@ -203,30 +210,22 @@ Array.prototype.flatMappedFilter = function <T,TR>(this : Array<T>, filter:Func<
 
 
 Array.prototype.first = function <T>(this : Array<T>, predicate:Func<[T], boolean>) : T|undefined {
-	for (let i=0; i<this.length; i++) {
-		if (predicate(this[i])) return this[i];
-	}
+	for (let i=0; i<this.length; i++) if (predicate(this[i])) return this[i];
 	return undefined;
 }
 
 Array.prototype.last = function <T>(this : Array<T>, predicate:Func<[T], boolean>) : T|undefined {
-	for (let i=this.length-1; i>=0; i--) {
-		if (predicate(this[i])) return this[i];
-	}
+	for (let i=this.length-1; i>=0; i--) if (predicate(this[i])) return this[i];
 	return undefined;
 }
 
 Array.prototype.firstIndex = function <T>(this : Array<T>, predicate:Func<[T], boolean>, failReturn:number=-1) : number {
-	for (let i=0; i<this.length; i++) {
-		if (predicate(this[i])) return i;
-	}
+	for (let i=0; i<this.length; i++) if (predicate(this[i])) return i;
 	return failReturn;
 }
 
 Array.prototype.lastIndex = function <T>(this : Array<T>, predicate:Func<[T], boolean>, failReturn:number=-1) : number {
-	for (let i=this.length-1; i>=0; i--) {
-		if (predicate(this[i])) return i;
-	}
+	for (let i=this.length-1; i>=0; i--) if (predicate(this[i])) return i;
 	return failReturn;
 }
 
@@ -234,7 +233,6 @@ Array.prototype.lastIndex = function <T>(this : Array<T>, predicate:Func<[T], bo
 Array.prototype.firstOrDefault = function <T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
 	return array.length > 0 ? array[0] : notFoundValue;
 }
-
 Array.prototype.lastOrDefault = function <T, NotFound = T>(array: ReadonlyArray<T>, notFoundValue?: NotFound): T | NotFound | undefined {
 	return array.length > 0 ? array[array.length - 1] : notFoundValue;
 }
@@ -310,9 +308,8 @@ Array.prototype.chunkArray = function sliceArray<T>(this: Array<T>, chunkSize: n
  * Please don't touch unless you understand https://jsperf.com/inserting-an-array-within-an-array
  */
 Array.prototype.insertArray = function arrayInsert<T>(this: T[], insertIndex: number, insertArr: T[]): T[] {
-	const before = this.slice(0, insertIndex);
-	const after = this.slice(insertIndex);
-	return before.concat(insertArr, after);
+	const [before, after] = [this.slice(0, insertIndex), this.slice(insertIndex)];
+	return [...before, ...insertArr, ...after];
 }
 
 
@@ -622,7 +619,9 @@ export function uniqBy<T>(arr: T[], fn: (el: T) => string): T[] {
 
 
 
-
+export function split<T>(arr: T[], index : number) {
+	return [arr.splice(0,index), arr.splice(index)]
+}
 
 
 

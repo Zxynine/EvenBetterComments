@@ -23,7 +23,7 @@ export async function Pulse(delay: float, count: int, callback: Action) {
 	}, delay);
 }
 
-export async function PulseWithCount(delay: float, count: int, callback: Action<[int]>) {
+export async function PulseWithCount(delay: float, count: int, callback: Action<int>) {
 	let counter = 0;
 	const intervalId = setInterval(() => {
 		if (counter++ > count) clearInterval(intervalId);
@@ -31,7 +31,7 @@ export async function PulseWithCount(delay: float, count: int, callback: Action<
 	}, delay);
 }
 
-export async function PulseWithCountCancelable(delay: float, count: int, callback: Func<[int], bool>) {
+export async function PulseWithCountCancelable(delay: float, count: int, callback: Func<int, bool>) {
 	let counter = 0;
 	const intervalId = setInterval(() => {
 		if (counter++ > count) clearInterval(intervalId);

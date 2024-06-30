@@ -5,10 +5,10 @@ import "./extensions/ArrayExtensions";
 // import { ExtentionProvider } from './providers/ExtentionProvider';
 // import { TextDocumentContentChangeEvent as ChangeEvent } from 'vscode';
 import { TMRegistry } from './Tokenisation/TextmateLoader';
-import { LanguageLoader } from './providers/LanguageProvider';
 import { StandardLineTokens } from './Tokenisation/tokenisation';
 import { Configuration } from './configuration';
 import { Console } from './Utilities/Logging/Console';
+import { DisposableContext } from './Utilities/Disposable';
 // import { FlagsArray } from './typings/BitFlags';
 
 function HyperScopeError(err : any, message : string, ...optionalParams : any[]) {
@@ -132,8 +132,7 @@ export class DocumentLoader {
 		if (DocumentLoader.documentsMap.has(document.uri)) { //Refreshes if exists.
 			DocumentLoader.documentsMap.get(document.uri)?.refresh();
 		} else if (TMRegistry.Current) { //If it does not exist, open it.
-			const scopeName = LanguageLoader.GetLanguageScopeName(document.languageId);
-			if (scopeName) return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
+			return TMRegistry.CreateGrammar(document.languageId).then(grammar =>{
 				if (grammar && document !== undefined) DocumentLoader.documentsMap.set(document.uri, new DocumentController(document, grammar));
 			});
 		}
@@ -191,20 +190,6 @@ export class DocumentLoader {
 
 
 
-
-
-//.........................................................................................................................
-
-
-
-
-abstract class DisposableContext implements vscode.Disposable {
-	protected readonly subscriptions: vscode.Disposable[] = [];
-	public readonly dispose = () =>	{
-		this.subscriptions.forEach((s) => s.dispose());
-		this.subscriptions.length = 0;
-	}
-}
 
 
 
